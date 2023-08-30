@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { GirlModule } from './girl/girl.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import 'dotenv/config';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import 'dotenv/config';
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
       synchronize: true,
+      entities: [join(__dirname, '**', '*.entity.{ts,js}')],
       ssl: {
         rejectUnauthorized: true,
       },

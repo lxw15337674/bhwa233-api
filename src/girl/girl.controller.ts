@@ -1,20 +1,23 @@
 import { GirlService } from './girl.service';
-import { Controller, Get, Post, Query, Body, Param, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
 
 @Controller('girl')
 export class GirlController {
-  constructor(private girlService: GirlService) {
-    console.log('GirlController constructor');
-  }
-  @Get()
-  getGirls(): any {
-    return this.girlService.getGirls();
+  constructor(
+    private girlService: GirlService,
+    @Inject('GirlArray') private girls: string[],
+  ) {
+    console.log('GirlController constructor init');
   }
 
-  @Get('/getGirlById')
-  getGirlById(@Query() query: any): any {
-    console.log(query);
-    return this.girlService.getGirlById(parseInt(query.id));
+  @Get('/test')
+  test(): any {
+    return this.girls;
+  }
+
+  @Get('')
+  getGirls(): any {
+    return this.girlService.getGirls();
   }
 
   @Post('/add')
@@ -23,12 +26,20 @@ export class GirlController {
     return this.girlService.addGirl();
   }
 
-  @Get('/findGirlById/:id')
-  findGirlById(@Param() param: any, @Headers() header: any): any {
-    const id: number = parseInt(param.id);
-    console.log(param.id);
-    console.log(header);
+  @Get('/getGirlByName/:name')
+  findGirlById(@Param() param: any): any {
+    return this.girlService.getGirlByName(param.name);
+  }
 
-    return this.girlService.getGirlById(id);
+  @Get('/delete/:id')
+  deleteGirl(@Param() params: any): any {
+    const id: number = parseInt(params.id);
+    return this.girlService.delGirl(id);
+  }
+
+  @Post('/update/:id')
+  updateGirl(@Param() params: any): any {
+    const id: string = params.id;
+    return this.girlService.updateGirl(id);
   }
 }

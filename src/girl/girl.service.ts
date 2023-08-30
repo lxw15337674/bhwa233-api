@@ -1,36 +1,41 @@
 import { Injectable } from '@nestjs/common';
+import { Like, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Girl } from './entities/girl.entity';
 
 @Injectable()
 export class GirlService {
+  constructor(
+    @InjectRepository(Girl) private readonly girl: Repository<Girl>,
+  ) {}
+
   getGirls() {
-    return {
-      code: 0,
-      data: ['翠花', '小红', '大丫'],
-      msg: '请求女孩列表成功',
-    };
+    return this.girl.find();
+  }
+
+  updateGirl(id: string) {
+    const data = new Girl();
+    data.name = '大梨';
+    data.age++;
+    return this.girl.update(id, data);
   }
 
   addGirl() {
-    return {
-      code: 0,
-      data: { id: 1, name: '大梨', age: 27 },
-      msg: '添加女孩成功',
-    };
+    const data = new Girl();
+    data.name = '大梨';
+    data.age = 27;
+    return this.girl.save(data);
   }
 
-  getGirlById(id: number) {
-    let reJson: any = {};
-    switch (id) {
-      case 1:
-        reJson = { id: 1, name: '翠花', age: 18 };
-        break;
-      case 2:
-        reJson = { id: 1, name: '小红', age: 20 };
-        break;
-      case 3:
-        reJson = { id: 1, name: '大丫', age: 23 };
-        break;
-    }
-    return reJson;
+  delGirl(id: number) {
+    return this.girl.delete(id);
+  }
+
+  getGirlByName(name: string) {
+    return this.girl.find({
+      where: {
+        name: Like(`%${name}%`),
+      },
+    });
   }
 }
