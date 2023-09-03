@@ -42,4 +42,11 @@ export class GirlController {
     const id: string = params.id;
     return this.girlService.updateGirl(id);
   }
+
+  @Get('/corstest')
+  corsTest(): any {
+    return {
+      message: '跨域测试成功',
+    };
+  }
 }
