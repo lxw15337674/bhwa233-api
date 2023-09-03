@@ -1,3 +1,4 @@
+import { BoyService } from './../boy/boy.service';
 import { GirlService } from './girl.service';
 import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
 
@@ -6,6 +7,8 @@ export class GirlController {
   constructor(
     private girlService: GirlService,
     @Inject('GirlArray') private girls: string[],
+    @Inject('Config') private shopName: string,
+    private BoyService: BoyService,
   ) {
     console.log('GirlController constructor init');
   }
@@ -48,5 +51,15 @@ export class GirlController {
     return {
       message: '跨域测试成功',
     };
+  }
+
+  @Get('/findAllBoy')
+  findBoy(): any {
+    return this.BoyService.findAll();
+  }
+
+  @Get('/getConfig')
+  getConfig(): any {
+    return this.shopName;
   }
 }

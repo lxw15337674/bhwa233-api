@@ -3,6 +3,8 @@ import { GirlModule } from './girl/girl.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import 'dotenv/config';
 import { join } from 'path';
+import { BoyModule } from './boy/boy.module';
+import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { join } from 'path';
       },
     }),
     GirlModule,
+    BoyModule,
+    ConfigModule
   ],
   controllers: [],
   providers: [],
