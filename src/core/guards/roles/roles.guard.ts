@@ -5,16 +5,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
 import { User } from 'src/feature/user/entities/user.entity';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(@Inject(Reflect) private readonly reflector: Reflector) {}
+  constructor(@Inject(Reflector) private readonly reflector: Reflector) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     // 通过反射获取请求路由是否添加了 @Roles() 装饰器，如果没有添加，则代表不需要进行认证
     const roles = this.reflector.get<string>('roles', context.getHandler());
     if (!roles) {

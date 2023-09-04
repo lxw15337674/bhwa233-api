@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import 'dotenv/config';
 import { join } from 'path';
-import { PostModule } from './feature/post/post.module';
 import { UserModule } from './feature/user/user.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from './core/auth/auth.module';
@@ -24,7 +23,6 @@ import { ErrorsInterceptor } from './core/interceptors/errors/errors.interceptor
       },
     }),
     UserModule,
-    PostModule,
     AuthModule,
   ],
   controllers: [],

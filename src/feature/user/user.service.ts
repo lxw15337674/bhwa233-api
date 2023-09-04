@@ -41,7 +41,7 @@ export class UserService implements OnModuleInit {
   /**
    * 用户注册
    */
-  async register({ account, password, name }: User) {
+  async register({ account, password, name = account }: User) {
     const existing = await this.findOneByAccount(account);
     if (existing) throw new HttpException('用户已存在', 406);
     const user = this.userRepo.create({

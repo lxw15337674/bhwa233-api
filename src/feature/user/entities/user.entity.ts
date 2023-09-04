@@ -1,5 +1,4 @@
-import { Post } from 'src/feature/post/entities/post.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('user')
 export class User {
@@ -14,9 +13,6 @@ export class User {
 
   @Column()
   name: string;
-
-  @OneToMany(() => Post, (post) => post.user)
-  posts: Post[];
 
   @Column({
     default: 'regular',

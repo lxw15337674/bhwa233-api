@@ -6,6 +6,7 @@ import {
   Delete,
   Inject,
   UseGuards,
+  Get,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Result } from 'src/common/interface/result';
@@ -48,5 +49,14 @@ export class UserController {
   async remove(@Param('id') id: number) {
     await this.userService.remove(id);
     return { code: 200, message: '删除成功' };
+  }
+
+  /**
+   * 获取所有用户
+   */
+  @Get('findAll')
+  async findAll() {
+    const users = await this.userService.findAll();
+    return { code: 200, message: '查询成功', data: users };
   }
 }
