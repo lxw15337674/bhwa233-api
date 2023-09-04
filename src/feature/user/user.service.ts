@@ -49,7 +49,8 @@ export class UserService implements OnModuleInit {
       password: this.cryptoUtil.encryptPassword(password),
       name,
     });
-    await this.userRepo.save(user);
+    const newUser = await this.userRepo.save(user);
+    return newUser;
   }
 
   /**

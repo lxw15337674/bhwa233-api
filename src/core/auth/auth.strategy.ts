@@ -28,7 +28,7 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
       payload.password,
     );
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('token不正确');
     }
     return user;
   }

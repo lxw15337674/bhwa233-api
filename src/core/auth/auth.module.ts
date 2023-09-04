@@ -8,8 +8,7 @@ import { AuthStrategy } from './auth.strategy';
 @Module({
   imports: [
     JwtModule.register({
-      // 向 nest 容器注册 jwt 模块，并配置密钥和令牌有效期
-      secretOrPrivateKey: 'secretKey',
+      secret: process.env.JWT_KEY,
       signOptions: {
         expiresIn: 3600,
       },

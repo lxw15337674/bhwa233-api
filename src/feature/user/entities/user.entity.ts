@@ -14,8 +14,20 @@ export class User {
   @Column()
   name: string;
 
-  @Column({
-    default: 'regular',
-  })
+  @Column('simple-enum', { enum: ['root', 'author', 'visitor'] })
   role: string;
+
+  @Column({
+    name: 'create_time',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createTime: Date;
+
+  @Column({
+    name: 'update_time',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  updateTime: Date;
 }

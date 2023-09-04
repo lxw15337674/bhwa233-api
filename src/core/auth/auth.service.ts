@@ -1,5 +1,5 @@
 import { UserService } from './../../feature/user/user.service';
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -10,14 +10,16 @@ export class AuthService {
   ) {}
   async validateUser(account: string, password: string): Promise<any> {
     const user = await this.userService.findOneByAccount(account);
-    if (user && user.password === password) {
-      const { password, ...result } = user;
-      return result;
+    if (!user) {
+      throw new BadRequestException('用户名不正确！');
     }
-    return null;
+    if (user.password !== password) {
+      throw new BadRequestException('密码错误！');
+    }
+    return user;
   }
 
   async createToken(account: string) {
-    return this.jwtService.sign(account);
+    return this.jwtService.sign({ account }, { expiresIn: '6h' });
   }
 }

@@ -7,6 +7,7 @@ import {
   Inject,
   UseGuards,
   Get,
+  Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Result } from 'src/common/interface/result';
@@ -38,9 +39,8 @@ export class UserController {
   }
 
   @Post('register')
-  async register(@Body() user: User) {
-    await this.userService.register(user);
-    return { code: 200, message: '注册成功' };
+  register(@Body() user: User) {
+    return this.userService.register(user);
   }
 
   @Delete(':id')
@@ -58,5 +58,11 @@ export class UserController {
   async findAll() {
     const users = await this.userService.findAll();
     return { code: 200, message: '查询成功', data: users };
+  }
+
+  @UseGuards(AuthGuard(), RolesGuard)
+  @Get('getInfo')
+  async getInfo(@Req() req: any) {
+    return { code: 200, message: '查询成功', data: req.user };
   }
 }

@@ -5,17 +5,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
+      "command": "pnpm start:debug",
+      "name": "Run start:debug",
       "request": "launch",
-      "name": "启动程序",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "program": "${file}",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ]
-    }
+      "type": "node-terminal"
+    },
   ]
 }
