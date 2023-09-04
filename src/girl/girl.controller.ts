@@ -1,6 +1,14 @@
 import { BoyService } from './../boy/boy.service';
 import { GirlService } from './girl.service';
-import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Inject,
+  ParseIntPipe,
+} from '@nestjs/common';
 
 @Controller('girl')
 export class GirlController {
@@ -27,8 +35,13 @@ export class GirlController {
   }
 
   @Get('/getGirlByName/:name')
-  findGirlById(@Param() param: any): any {
+  findGirlByName(@Param('name') param: any): any {
     return this.girlService.getGirlByName(param.name);
+  }
+
+  @Get('/getGirlById/:id')
+  findGirlById(@Param('id', ParseIntPipe) id: number): any {
+    return this.girlService.getGirlById(id);
   }
 
   @Get('/delete/:id')

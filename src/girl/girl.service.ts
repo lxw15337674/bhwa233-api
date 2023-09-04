@@ -38,4 +38,12 @@ export class GirlService {
       },
     });
   }
+
+  getGirlById(id: number) {
+    return this.girl.find({
+      where: {
+        id,
+      },
+    });
+  }
 }
