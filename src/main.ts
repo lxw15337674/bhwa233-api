@@ -1,18 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cors from 'cors';
-
-function MiddleWareAll(req: any, res: any, next: any) {
-  console.log('我是全局中间件.....');
-  // res.send('禁止访问')
-  next();
-}
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.use(cors());
-  app.use(MiddleWareAll);
-  await app.listen(6060);
+  await app.listen(6060).then(() => {
+    new Logger('NestApplication').log(
+      'Server is running on http://localhost:6060',
+    );
+  });
 }
 bootstrap();

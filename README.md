@@ -23,3 +23,14 @@
 [让我们用Nestjs来重写一个CNode(上)](https://github.com/jiayisheji/blog/issues/18)
 
 [nest入门教程(不推荐：半成品)](https://jspang.com/article/87#toc14)
+
+
+
+## 开发记录
+
+1. 生成crud
+
+```bash
+nest g resource feature/user
+```
+

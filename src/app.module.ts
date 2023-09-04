@@ -1,21 +1,20 @@
 import { Module } from '@nestjs/common';
-import { GirlModule } from './girl/girl.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import 'dotenv/config';
 import { join } from 'path';
-import { BoyModule } from './boy/boy.module';
-import { ConfigModule } from './config/config.module';
+import { PostModule } from './feature/post/post.module';
+import { UserModule } from './feature/user/user.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuthModule } from './core/auth/auth.module';
+import { ErrorsInterceptor } from './core/interceptors/errors/errors.interceptor';
 
 @Module({
   imports: [
-    GirlModule,
-    BoyModule,
-    ConfigModule.forRoot('洗浴中心'),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DATABASE_HOST,
       port: 3306,
-      username: process.env.DATABASE_USER,
+      username: process.env.DATABASE_USERNAME,
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
       synchronize: true,
@@ -24,8 +23,16 @@ import { ConfigModule } from './config/config.module';
         rejectUnauthorized: true,
       },
     }),
+    UserModule,
+    PostModule,
+    AuthModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR, // 全局拦截器，这里使用全局异常拦截器改写异常消息结构
+      useClass: ErrorsInterceptor,
+    },
+  ],
 })
 export class AppModule {}
