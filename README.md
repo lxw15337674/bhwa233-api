@@ -16,7 +16,7 @@
 
 ## 学习文档
 
-Nest官方文档：https://nest.nodejs.cn/
+Nest官方文档：https://docs.nestjs.cn/
 
 nest入门教程：https://jspang.com/article/87#toc14
 

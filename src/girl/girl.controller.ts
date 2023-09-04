@@ -6,13 +6,10 @@ import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
 export class GirlController {
   constructor(
     private girlService: GirlService,
+    private BoyService: BoyService,
     @Inject('GirlArray') private girls: string[],
     @Inject('Config') private shopName: string,
-    private BoyService: BoyService,
-  ) {
-    console.log('GirlController constructor init');
-  }
-
+  ) {}
   @Get('/test')
   test(): any {
     return this.girls;

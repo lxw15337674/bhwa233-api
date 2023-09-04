@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Girl } from './entities/girl.entity';
 import { CounterMiddleware } from 'src/counter/counter.middleware';
 import { BoyService } from 'src/boy/boy.service';
+import { ConfigModule } from 'src/config/config.module';
 
 @Module({
   controllers: [GirlController],
@@ -16,7 +17,7 @@ import { BoyService } from 'src/boy/boy.service';
     },
     BoyService,
   ],
-  imports: [TypeOrmModule.forFeature([Girl])],
+  imports: [TypeOrmModule.forFeature([Girl]), ConfigModule.forRoot('洗浴中心')],
 })
 export class GirlModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

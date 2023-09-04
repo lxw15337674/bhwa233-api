@@ -8,6 +8,9 @@ import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
+    GirlModule,
+    BoyModule,
+    ConfigModule.forRoot('洗浴中心'),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DATABASE_HOST,
@@ -21,11 +24,8 @@ import { ConfigModule } from './config/config.module';
         rejectUnauthorized: true,
       },
     }),
-    GirlModule,
-    BoyModule,
-    ConfigModule
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}
