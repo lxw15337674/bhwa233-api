@@ -10,7 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { Result } from 'src/common/interface/result';
+import { IUser, Result } from 'src/common/interface/result';
 import { AuthService } from 'src/core/auth/auth.service';
 import { User } from './entities/user.entity';
 import { Roles } from 'src/common/roles/roles.decorator';
@@ -30,11 +30,9 @@ export class UserController {
    * 其中 Authorization 是用于告诉服务端本次请求有令牌，并且令牌前缀是 Bearer，而令牌的具体内容是登录之后返回的 data(accessToken)。
    */
   @Post('login')
-  async login(
-    @Body() body: { account: string; password: string },
-  ): Promise<Result> {
+  async login(@Body() body: IUser): Promise<Result> {
     await this.userService.login(body.account, body.password);
-    const accessToken = await this.authService.createToken(body.account);
+    const accessToken = await this.authService.createToken(body);
     return { code: 200, message: '登录成功', data: accessToken };
   }
 
@@ -60,7 +58,7 @@ export class UserController {
     return { code: 200, message: '查询成功', data: users };
   }
 
-  @UseGuards(AuthGuard(), RolesGuard)
+  @UseGuards(AuthGuard('jwt'))
   @Get('getInfo')
   async getInfo(@Req() req: any) {
     return { code: 200, message: '查询成功', data: req.user };

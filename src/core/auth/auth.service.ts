@@ -1,12 +1,15 @@
+import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { UserService } from './../../feature/user/user.service';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { IUser } from 'src/common/interface/result';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(CryptoUtil) private readonly cryptoUtil: CryptoUtil,
   ) {}
   async validateUser(account: string, password: string): Promise<any> {
     const user = await this.userService.findOneByAccount(account);
@@ -19,7 +22,13 @@ export class AuthService {
     return user;
   }
 
-  async createToken(account: string) {
-    return this.jwtService.sign({ account }, { expiresIn: '6h' });
+  async createToken(user: IUser) {
+    return this.jwtService.sign(
+      {
+        account: user.account,
+        password: this.cryptoUtil.encryptPassword(user.password),
+      },
+      { expiresIn: '6h' },
+    );
   }
 }

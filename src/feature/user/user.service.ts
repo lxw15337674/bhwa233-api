@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CryptoUtil } from '../../utils/crypto.utils';
+import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { User } from './entities/user.entity';
 
 @Injectable()

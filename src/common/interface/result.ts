@@ -3,3 +3,8 @@ export interface Result<T = any> {
   message: string;
   data?: T;
 }
+
+export interface IUser {
+  account: string;
+  password: string;
+}

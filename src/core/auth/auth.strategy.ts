@@ -12,7 +12,7 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly authService: AuthService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: 'secretKey',
+      secretOrKey: process.env.JWT_KEY,
     });
   }
 
@@ -22,6 +22,7 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
    * 当用户不存在时，说明令牌有误，可能是被伪造了，此时需抛出 UnauthorizedException 未授权异常。
    * 当用户存在时，会将 user 对象添加到 req 中，在之后的 req 对象中，可以使用 req.user 获取当前登录用户。
    */
+  // JWT验证 - Step 4: 被守卫调用
   async validate(payload: { account: string; password: string }) {
     const user = await this.authService.validateUser(
       payload.account,
