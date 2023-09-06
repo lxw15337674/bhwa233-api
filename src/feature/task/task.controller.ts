@@ -1,15 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-
+import { Req, UseGuards } from '@nestjs/common/decorators';
+import { AuthGuard } from '@nestjs/passport';
 @Controller('task')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
-  @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    return this.taskService.create(createTaskDto);
+  @Post('create')
+  @UseGuards(AuthGuard('jwt'))
+  @Get('getInfo')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async create(@Body() createTaskDto: CreateTaskDto, @Req() req: any) {
+    return this.taskService.create({ ...createTaskDto, userId: req.user.id });
   }
 
   @Get()

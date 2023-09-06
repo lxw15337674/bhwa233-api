@@ -17,7 +17,6 @@ import { TaskModule } from './feature/task/task.module';
       username: process.env.DATABASE_USERNAME,
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
-      synchronize: true,
       entities: [join(__dirname, '**', '*.entity.{ts,js}')],
       ssl: {
         rejectUnauthorized: true,
