@@ -6,6 +6,7 @@ import { UserModule } from './feature/user/user.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from './core/auth/auth.module';
 import { ErrorsInterceptor } from './core/interceptors/errors/errors.interceptor';
+import { TaskModule } from './feature/task/task.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ErrorsInterceptor } from './core/interceptors/errors/errors.interceptor
     }),
     UserModule,
     AuthModule,
+    TaskModule,
   ],
   controllers: [],
   providers: [

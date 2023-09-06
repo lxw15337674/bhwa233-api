@@ -14,7 +14,8 @@ export class User {
   @Column()
   name: string;
 
-  @Column('simple-enum', { enum: ['root', 'author', 'visitor'] })
+  // @Column('simple-enum', { enum: ['root', 'author', 'visitor'] })
+  @Column({ default: 'visitor' })
   role: string;
 
   @Column({
