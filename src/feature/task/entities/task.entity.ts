@@ -1,11 +1,4 @@
-import User from 'src/feature/user/entities/user.entity';
-import {
-  Column,
-  Model,
-  Table,
-  BelongsTo,
-  ForeignKey,
-} from 'sequelize-typescript';
+import { Column, Model, Table } from 'sequelize-typescript';
 
 @Table
 export default class Task extends Model<Task> {
@@ -42,10 +35,7 @@ export default class Task extends Model<Task> {
   })
   finishTime: Date;
 
-  @ForeignKey(() => User)
+  // 用户id
   @Column
   userId: number;
-
-  @BelongsTo(() => User)
-  user: User;
 }

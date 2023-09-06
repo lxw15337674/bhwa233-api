@@ -19,6 +19,10 @@ import { SequelizeModule } from '@nestjs/sequelize';
       database: process.env.DATABASE_NAME,
       synchronize: true,
       autoLoadModels: true,
+      // // 强制刷新数据库，会删除所有数据
+      // sync: {
+      //   force: true,
+      // },
       dialectOptions: {
         ssl: {
           rejectUnauthorized: true,

@@ -20,6 +20,7 @@ export default class User extends Model<User> {
   @Column({
     type: 'enum',
     values: ['root', 'author', 'visitor'],
+    allowNull: true,
   })
   role: string;
 
@@ -34,7 +35,4 @@ export default class User extends Model<User> {
     defaultValue: () => 'CURRENT_TIMESTAMP',
   })
   updateTime: Date;
-
-  @HasMany(() => Task)
-  tasks: Task[];
 }
