@@ -12,7 +12,7 @@ import {
 import { UserService } from './user.service';
 import { IUser, Result } from 'src/common/interface/result';
 import { AuthService } from 'src/core/auth/auth.service';
-import { User } from './entities/user.entity';
+import User from './entities/user.entity';
 import { Roles } from 'src/common/roles/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/core/guards/roles/roles.guard';

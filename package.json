@@ -26,7 +26,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^10.0.1",
     "@nestjs/platform-express": "^10.0.0",
-    "@nestjs/typeorm": "^10.0.0",
+    "@nestjs/sequelize": "^10.0.0",
     "@types/passport-jwt": "^3.0.9",
     "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
@@ -36,7 +36,8 @@
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.17"
+    "sequelize": "^6.32.1",
+    "sequelize-typescript": "^2.1.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -47,6 +48,7 @@
     "@types/jest": "^29.5.2",
     "@types/node": "^20.3.1",
     "@types/passport-local": "^1.0.35",
+    "@types/sequelize": "^4.28.15",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",

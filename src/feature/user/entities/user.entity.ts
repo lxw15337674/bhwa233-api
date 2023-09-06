@@ -1,37 +1,40 @@
-import { Task } from 'src/feature/task/entities/task.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Model, Table, HasMany } from 'sequelize-typescript';
+import Task from 'src/feature/task/entities/task.entity';
 
-@Entity('user')
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
+@Table
+export default class User extends Model<User> {
+  @Column({
+    primaryKey: true,
+    autoIncrement: true,
+  })
   account: string;
 
-  @Column()
+  @Column
   password: string;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   name: string;
 
-  @Column('simple-enum', { enum: ['root', 'author', 'visitor'] })
+  @Column({
+    type: 'enum',
+    values: ['root', 'author', 'visitor'],
+  })
   role: string;
 
   @Column({
-    name: 'create_time',
     type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
+    defaultValue: () => 'CURRENT_TIMESTAMP',
   })
   createTime: Date;
 
   @Column({
-    name: 'update_time',
     type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
+    defaultValue: () => 'CURRENT_TIMESTAMP',
   })
   updateTime: Date;
 
-  // @OneToMany(() => Task, (task) => task.user)
-  // tasks: Task[];
+  @HasMany(() => Task)
+  tasks: Task[];
 }
