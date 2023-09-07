@@ -16,16 +16,21 @@ export class TaskService {
     return newTask;
   }
 
-  findAll() {
-    return `This action returns all task`;
+  async findAll(userId: number) {
+    return await this.taskRepo.find({ where: { userId } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} task`;
+  async findByTitle(userId: number, title: string) {
+    return await this.taskRepo.find({ where: { title, userId } });
   }
 
-  update(id: number, updateTaskDto: UpdateTaskDto) {
-    return `This action updates a #${id} task`;
+  async update(updateTaskDto: UpdateTaskDto) {
+    const task = await this.taskRepo.findOne({
+      where: { id: updateTaskDto.id },
+    });
+    if (!task) throw new Error('任务不存在');
+    const newTask = this.taskRepo.merge(task, updateTaskDto);
+    return await this.taskRepo.save(newTask);
   }
 
   remove(id: number) {

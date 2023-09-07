@@ -30,10 +30,10 @@ export class UserController {
    * 其中 Authorization 是用于告诉服务端本次请求有令牌，并且令牌前缀是 Bearer，而令牌的具体内容是登录之后返回的 data(accessToken)。
    */
   @Post('login')
-  async login(@Body() body: IUser): Promise<Result> {
+  async login(@Body() body: IUser): Promise<string> {
     await this.userService.login(body.account, body.password);
     const accessToken = await this.authService.createToken(body);
-    return { code: 200, message: '登录成功', data: accessToken };
+    return accessToken;
   }
 
   @Post('register')
@@ -46,7 +46,7 @@ export class UserController {
   @UseGuards(AuthGuard(), RolesGuard)
   async remove(@Param('id') id: number) {
     await this.userService.remove(id);
-    return { code: 200, message: '删除成功' };
+    return null;
   }
 
   /**
@@ -55,12 +55,12 @@ export class UserController {
   @Get('findAll')
   async findAll() {
     const users = await this.userService.findAll();
-    return { code: 200, message: '查询成功', data: users };
+    return users;
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('getInfo')
   async getInfo(@Req() req: any) {
-    return { code: 200, message: '查询成功', data: req.user };
+    return req.user;
   }
 }
