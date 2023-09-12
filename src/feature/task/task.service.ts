@@ -24,16 +24,22 @@ export class TaskService {
     return await this.taskRepo.find({ where: { title, userId } });
   }
 
+  async findById(userId: number, id: number) {
+    return await this.taskRepo.findOne({ where: { id, userId } });
+  }
+
   async update(updateTaskDto: UpdateTaskDto) {
     const task = await this.taskRepo.findOne({
       where: { id: updateTaskDto.id },
     });
     if (!task) throw new Error('任务不存在');
-    const newTask = this.taskRepo.merge(task, updateTaskDto);
+    const newTask = this.taskRepo.merge(task, updateTaskDto, {
+      updateTime: new Date(),
+    });
     return await this.taskRepo.save(newTask);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} task`;
+    return this.taskRepo.delete({ id });
   }
 }

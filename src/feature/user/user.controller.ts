@@ -53,6 +53,7 @@ export class UserController {
    * 获取所有用户
    */
   @Get('findAll')
+  @Roles('admin')
   async findAll() {
     const users = await this.userService.findAll();
     return users;

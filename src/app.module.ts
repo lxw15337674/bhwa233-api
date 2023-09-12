@@ -7,7 +7,8 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from './core/auth/auth.module';
 import { ErrorsInterceptor } from './core/interceptors/errors/errors.interceptor';
 import { TaskModule } from './feature/task/task.module';
-import { UnauthorizedExceptionFilter } from './core/exception/UnauthorizedException.filter';
+import { TypeModule } from './feature/type/type.module';
+import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedException.filter';
 
 @Module({
   imports: [
@@ -22,10 +23,12 @@ import { UnauthorizedExceptionFilter } from './core/exception/UnauthorizedExcept
       ssl: {
         rejectUnauthorized: true,
       },
+      // synchronize: true,
     }),
     UserModule,
     AuthModule,
     TaskModule,
+    TypeModule,
   ],
   controllers: [],
   providers: [
