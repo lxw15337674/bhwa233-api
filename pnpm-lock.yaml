@@ -70,9 +70,6 @@ devDependencies:
   '@nestjs/testing':
     specifier: ^10.0.0
     version: 10.0.0(@nestjs/common@10.0.0)(@nestjs/core@10.0.0)(@nestjs/platform-express@10.0.0)
-  '@types/cors':
-    specifier: ^2.8.13
-    version: 2.8.13
   '@types/express':
     specifier: ^4.17.17
     version: 4.17.17
@@ -97,9 +94,6 @@ devDependencies:
   class-validator:
     specifier: ^0.14.0
     version: 0.14.0
-  cors:
-    specifier: ^2.8.5
-    version: 2.8.5
   eslint:
     specifier: ^8.42.0
     version: 8.42.0
@@ -1195,12 +1189,6 @@ packages:
 
   /@types/cookiejar@2.1.2:
     resolution: {integrity: sha512-t73xJJrvdTjXrn4jLS9VSGRbz0nUY3cl2DMGDU48lKl+HR9dbbjW2A9r3g40VA++mQpy6uuHg33gy7du2BKpog==}
-    dev: true
-
-  /@types/cors@2.8.13:
-    resolution: {integrity: sha512-RG8AStHlUiV5ysZQKq97copd2UmVYw3/pRMLefISZ3S1hK104Cwm7iLQ3fTKx+lsUH2CE8FlLaYeEA2LSeqYUA==}
-    dependencies:
-      '@types/node': 20.3.1
     dev: true
 
   /@types/eslint-scope@3.7.4:
