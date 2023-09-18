@@ -39,11 +39,11 @@ export class TypeService {
     @InjectRepository(TaskType) private readonly typeRepo: Repository<TaskType>,
   ) {}
 
-  async create(createTypeDto: CreateTypeDto) {
-    const { name, userId } = createTypeDto;
+  async create(createTypeDto: CreateTypeDto, userId: number) {
+    const { name } = createTypeDto;
     const exist = await this.typeRepo.findOne({ where: { name, userId } });
     if (exist) throw new Error('类型已存在');
-    const type = this.typeRepo.create(createTypeDto);
+    const type = this.typeRepo.create({ ...createTypeDto, userId });
     // 随机生成颜色
     type.color = createRandomColor();
     return this.typeRepo.save(type);
@@ -68,8 +68,8 @@ export class TypeService {
     return await this.typeRepo.save(types);
   }
 
-  update(updateTypeDto: UpdateTypeDto) {
-    const { name, userId } = updateTypeDto;
+  update(updateTypeDto: UpdateTypeDto, userId: number) {
+    const { name } = updateTypeDto;
     return this.typeRepo.update({ name, userId }, updateTypeDto);
   }
 

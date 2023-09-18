@@ -29,8 +29,8 @@ export class TypeController implements OnModuleInit {
   @Post('create')
   @UseGuards(AuthGuard('jwt'))
   @UsePipes(new ValidationPipe({ transform: true }))
-  create(@Body() createTypeDto: CreateTypeDto) {
-    return this.typeService.create(createTypeDto);
+  create(@Body() createTypeDto: CreateTypeDto, @UserInfo() user: User) {
+    return this.typeService.create(createTypeDto, user.id);
   }
 
   @Get('findAll')
@@ -41,8 +41,8 @@ export class TypeController implements OnModuleInit {
 
   @Patch('update')
   @UseGuards(AuthGuard('jwt'))
-  update(@Body() updateTaskDto: UpdateTypeDto) {
-    return this.typeService.update(updateTaskDto);
+  update(@Body() updateTaskDto: UpdateTypeDto, @UserInfo() user: User) {
+    return this.typeService.update(updateTaskDto, user.id);
   }
 
   @Delete(':id')
