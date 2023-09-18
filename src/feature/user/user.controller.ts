@@ -10,7 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { IUser, Result } from 'src/common/interface/result';
+import { IUser } from 'src/common/interface/result';
 import { AuthService } from 'src/core/auth/auth.service';
 import { User } from './entities/user.entity';
 import { Roles } from 'src/common/roles/roles.decorator';
@@ -54,6 +54,7 @@ export class UserController {
    */
   @Get('findAll')
   @Roles('admin')
+  @UseGuards(AuthGuard('jwt'))
   async findAll() {
     const users = await this.userService.findAll();
     return users;
