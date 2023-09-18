@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "todo-backend",
   "builds": [
     {
       "src": "dist/main.js",
