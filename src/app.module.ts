@@ -1,4 +1,4 @@
-import { Module, Res } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import 'dotenv/config';
 import { join } from 'path';
@@ -9,6 +9,8 @@ import { ErrorsInterceptor } from './core/interceptors/errors/errors.interceptor
 import { TaskModule } from './feature/task/task.module';
 import { TypeModule } from './feature/type/type.module';
 import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedException.filter';
+import { AppService } from './app.service';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedExcept
     TaskModule,
     TypeModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_INTERCEPTOR, // 全局拦截器，这里使用全局异常拦截器改写异常消息结构
@@ -40,6 +42,7 @@ import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedExcept
       provide: APP_FILTER,
       useClass: UnauthorizedExceptionFilter,
     },
+    AppService
   ],
 })
 export class AppModule {}
