@@ -10,7 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { IUser } from 'src/common/interface/result';
+import { IUser, OauthUser } from 'src/common/interface/result';
 import { AuthService } from 'src/core/auth/auth.service';
 import { User } from './entities/user.entity';
 import { Roles } from 'src/common/roles/roles.decorator';
@@ -37,8 +37,26 @@ export class UserController {
   }
 
   @Post('register')
-  register(@Body() user: User) {
-    return this.userService.register(user);
+  async register(@Body() user: User) {
+    const newUser = await this.userService.register(user);
+    const accessToken = await this.authService.createToken(newUser);
+    return accessToken;
+  }
+
+  // 三方登录
+  @Post('oauth')
+  async oauth(@Body() body: OauthUser) {
+    let user = await this.userService.findOneByAccount(body.email);
+    if (!user) {
+      user = await this.userService.register({
+        name: body.name,
+        account: body.email,
+        // 随机生成
+        password: Math.random().toString(36).substring(2),
+      });
+    }
+    const accessToken = await this.authService.createToken(user);
+    return accessToken;
   }
 
   @Delete(':id')

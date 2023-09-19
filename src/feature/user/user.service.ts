@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { User } from './entities/user.entity';
+import { RegisterUser } from 'src/common/interface/result';
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -41,7 +42,7 @@ export class UserService implements OnModuleInit {
   /**
    * 用户注册
    */
-  async register({ account, password, name = account }: User) {
+  async register({ account, password, name = account }: RegisterUser) {
     const existing = await this.findOneByAccount(account);
     if (existing) throw new HttpException('用户已存在', 406);
     const user = this.userRepo.create({
