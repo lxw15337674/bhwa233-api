@@ -11,6 +11,7 @@ import { TypeModule } from './feature/type/type.module';
 import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedException.filter';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
+import { CountModule } from './feature/count/count.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AppController } from './app.controller';
     AuthModule,
     TaskModule,
     TypeModule,
+    CountModule,
   ],
   controllers: [AppController],
   providers: [
@@ -42,7 +44,7 @@ import { AppController } from './app.controller';
       provide: APP_FILTER,
       useClass: UnauthorizedExceptionFilter,
     },
-    AppService
+    AppService,
   ],
 })
 export class AppModule {}
