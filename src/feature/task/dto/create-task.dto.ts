@@ -23,5 +23,5 @@ export class CreateTaskDto {
   @IsOptional()
   readonly priority: string = '';
 
-  readonly userId: number;
+  readonly userId: string;
 }

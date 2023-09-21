@@ -8,7 +8,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { User } from './entities/user.entity';
-import { RegisterUser } from 'src/common/interface/result';
+import { GithubUserInfo, RegisterUser } from 'src/common/interface/result';
+import { HttpService } from '@nestjs/axios';
+import { log } from 'console';
+import { lastValueFrom, map } from 'rxjs';
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -26,6 +29,7 @@ export class UserService implements OnModuleInit {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @Inject(CryptoUtil) private readonly cryptoUtil: CryptoUtil,
+    private readonly httpService: HttpService,
   ) {}
 
   /**
@@ -54,10 +58,36 @@ export class UserService implements OnModuleInit {
     return newUser;
   }
 
+  // 拿到用户id，如果存在则返回用户，不存在则创建用户
+  async OauthLogin(access_token: string) {
+    const getInfo = this.httpService.get<GithubUserInfo>(
+      'https://api.github.com/user',
+      {
+        headers: {
+          Authorization: 'Bearer ' + access_token,
+        },
+      },
+    );
+    const userInfo = await (await lastValueFrom(getInfo)).data;
+    const id = userInfo.id.toString();
+    const user = await this.userRepo.findOne({
+      where: { id },
+    });
+    if (!user) {
+      const newUser = await this.userRepo.save({
+        id,
+        password: this.cryptoUtil.randomPassword(),
+        account: userInfo.login,
+      });
+      return newUser;
+    }
+    return user;
+  }
+
   /**
    * 删除用户
    */
-  async remove(id: number) {
+  async remove(id: string) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new HttpException('用户不存在', 406);
     await this.userRepo.remove(user);
@@ -66,7 +96,7 @@ export class UserService implements OnModuleInit {
   /**
    * 更新用户
    */
-  async update(id: number, updateInput: User) {
+  async update(id: string, updateInput: User) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new HttpException('用户不存在', 406);
     await this.userRepo.update(id, updateInput);

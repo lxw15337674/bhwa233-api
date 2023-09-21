@@ -39,7 +39,7 @@ export class TypeService {
     @InjectRepository(TaskType) private readonly typeRepo: Repository<TaskType>,
   ) {}
 
-  async create(createTypeDto: CreateTypeDto, userId: number) {
+  async create(createTypeDto: CreateTypeDto, userId: string) {
     const { name } = createTypeDto;
     const exist = await this.typeRepo.findOne({ where: { name, userId } });
     if (exist) throw new Error('类型已存在');
@@ -50,7 +50,7 @@ export class TypeService {
   }
 
   // 包括默认类型和用户自定义类型
-  async findAll(userId: number) {
+  async findAll(userId: string) {
     return await this.typeRepo.find({
       where: { userId: In([userId, 0]) },
     });
@@ -58,17 +58,17 @@ export class TypeService {
 
   async createDefaultTypes() {
     // 检测是否存在默认类型
-    const exist = await this.typeRepo.findOne({ where: { userId: 0 } });
+    const exist = await this.typeRepo.findOne({ where: { userId: '0' } });
     if (exist) return;
     const types = TodoTypes.map((name) => ({
       name: name.name,
-      userId: 0,
+      userId: '0',
       color: name.color,
     }));
     return await this.typeRepo.save(types);
   }
 
-  update(updateTypeDto: UpdateTypeDto, userId: number) {
+  update(updateTypeDto: UpdateTypeDto, userId: string) {
     const { name } = updateTypeDto;
     return this.typeRepo.update({ name, userId }, updateTypeDto);
   }

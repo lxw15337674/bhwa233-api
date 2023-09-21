@@ -40,5 +40,5 @@ export class Task {
 
   // 用户id
   @Column()
-  userId: number;
+  userId: string;
 }

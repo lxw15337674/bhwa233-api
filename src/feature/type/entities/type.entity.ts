@@ -9,7 +9,7 @@ export class TaskType {
   name: string;
 
   @Column()
-  userId: number;
+  userId: string;
 
   @Column()
   color: string;

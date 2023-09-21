@@ -8,9 +8,10 @@ import {
   UseGuards,
   Get,
   Req,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { IUser, OauthUser } from 'src/common/interface/result';
+import { IUser } from 'src/common/interface/result';
 import { AuthService } from 'src/core/auth/auth.service';
 import { User } from './entities/user.entity';
 import { Roles } from 'src/common/roles/roles.decorator';
@@ -44,17 +45,9 @@ export class UserController {
   }
 
   // 三方登录
-  @Post('oauth')
-  async oauth(@Body() body: OauthUser) {
-    let user = await this.userService.findOneByAccount(body.email);
-    if (!user) {
-      user = await this.userService.register({
-        name: body.name,
-        account: body.email,
-        // 随机生成
-        password: Math.random().toString(36).substring(2),
-      });
-    }
+  @Get('oauth')
+  async oauth(@Query('access_token') access_token: string) {
+    const user = await this.userService.OauthLogin(access_token);
     const accessToken = await this.authService.createToken(user);
     return accessToken;
   }
@@ -62,7 +55,7 @@ export class UserController {
   @Delete(':id')
   @Roles('admin')
   @UseGuards(AuthGuard(), RolesGuard)
-  async remove(@Param('id') id: number) {
+  async remove(@Param('id') id: string) {
     await this.userService.remove(id);
     return null;
   }

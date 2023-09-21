@@ -35,7 +35,7 @@ export class TaskController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @Param('title') title: string) {
-    return this.taskService.findByTitle(+id, title);
+    return this.taskService.findByTitle(id, title);
   }
 
   @Patch('update')

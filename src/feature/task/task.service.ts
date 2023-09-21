@@ -16,15 +16,15 @@ export class TaskService {
     return newTask;
   }
 
-  async findAll(userId: number) {
+  async findAll(userId: string) {
     return await this.taskRepo.find({ where: { userId } });
   }
 
-  async findByTitle(userId: number, title: string) {
+  async findByTitle(userId: string, title: string) {
     return await this.taskRepo.find({ where: { title, userId } });
   }
 
-  async findById(userId: number, id: number) {
+  async findById(userId: string, id: number) {
     return await this.taskRepo.findOne({ where: { id, userId } });
   }
 

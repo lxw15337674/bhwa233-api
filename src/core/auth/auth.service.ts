@@ -1,6 +1,6 @@
 import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { UserService } from './../../feature/user/user.service';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { IUser } from 'src/common/interface/result';
 
@@ -14,10 +14,10 @@ export class AuthService {
   async validateUser(account: string, password: string): Promise<any> {
     const user = await this.userService.findOneByAccount(account);
     if (!user) {
-      throw new BadRequestException('用户名不正确！');
+      throw new UnauthorizedException('用户名不正确！');
     }
     if (user.password !== password) {
-      throw new BadRequestException('密码错误！');
+      throw new UnauthorizedException('密码错误！');
     }
     return user;
   }
