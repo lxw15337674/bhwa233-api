@@ -27,13 +27,14 @@ export class CryptoUtil {
   }
   // 随机生成密码
   randomPassword(): string {
-    const chars =
-      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const maxPos = chars.length;
-    let pwd = '';
-    for (let i = 0; i < 8; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * maxPos));
+    const length = 6;
+    const characters =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      password += characters.charAt(randomIndex);
     }
-    return this.encryptPassword(pwd);
+    return this.encryptPassword(password);
   }
 }

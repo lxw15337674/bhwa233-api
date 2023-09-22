@@ -10,7 +10,6 @@ import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { User } from './entities/user.entity';
 import { GithubUserInfo, RegisterUser } from 'src/common/interface/result';
 import { HttpService } from '@nestjs/axios';
-import { log } from 'console';
 import { lastValueFrom, map } from 'rxjs';
 
 @Injectable()
@@ -74,11 +73,13 @@ export class UserService implements OnModuleInit {
       where: { id },
     });
     if (!user) {
-      const newUser = await this.userRepo.save({
+      let newUser = await this.userRepo.create({
         id,
         password: this.cryptoUtil.randomPassword(),
         account: userInfo.login,
+        name: userInfo.name,
       });
+      newUser = await this.userRepo.save(newUser);
       return newUser;
     }
     return user;
