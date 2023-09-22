@@ -60,13 +60,6 @@ export class CountService {
     return this.countMetaRepo.save(newCount);
   }
 
-  async remove(id: string, userId: string) {
-    // 如果是本用户的统计类型，则删除
-    if (userId) {
-      return await this.countMetaRepo.delete({ id, userId });
-    }
-  }
-
   async addCount(countId: string, userId: string) {
     const count = await this.countMetaRepo.findOne({
       where: { id: countId, userId },
@@ -89,5 +82,16 @@ export class CountService {
     });
     if (!count) throw new Error('统计类型不存在');
     await this.countItemRepo.softRemove(count.counts);
+  }
+
+  async removeCount(countId: string, userId: string) {
+    const count = await this.countMetaRepo.findOne({
+      where: { id: countId, userId },
+      relations: {
+        counts: true,
+      },
+    });
+    if (!count) throw new Error('统计类型不存在');
+    await this.countMetaRepo.softRemove(count);
   }
 }

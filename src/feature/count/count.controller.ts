@@ -48,8 +48,8 @@ export class CountController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
-  remove(@Param('id') id: string, @UserInfo() user: User) {
-    return this.countService.remove(id, user.id);
+  remove(@Body('id') id: string, @UserInfo() user: User) {
+    return this.countService.removeCount(id, user.id);
   }
 
   @Post('resetCount')
