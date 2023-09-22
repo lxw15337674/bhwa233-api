@@ -78,7 +78,7 @@ export class UserService implements OnModuleInit {
         id,
         password: this.cryptoUtil.randomPassword(),
         account: userInfo.login,
-        name: userInfo.name,
+        name: userInfo?.name ?? '',
       });
       newUser = await this.userRepo.save(newUser);
       return newUser;
