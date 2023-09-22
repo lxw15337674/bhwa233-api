@@ -50,9 +50,9 @@ export class CountService {
     });
   }
 
-  async update(updateCountDto: UpdateCountDto) {
+  async update(updateCountDto: UpdateCountDto, userId: string) {
     const { id } = updateCountDto;
-    const count = await this.countMetaRepo.findOne({ where: { id } });
+    const count = await this.countMetaRepo.findOne({ where: { id, userId } });
     if (!count) throw new Error('任务不存在');
     const newCount = this.countMetaRepo.merge(count, updateCountDto, {
       updateTime: new Date(),

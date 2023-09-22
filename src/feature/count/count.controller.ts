@@ -15,6 +15,7 @@ import { CreateCountDto } from './dto/create-count.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UserInfo } from 'src/common/user/user.decorator';
 import { User } from '../user/entities/user.entity';
+import { UpdateCountDto } from './dto/update-count.dto';
 
 @Controller('count')
 export class CountController {
@@ -56,5 +57,11 @@ export class CountController {
   @UseGuards(AuthGuard('jwt'))
   resetCount(@Body('countId') id: string, @UserInfo() user: User) {
     return this.countService.resetCount(id, user.id);
+  }
+
+  @Patch('update')
+  @UseGuards(AuthGuard('jwt'))
+  updateCount(@Body() updateCountDto: UpdateCountDto, @UserInfo() user: User) {
+    return this.countService.update(updateCountDto, user.id);
   }
 }
