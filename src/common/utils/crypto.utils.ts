@@ -20,10 +20,7 @@ export class CryptoUtil {
    */
   checkPassword(password: string, encryptedPassword: string): boolean {
     const currentPass = this.encryptPassword(password);
-    if (currentPass === encryptedPassword) {
-      return true;
-    }
-    return false;
+    return currentPass === encryptedPassword;
   }
   // 随机生成密码
   randomPassword(): string {

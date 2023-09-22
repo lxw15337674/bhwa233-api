@@ -10,7 +10,7 @@ import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { User } from './entities/user.entity';
 import { GithubUserInfo, RegisterUser } from 'src/common/interface/result';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -40,6 +40,7 @@ export class UserService implements OnModuleInit {
     if (!this.cryptoUtil.checkPassword(password, user.password)) {
       throw new HttpException('登录密码有误', 406);
     }
+    return user;
   }
 
   /**

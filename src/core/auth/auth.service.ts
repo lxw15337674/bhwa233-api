@@ -1,4 +1,3 @@
-import { CryptoUtil } from '../../common/utils/crypto.utils';
 import { UserService } from './../../feature/user/user.service';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -9,7 +8,6 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     @Inject(JwtService) private readonly jwtService: JwtService,
-    @Inject(CryptoUtil) private readonly cryptoUtil: CryptoUtil,
   ) {}
   async validateUser(account: string, password: string): Promise<any> {
     const user = await this.userService.findOneByAccount(account);
@@ -26,7 +24,7 @@ export class AuthService {
     return this.jwtService.sign(
       {
         account: user.account,
-        password: this.cryptoUtil.encryptPassword(user.password),
+        password: user.password,
       },
       { expiresIn: '6h' },
     );

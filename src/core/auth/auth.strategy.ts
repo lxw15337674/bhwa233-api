@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from './auth.service';
@@ -28,9 +28,7 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
       payload.account,
       payload.password,
     );
-    if (!user) {
-      throw new UnauthorizedException('token不正确');
-    }
+
     return user;
   }
 }

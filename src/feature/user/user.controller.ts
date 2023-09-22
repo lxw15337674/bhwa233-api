@@ -32,8 +32,8 @@ export class UserController {
    */
   @Post('login')
   async login(@Body() body: IUser): Promise<string> {
-    await this.userService.login(body.account, body.password);
-    const accessToken = await this.authService.createToken(body);
+    const user = await this.userService.login(body.account, body.password);
+    const accessToken = await this.authService.createToken(user);
     return accessToken;
   }
 
