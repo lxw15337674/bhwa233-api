@@ -26,7 +26,7 @@ export class AuthService {
         account: user.account,
         password: user.password,
       },
-      { expiresIn: '6h' },
+      { expiresIn: '7d' },
     );
   }
 }
