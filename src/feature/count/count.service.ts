@@ -1,3 +1,4 @@
+import { map } from 'rxjs';
 import { Injectable } from '@nestjs/common';
 import { CreateCountDto } from './dto/create-count.dto';
 import { UpdateCountDto } from './dto/update-count.dto';
@@ -5,7 +6,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CountMeta } from './entities/count-meta.entity';
 import { CountItem } from './entities/count-item.entity';
-import { AddCountDto } from './dto/add-count.dto';
+import { omit } from 'lodash';
 
 @Injectable()
 export class CountService {
@@ -36,6 +37,29 @@ export class CountService {
             (a, b) => b.createTime.getTime() - a.createTime.getTime(),
           );
           return count;
+        });
+      });
+    return counts;
+  }
+
+  async findAllWithCounter(userId: string) {
+    const counts = await this.countMetaRepo
+      .find({
+        where: { userId },
+        relations: ['counts'],
+        order: {
+          updateTime: 'DESC',
+        },
+      })
+      .then((counts) => {
+        return counts.map((count) => {
+          count.counts.sort(
+            (a, b) => b.createTime.getTime() - a.createTime.getTime(),
+          );
+          return {
+            ...omit(count, ['counts']),
+            count: count.counts.length,
+          };
         });
       });
     return counts;
@@ -93,5 +117,16 @@ export class CountService {
     });
     if (!count) throw new Error('统计类型不存在');
     await this.countMetaRepo.softRemove(count);
+  }
+
+  async getTypeCounts(countId: string, userId: string) {
+    const count = await this.countMetaRepo.findOne({
+      where: { id: countId, userId },
+      relations: {
+        counts: true,
+      },
+    });
+    if (!count) throw new Error('统计类型不存在');
+    return count.counts || [];
   }
 }

@@ -9,6 +9,7 @@ import {
   UseGuards,
   UsePipes,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { CountService } from './count.service';
 import { CreateCountDto } from './dto/create-count.dto';
@@ -28,10 +29,25 @@ export class CountController {
     return this.countService.createCountType(createTaskDto, user.id);
   }
 
+  // 获取所有计数器，包括计数统计数据
   @Get('findAll')
   @UseGuards(AuthGuard('jwt'))
   findAll(@UserInfo() user: User) {
     return this.countService.findAll(user.id);
+  }
+
+  // 获取单个计数器的统计数据
+  @Get('getTypeCounts')
+  @UseGuards(AuthGuard('jwt'))
+  getTypeCounts(@Query('countId') id: string, @UserInfo() user: User) {
+    return this.countService.getTypeCounts(id, user.id);
+  }
+
+  // 获取所有计数器
+  @Get('findAllWithCounter')
+  @UseGuards(AuthGuard('jwt'))
+  findAllWithCounter(@UserInfo() user: User) {
+    return this.countService.findAllWithCounter(user.id);
   }
 
   @Get(':id')
