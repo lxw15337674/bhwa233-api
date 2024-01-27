@@ -16,13 +16,12 @@
 
 ## 学习文档
 
-[Nest官方文档](https://docs.nestjs.cn/)
+[Nest官方中文文档](http://nestjs.inode.club/)
 
 [nest配置plantscale 数据库](https://planetscale.com/blog/build-a-user-management-api-with-nestjs-mysql)
 
 [让我们用Nestjs来重写一个CNode(上)](https://github.com/jiayisheji/blog/issues/18)
 
-[nest入门教程(不推荐：半成品)](https://jspang.com/article/87#toc14)
 
 
 
