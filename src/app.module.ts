@@ -12,6 +12,7 @@ import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedExcept
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { CountModule } from './feature/count/count.module';
+import { ChatSocketModule } from './chat-socket/chat-socket.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CountModule } from './feature/count/count.module';
     TaskModule,
     TypeModule,
     CountModule,
+    ChatSocketModule,
   ],
   controllers: [AppController],
   providers: [
