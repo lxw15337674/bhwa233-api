@@ -74,9 +74,10 @@ export class FishingTimeService {
     - 距离【15号发工资】: ${salaryday15} 天
     - 距离【20号发工资】: ${salaryday20} 天
 
-   【放假】
-    距离【周六】还有 ${day_to_weekend} 天
-    距离下一个法定节假日【${nextHoliday.name}】${this.dateParse(nextHolidayDate)}，还有 ${nextHoliday.rest} 天
+   【假期】
+
+    - 距离【周六】还有 ${day_to_weekend} 天
+    - 距离下一个法定节假日【${nextHoliday.name}】${this.dateParse(nextHolidayDate)}，还有 ${nextHoliday.rest} 天
     `
   }
 }
