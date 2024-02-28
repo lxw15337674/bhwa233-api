@@ -60,11 +60,13 @@ export class FishingTimeService {
     const day_to_weekend = 6 - new Date().getDay();
     const nextHolidayDate = new Date(nextHoliday.date);
     return `
-    # 【摸鱼办】提醒您: ${year} 年 已经过去 ${passdays} 天 ${passhours} 小时
+    【摸鱼办】提醒您: ${year} 年 已经过去 ${passdays} 天 ${passhours} 小时
     今天是 ${year}年${month}月${day}日, 星期${weekday}
     你好, 摸鱼人！工作再忙, 一定不要忘记摸鱼哦！
     有事没事起身去茶水间, 去厕所, 去走廊走走, 去找同事聊聊八卦别老在工位上坐着, 钱是老板的但命是自己的。
-    ## 【工资】
+
+    【工资】
+
     - 距离【月底发工资】: ${salaryday1} 天
     - 距离【05号发工资】: ${salaryday5} 天
     - 距离【09号发工资】: ${salaryday9} 天
@@ -72,8 +74,10 @@ export class FishingTimeService {
     - 距离【15号发工资】: ${salaryday15} 天
     - 距离【20号发工资】: ${salaryday20} 天
     - 距离【周六】还有 ${day_to_weekend} 天
-    ## 【节假日】
-    距离【${nextHoliday.name}】${this.dateParse(nextHolidayDate)} 还有 ${nextHoliday.rest} 天
-    `;
+
+   【节假日】
+
+    距离下一个节假日【${nextHoliday.name}】${this.dateParse(nextHolidayDate)}，还有 ${nextHoliday.rest} 天
+    `
   }
 }
