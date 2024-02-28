@@ -13,6 +13,7 @@ import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { CountModule } from './feature/count/count.module';
 import { ChatSocketModule } from './chat-socket/chat-socket.module';
+import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ChatSocketModule } from './chat-socket/chat-socket.module';
     TypeModule,
     CountModule,
     ChatSocketModule,
+    FishingTimeModule,
   ],
   controllers: [AppController],
   providers: [
