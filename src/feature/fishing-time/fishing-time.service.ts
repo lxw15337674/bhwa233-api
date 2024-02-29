@@ -64,18 +64,14 @@ export class FishingTimeService {
     今天是 ${year}年${month}月${day}日, 星期${weekday}
     你好, 摸鱼人！工作再忙, 一定不要忘记摸鱼哦！
     有事没事起身去茶水间, 去厕所, 去走廊走走, 去找同事聊聊八卦别老在工位上坐着, 钱是老板的但命是自己的。
-
     【工资】
-
     - 距离【月底发工资】: ${salaryday1} 天
     - 距离【05号发工资】: ${salaryday5} 天
     - 距离【09号发工资】: ${salaryday9} 天
     - 距离【10号发工资】: ${salaryday10} 天
     - 距离【15号发工资】: ${salaryday15} 天
     - 距离【20号发工资】: ${salaryday20} 天
-
    【假期】
-
     - 距离【周六】还有 ${day_to_weekend} 天
     - 距离下一个法定节假日【${nextHoliday.name}】${this.dateParse(nextHolidayDate)}，还有 ${nextHoliday.rest} 天
     `
