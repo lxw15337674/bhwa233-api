@@ -5,8 +5,8 @@ import { FishingTimeService } from './fishing-time.service';
 export class FishingTimeController {
   constructor(private readonly fishingTimeService: FishingTimeService) {}
   @Get()
-  getText() {
-    return this.fishingTimeService.getText();
+  getTime() {
+    return this.fishingTimeService.getTime();
   }
 }
  
