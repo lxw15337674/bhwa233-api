@@ -1,5 +1,5 @@
 import { UserService } from './../../feature/user/user.service';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { IUser } from 'src/common/interface/result';
 
@@ -12,9 +12,11 @@ export class AuthService {
   async validateUser(account: string, password: string): Promise<any> {
     const user = await this.userService.findOneByAccount(account);
     if (!user) {
+      new Logger('login').error('用户名不正确！', account, password);
       throw new UnauthorizedException('用户名不正确！');
     }
     if (user.password !== password) {
+      new Logger('login').error('密码错误！', account, password);
       throw new UnauthorizedException('密码错误！');
     }
     return user;

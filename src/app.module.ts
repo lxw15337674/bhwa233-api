@@ -28,7 +28,7 @@ import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
       ssl: {
         rejectUnauthorized: true,
       },
-      synchronize: false,
+      synchronize: true,
     }),
     UserModule,
     AuthModule,

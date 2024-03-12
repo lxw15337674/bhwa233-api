@@ -67,15 +67,15 @@ export class UserService implements OnModuleInit {
           Authorization: 'Bearer ' + access_token,
         },
       },
-    );
+    ); 
     const userInfo = await (await lastValueFrom(getInfo)).data;
-    const id = userInfo.id.toString();
+    const thirdPartyId = userInfo.id;
     const user = await this.userRepo.findOne({
-      where: { id },
+      where: { thirdPartyId },
     });
     if (!user) {
       let newUser = await this.userRepo.create({
-        id,
+        thirdPartyId,
         password: this.cryptoUtil.randomPassword(),
         account: userInfo.login,
         name: userInfo?.name ?? '',

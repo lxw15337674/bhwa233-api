@@ -5,6 +5,9 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ nullable: true }) // 可以为空
+  thirdPartyId: number;
+
   @Column()
   account: string;
 
