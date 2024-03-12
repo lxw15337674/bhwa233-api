@@ -3,8 +3,8 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 async function bootstrap() {
-  if(process.env.POSTGRES_USER) {
-    new Logger('EnvironmentVariable').log('environment variable is set');
+  if (process.env.POSTGRES_USER) {
+    new Logger('EnvironmentVariable').log('environment variable is set', process.env.POSTGRES_DATABASE);
   }
   const app = await NestFactory.create(AppModule, {
     cors: true,
