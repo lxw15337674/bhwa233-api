@@ -11,6 +11,11 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
+    "lib": [
+      "ES2021",
+      "esnext"
+    ],
+    "moduleResolution": "node",
     "skipLibCheck": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
