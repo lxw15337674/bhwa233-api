@@ -11,13 +11,13 @@ async function bootstrap() {
   });
   app.setGlobalPrefix('api');
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
+    .setTitle('工具文档')
     .setDescription('The cats API description')
     .setVersion('1.0')
-    .addTag('cats')
+    // .addTag('cats')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('openapi', app, document);
   await app.listen(6060).then(() => {
     new Logger('NestApplication').log('Server is running ');
   });
