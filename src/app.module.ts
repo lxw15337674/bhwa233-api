@@ -33,7 +33,7 @@ import { ConfigModule } from '@nestjs/config';
       ssl: {
         rejectUnauthorized: true,
       },
-      synchronize: true, // 生产环境不要使用，vercel会报错
+      synchronize: false, // 生产环境不要使用，vercel会报错
     }),
     UserModule,
     CountModule,
