@@ -5,6 +5,9 @@ import { Logger } from '@nestjs/common';
 async function bootstrap() {
   if (process.env.POSTGRES_USER) {
     new Logger('EnvironmentVariable').log('environment variable is set', process.env.POSTGRES_DATABASE);
+  }else{
+    new Logger('EnvironmentVariable').error('environment variable is not set');
+    return 
   }
   const app = await NestFactory.create(AppModule, {
     cors: true,
@@ -14,10 +17,9 @@ async function bootstrap() {
     .setTitle('工具文档')
     .setDescription('The cats API description')
     .setVersion('1.0')
-    // .addTag('cats')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('openapi', app, document);
+  SwaggerModule.setup('open', app, document);
   await app.listen(6060).then(() => {
     new Logger('NestApplication').log('Server is running ');
   });

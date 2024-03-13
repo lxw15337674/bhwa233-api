@@ -4,7 +4,7 @@
 
 1. nest.js：web框架
 2. typeorm：ORM框架
-3. dotenv：读取.env的环境变量。
+3. @nestjs/config：读取.env的环境变量。
 
 
 

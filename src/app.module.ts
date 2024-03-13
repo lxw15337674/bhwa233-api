@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import 'dotenv/config';
 import { join } from 'path';
 import { UserModule } from './feature/user/user.module';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
@@ -14,9 +13,15 @@ import { AppController } from './app.controller';
 import { CountModule } from './feature/count/count.module';
 import { ChatSocketModule } from './chat-socket/chat-socket.module';
 import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
+import { ConfigModule } from '@nestjs/config';
+
+
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.POSTGRES_HOST,
@@ -51,4 +56,4 @@ import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
     AppService,
   ],
 })
-export class AppModule {}
+export class AppModule { }
