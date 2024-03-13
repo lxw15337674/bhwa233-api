@@ -9,7 +9,7 @@ import { CountMeta } from './entities/count-meta.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CountItem, CountMeta]),
+    TypeOrmModule.forFeature([CountMeta, CountItem]),
     CommonModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],

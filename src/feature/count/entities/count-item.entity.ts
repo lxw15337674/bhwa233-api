@@ -4,6 +4,7 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Relation,
 } from 'typeorm';
 import { CountMeta } from './count-meta.entity';
 
@@ -28,8 +29,8 @@ export class CountItem {
   })
   updateTime: Date;
 
-  @ManyToOne(() => CountMeta, (countMeta) => countMeta.counts)
-  countMeta: CountMeta;
+  @ManyToOne(() => CountMeta, (countMeta) => countMeta?.counts)
+  countMeta: Relation<CountMeta>;
 
   @DeleteDateColumn()
   deletedAt: Date;

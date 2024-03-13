@@ -2,7 +2,6 @@ import {
   Column,
   DeleteDateColumn,
   Entity,
-  Index,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
