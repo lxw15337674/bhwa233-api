@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   HttpException,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable, catchError, map } from 'rxjs';
@@ -20,6 +21,7 @@ export class ErrorsInterceptor implements NestInterceptor {
               message: error.getResponse(),
             });
           }
+          new Logger('ErrorsInterceptor').error(error.toString());
           return Promise.resolve({
             code: 500,
             message: `出现了意外错误：${error.toString()}`,

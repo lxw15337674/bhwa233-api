@@ -9,6 +9,7 @@ import {
   Get,
   Req,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { IUser } from 'src/common/interface/result';
@@ -23,7 +24,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     @Inject(AuthService) private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   /**
    * 用户登录成功后，返回的 data 是授权令牌；
@@ -34,6 +35,7 @@ export class UserController {
   async login(@Body() body: IUser): Promise<string> {
     const user = await this.userService.login(body.account, body.password);
     const accessToken = await this.authService.createToken(user);
+    new Logger('login').log(`用户登录成功！${user.account}`);
     return accessToken;
   }
 
