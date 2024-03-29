@@ -14,7 +14,7 @@ import { CountModule } from './feature/count/count.module';
 import { ChatSocketModule } from './chat-socket/chat-socket.module';
 import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 import { ConfigModule } from '@nestjs/config';
-
+import { RoutingModule } from './feature/routing/routing.module';
 
 
 @Module({
@@ -42,6 +42,7 @@ import { ConfigModule } from '@nestjs/config';
     TypeModule,
     ChatSocketModule,
     FishingTimeModule,
+    RoutingModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateFishingTimeDto } from './dto/create-fishing-time.dto';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom } from 'rxjs';
 
 interface HolidayData {
   code: number;
