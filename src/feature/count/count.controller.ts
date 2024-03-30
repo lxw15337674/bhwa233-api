@@ -17,7 +17,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { UserInfo } from 'src/common/user/user.decorator';
 import { User } from '../user/entities/user.entity';
 import { UpdateCountDto } from './dto/update-count.dto';
-import { ApiProperty } from '@nestjs/swagger';
 
 @Controller('count')
 export class CountController {
