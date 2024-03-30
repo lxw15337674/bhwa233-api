@@ -17,6 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UserInfo } from 'src/common/user/user.decorator';
 import { User } from '../user/entities/user.entity';
 import { UpdateCountDto } from './dto/update-count.dto';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Controller('count')
 export class CountController {
@@ -56,6 +57,13 @@ export class CountController {
     return this.countService.findOne(id);
   }
 
+  // 删除一次计数
+  @Delete('removeCount/:id')
+  @UseGuards(AuthGuard('jwt'))
+  removeCount(@Param('id') id: string, @UserInfo() user: User) {
+    return this.countService.removeCount(id, user.id);
+  }
+
   // 增加次数
   @Post('addCount')
   @UseGuards(AuthGuard('jwt'))
@@ -66,7 +74,7 @@ export class CountController {
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
   remove(@Body('id') id: string, @UserInfo() user: User) {
-    return this.countService.removeCount(id, user.id);
+    return this.countService.removeCounter(id, user.id);
   }
 
   @Post('resetCount')

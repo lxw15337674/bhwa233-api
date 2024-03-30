@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { CountItem } from './count-item.entity';
 
-// 单次统计信息
+//  计数器元数据
 @Entity('countMeta')
 export class CountMeta {
   @PrimaryGeneratedColumn('uuid')

@@ -108,6 +108,14 @@ export class CountService {
   }
 
   async removeCount(countId: string, userId: string) {
+    const count = await this.countItemRepo.findOne({
+      where: { id: countId },
+    });
+    if (!count) throw new Error('统计不存在');
+    await this.countItemRepo.softRemove(count);
+  }
+
+  async removeCounter(countId: string, userId: string) {
     const count = await this.countMetaRepo.findOne({
       where: { id: countId, userId },
       relations: {
