@@ -11,7 +11,6 @@ import { UnauthorizedExceptionFilter } from './core/exception/unauthorizedExcept
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { CountModule } from './feature/count/count.module';
-import { ChatSocketModule } from './chat-socket/chat-socket.module';
 import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 import { ConfigModule } from '@nestjs/config';
 import { RoutingModule } from './feature/routing/routing.module';
@@ -40,7 +39,6 @@ import { RoutingModule } from './feature/routing/routing.module';
     AuthModule,
     TaskModule,
     TypeModule,
-    ChatSocketModule,
     FishingTimeModule,
     RoutingModule,
   ],
