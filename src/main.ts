@@ -19,7 +19,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('open', app, document);
+  SwaggerModule.setup('doc', app, document);
   await app.listen(6060).then(() => {
     new Logger('NestApplication').log('Server is running ');
   });
