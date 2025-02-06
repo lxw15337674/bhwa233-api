@@ -1,19 +1,20 @@
+# Base stage for common dependencies
+FROM node:20-alpine AS base
+
+# Install pnpm and system dependencies
+RUN npm install -g pnpm &&
+    apk add --no-cache \
+        chromium \
+        nss \
+        freetype \
+        freetype-dev \
+        harfbuzz \
+        ca-certificates \
+        ttf-freefont \
+        python3
+
 # Build stage
-FROM node:20-alpine AS builder
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install system dependencies for Playwright
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    python3
+FROM base AS builder
 
 WORKDIR /app
 
@@ -33,22 +34,7 @@ COPY . .
 RUN pnpm build
 
 # Production stage
-FROM node:20-alpine
-
-# Install system dependencies for Playwright
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    nodejs \
-    python3
-
-# Install pnpm
-RUN npm install -g pnpm
+FROM base AS production
 
 WORKDIR /app
 
@@ -56,8 +42,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install production dependencies and Playwright
-RUN pnpm install --prod
-RUN pnpm exec playwright install --with-deps chromium
+RUN pnpm install --prod &&
+    pnpm exec playwright install --with-deps chromium
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
