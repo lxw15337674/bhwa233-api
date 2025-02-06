@@ -79,10 +79,28 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
             const page = await context.newPage();
 
             try {
-                await page.goto(url, { waitUntil: 'domcontentloaded' });
-                const content = await page.content();
-                const pageTitle = await page.title();
+                await page.goto(url, {
+                    waitUntil: 'networkidle',
+                    timeout: 30000
+                });
 
+                // 等待页面加载完成
+                await page.waitForLoadState('domcontentloaded');
+
+                // 获取标题，增加重试和超时处理
+                let pageTitle = '';
+                try {
+                    pageTitle = await page.title();
+                    if (!pageTitle) {
+                        // 如果标题为空，尝试从DOM中直接获取
+                        pageTitle = await page.$eval('title', (el) => el.textContent) || '';
+                    }
+                } catch (titleError) {
+                    console.error('Error getting page title:', titleError);
+                    // 尝试从 DOM 中获取 h1 作为备选标题
+                    pageTitle = await page.$eval('h1', (el) => el.textContent) || '';
+                }
+                const content = await page.content();
                 return {
                     title: pageTitle,
                     content: content,
