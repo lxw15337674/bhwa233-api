@@ -20,7 +20,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('doc', app, document);
-  await app.listen(6060).then(() => {
+  await app.listen(8080).then(() => {
     new Logger('NestApplication').log('Server is running ');
   });
 }
