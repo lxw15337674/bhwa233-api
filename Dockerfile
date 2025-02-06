@@ -76,8 +76,8 @@ COPY package.json pnpm-lock.yaml ./
 
 # Install production dependencies and Playwright
 RUN pnpm install --prod &&
-    npx playwright install-deps chromium &&
-    npx playwright install chromium
+    pnpm exec playwright install-deps chromium &&
+    pnpm exec playwright install chromium
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
