@@ -4,15 +4,27 @@ FROM node:20-alpine AS builder
 # Install pnpm
 RUN npm install -g pnpm
 
+# Install system dependencies for Playwright
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    python3
+
 WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies and Playwright
+# Install dependencies
 RUN pnpm install
-RUN pnpm exec playwright install --with-deps chromium
-RUN pnpm exec playwright install-deps chromium
+
+# Install Playwright
+RUN pnpm exec playwright install chromium
 
 # Copy source code
 COPY . .
