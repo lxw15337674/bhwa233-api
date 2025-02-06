@@ -5,9 +5,9 @@ import { Logger } from '@nestjs/common';
 async function bootstrap() {
   if (process.env.POSTGRES_USER) {
     new Logger('EnvironmentVariable').log('environment variable is set', process.env.POSTGRES_DATABASE);
-  }else{
+  } else {
     new Logger('EnvironmentVariable').error('environment variable is not set');
-    return 
+    return
   }
   const app = await NestFactory.create(AppModule, {
     cors: true,
