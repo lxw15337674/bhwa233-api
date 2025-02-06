@@ -1,23 +1,6 @@
 # Build stage
 FROM node:20-alpine AS builder
 
-# Install pnpm and system dependencies for Playwright
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    nodejs \
-    yarn \
-    python3 \
-    make \
-    g++ \
-    gcc \
-    libc6-compat
-
 # Install pnpm
 RUN npm install -g pnpm
 
