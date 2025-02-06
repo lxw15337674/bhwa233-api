@@ -23,7 +23,6 @@ interface CleanedContent {
 export interface PageContent {
     title: string;
     content: string;
-    image: string;
 }
 
 @Injectable()
@@ -35,22 +34,6 @@ export class AiService {
             baseURL: process.env.AI_BASE_URL,
             apiKey: process.env.AI_API_KEY,
         });
-    }
-
-    private async cleanHtml(html: string): Promise<CleanedContent> {
-        // 简单的清理HTML内容
-        const text = html
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-            .replace(/<[^>]+>/g, '\n')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-        // 尝试提取第一个图片URL
-        const imageMatch = html.match(/<img[^>]+src="([^">]+)"/i);
-        const image = imageMatch ? imageMatch[1] : '';
-
-        return { text, image };
     }
 
     async generateResponse(
@@ -94,12 +77,10 @@ export class AiService {
                 await page.goto(url, { waitUntil: 'domcontentloaded' });
                 const content = await page.content();
                 const pageTitle = await page.title();
-                const cleanedContent = await this.cleanHtml(content);
 
                 return {
                     title: pageTitle,
-                    content: cleanedContent.text,
-                    image: cleanedContent.image,
+                    content: content,
                 };
             } finally {
                 await context.close();
@@ -110,7 +91,6 @@ export class AiService {
             return {
                 title: '',
                 content: '',
-                image: '',
             };
         }
     }
