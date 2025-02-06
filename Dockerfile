@@ -82,9 +82,6 @@ RUN pnpm install --prod &&
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Set Playwright browser path
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
 # Expose application port
 EXPOSE 3000
 
