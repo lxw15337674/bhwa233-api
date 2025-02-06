@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import { Injectable } from '@nestjs/common';
-import { chromium } from 'playwright';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { chromium, Browser } from 'playwright';
 
 export interface AIResponse {
     success: boolean;
@@ -15,25 +15,31 @@ export interface BookmarkSummary {
     image?: string;
 }
 
-interface CleanedContent {
-    text: string;
-    image: string;
-}
-
 export interface PageContent {
     title: string;
     content: string;
 }
 
 @Injectable()
-export class AiService {
+export class AiService implements OnModuleInit, OnModuleDestroy {
     private openai: OpenAI;
+    private browser: Browser;
 
     constructor() {
         this.openai = new OpenAI({
             baseURL: process.env.AI_BASE_URL,
             apiKey: process.env.AI_API_KEY,
         });
+    }
+
+    async onModuleInit() {
+        this.browser = await chromium.launch({ headless: true });
+    }
+
+    async onModuleDestroy() {
+        if (this.browser) {
+            await this.browser.close();
+        }
     }
 
     async generateResponse(
@@ -67,8 +73,7 @@ export class AiService {
 
     async getPageContent(url: string): Promise<PageContent> {
         try {
-            const browser = await chromium.launch({ headless: true });
-            const context = await browser.newContext({
+            const context = await this.browser.newContext({
                 userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1'
             });
             const page = await context.newPage();
@@ -84,7 +89,6 @@ export class AiService {
                 };
             } finally {
                 await context.close();
-                await browser.close();
             }
         } catch (error) {
             console.error('Error in getPageContent:', error);
