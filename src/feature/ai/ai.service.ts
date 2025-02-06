@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { chromium, Browser } from 'playwright';
+import { chromium, Browser, BrowserContext } from 'playwright';
 
 export interface AIResponse {
     success: boolean;
@@ -24,6 +24,7 @@ export interface PageContent {
 export class AiService implements OnModuleInit, OnModuleDestroy {
     private openai: OpenAI;
     private browser: Browser;
+    private context: BrowserContext;
 
     constructor() {
         this.openai = new OpenAI({
@@ -34,9 +35,16 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
 
     async onModuleInit() {
         this.browser = await chromium.launch({ headless: true });
+        // 创建单个上下文
+        this.context = await this.browser.newContext({
+            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1'
+        });
     }
 
     async onModuleDestroy() {
+        if (this.context) {
+            await this.context.close();
+        }
         if (this.browser) {
             await this.browser.close();
         }
@@ -72,48 +80,40 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
     }
 
     async getPageContent(url: string): Promise<PageContent> {
+        const page = await this.context.newPage();
         try {
-            const context = await this.browser.newContext({
-                userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1'
+            await page.goto(url, {
+                waitUntil: 'networkidle',
+                timeout: 30000
             });
-            const page = await context.newPage();
 
+            // 等待页面加载完成
+            await page.waitForLoadState('domcontentloaded');
+
+            let pageTitle = '';
             try {
-                await page.goto(url, {
-                    waitUntil: 'networkidle',
-                    timeout: 30000
-                });
-
-                // 等待页面加载完成
-                await page.waitForLoadState('domcontentloaded');
-
-                // 获取标题，增加重试和超时处理
-                let pageTitle = '';
-                try {
-                    pageTitle = await page.title();
-                    if (!pageTitle) {
-                        // 如果标题为空，尝试从DOM中直接获取
-                        pageTitle = await page.$eval('title', (el) => el.textContent) || '';
-                    }
-                } catch (titleError) {
-                    console.error('Error getting page title:', titleError);
-                    // 尝试从 DOM 中获取 h1 作为备选标题
-                    pageTitle = await page.$eval('h1', (el) => el.textContent) || '';
+                pageTitle = await page.title();
+                if (!pageTitle) {
+                    pageTitle = await page.$eval('title', (el) => el.textContent) || '';
                 }
-                const content = await page.content();
-                return {
-                    title: pageTitle,
-                    content: content,
-                };
-            } finally {
-                await context.close();
+            } catch (titleError) {
+                console.error('Error getting page title:', titleError);
+                pageTitle = await page.$eval('h1', (el) => el.textContent) || '';
             }
+
+            const content = await page.content();
+            return {
+                title: pageTitle,
+                content: content,
+            };
         } catch (error) {
             console.error('Error in getPageContent:', error);
             return {
                 title: '',
                 content: '',
             };
+        } finally {
+            await page.close();
         }
     }
 
