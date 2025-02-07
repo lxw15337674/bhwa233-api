@@ -59,9 +59,6 @@ importers:
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
-      crypto:
-        specifier: ^1.0.1
-        version: 1.0.1
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -83,9 +80,6 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.13.1
-      playwright:
-        specifier: ^1.50.1
-        version: 1.50.1
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -153,6 +147,9 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.17.17)(ts-node@10.9.2(@swc/core@1.10.14)(@types/node@20.17.17)(typescript@5.7.3))
+      playwright:
+        specifier: ^1.50.1
+        version: 1.50.1
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
@@ -1632,10 +1629,6 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
-
-  crypto@1.0.1:
-    resolution: {integrity: sha512-VxBKmeNcqQdiUQUW2Tzq0t377b54N2bMtXO/qiLa+6eRRmmC4qT3D4OnTGoT/U6O9aklQ/jTwbOtRMTTY8G0Ig==}
-    deprecated: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
 
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
@@ -5584,8 +5577,6 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
-
-  crypto@1.0.1: {}
 
   dayjs@1.11.13: {}
 
