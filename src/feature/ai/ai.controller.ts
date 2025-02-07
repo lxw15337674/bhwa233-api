@@ -1,14 +1,13 @@
-import { Controller, Get, Query} from '@nestjs/common';
+import { Controller, Get, Post, Query, Body } from '@nestjs/common';
 import { AiService } from './ai.service';
-
 
 @Controller('ai')
 export class AiController {
     constructor(private readonly aiService: AiService) { }
 
-    @Get('chat')
-    async chat(@Query('prompt') prompt: string, @Query('model') model: string) {
-        return this.aiService.generateResponse(prompt, model);
+    @Post('chat')
+    async chat(@Body() body: { prompt: string; model?: string }) {
+        return this.aiService.generateResponse(body.prompt, body.model);
     }
 
     @Get('page-content')
