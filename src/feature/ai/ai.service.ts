@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { chromium, Browser, BrowserContext } from 'playwright';
+import { GenerativeModel, GoogleGenerativeAI }  from"@google/generative-ai";
 
 
 export interface BookmarkSummary {
@@ -18,6 +19,7 @@ export interface PageContent {
 @Injectable()
 export class AiService implements OnModuleInit, OnModuleDestroy {
     private openai: OpenAI;
+    private googleModel: GenerativeModel;
     private browser: Browser;
     private context: BrowserContext;
 
@@ -26,13 +28,18 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
             baseURL: process.env.AI_BASE_URL,
             apiKey: process.env.AI_API_KEY,
         });
+        const genAI = new GoogleGenerativeAI('AIzaSyAEGXXhYegK09KstC83nA91ee6puhRZlUg');
+        this.googleModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     }
 
     async onModuleInit() {
         this.browser = await chromium.launch({ headless: true });
-        // 创建单个上下文
         this.context = await this.browser.newContext({
-            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1'
+            viewport: { width: 375, height: 667 },
+            isMobile: true,
+            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1',
+            locale: 'zh-CN',
+            timezoneId: 'Asia/Shanghai'
         });
     }
 
@@ -43,6 +50,12 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
         if (this.browser) {
             await this.browser.close();
         }
+    }
+
+    async genGoogleResponse(prompt: string) {
+        const result = await this.googleModel.generateContent(prompt);
+        const text = result.response.text()
+        return text;
     }
 
     async generateResponse(
@@ -69,9 +82,6 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
                 waitUntil: 'networkidle',
                 timeout: 30000
             });
-
-            // 等待页面加载完成
-            await page.waitForLoadState('domcontentloaded');
 
             let pageTitle = '';
             try {
@@ -100,4 +110,4 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-} 
+}

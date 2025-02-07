@@ -10,6 +10,11 @@ export class AiController {
         return this.aiService.generateResponse(body.prompt, body.model);
     }
 
+    @Post('google-chat')
+    async googleChat(@Body() body: { prompt: string }) {
+        return this.aiService.genGoogleResponse(body.prompt);
+    }
+
     @Get('page-content')
     async getPageContent(@Query('url') url: string) {
         return this.aiService.getPageContent(url);
