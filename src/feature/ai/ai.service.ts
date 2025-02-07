@@ -2,11 +2,6 @@ import OpenAI from 'openai';
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { chromium, Browser, BrowserContext } from 'playwright';
 
-export interface AIResponse {
-    success: boolean;
-    data: string;
-    error?: string;
-}
 
 export interface BookmarkSummary {
     title: string;
@@ -52,30 +47,18 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
 
     async generateResponse(
         prompt: string,
-        model: string = 'deepseek-chat',
-    ): Promise<AIResponse> {
+        model: string = process.env.AI_MODEL || 'step-2-mini',
+    ) {
         try {
             const completion = await this.openai.chat.completions.create({
                 messages: [{ role: 'system', content: prompt }],
                 model: model,
             });
-
-            const content = completion.choices[0].message?.content ?? '';
-            const match = content.match(/```json\s*([\s\S]*?)\s*```/) || [
-                null,
-                content,
-            ];
-            const parsed = JSON.parse(match[1] || content);
-            return {
-                success: true,
-                data: parsed,
-            };
+            console.log('Generated response:', completion);
+            return completion
         } catch (error) {
-            return {
-                success: false,
-                data: '',
-                error: 'AI服务调用失败',
-            };
+            console.error('Error generating response:', error);
+            return { choices: [] };
         }
     }
 
