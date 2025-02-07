@@ -28,7 +28,7 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
             baseURL: process.env.AI_BASE_URL,
             apiKey: process.env.AI_API_KEY,
         });
-        const genAI = new GoogleGenerativeAI('AIzaSyAEGXXhYegK09KstC83nA91ee6puhRZlUg');
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
         this.googleModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     }
 
