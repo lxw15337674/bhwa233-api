@@ -79,7 +79,7 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
         const page = await this.context.newPage();
         try {
             await page.goto(url, {
-                waitUntil: 'networkidle',
+                waitUntil: 'domcontentloaded',
                 timeout: 30000
             });
 
