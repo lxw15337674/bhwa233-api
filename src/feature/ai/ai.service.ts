@@ -78,11 +78,8 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
     async getPageContent(url: string): Promise<PageContent> {
         const page = await this.context.newPage();
         try {
-            await page.goto(url, {
-                waitUntil: 'domcontentloaded',
-                timeout: 30000
-            });
-
+            await page.goto(url);
+            await page.waitForTimeout(5000); // wait for 5 seconds
             let pageTitle = '';
             try {
                 pageTitle = await page.title();
