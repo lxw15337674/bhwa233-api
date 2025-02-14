@@ -19,4 +19,13 @@ export class AiController {
     async getPageContent(@Query('url') url: string) {
         return this.aiService.getPageContent(url);
     }
+
+    @Get('getFutuStockMap')
+    async getFutuStockMap(@Query('area') area: string, @Query('mapType') mapType: string) {
+        return this.aiService.getFutuStockMap(area, mapType);
+    }
+    @Get('getYuntuStockMap')
+    async getYuntuStockMap() {
+        return this.aiService.getYuntuStockMap();
+    }
 }

@@ -13,7 +13,8 @@
     "incremental": true,
     "lib": [
       "ES2021",
-      "esnext"
+      "esnext",
+      "dom"
     ],
     "moduleResolution": "node",
     "skipLibCheck": true,
@@ -23,4 +24,4 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true
   }
-}
+}  
