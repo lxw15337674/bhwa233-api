@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AiService } from './ai.service';
 
 @Controller('ai')
@@ -13,19 +13,5 @@ export class AiController {
     @Post('google-chat')
     async googleChat(@Body() body: { prompt: string }) {
         return this.aiService.genGoogleResponse(body.prompt);
-    }
-
-    @Get('page-content')
-    async getPageContent(@Query('url') url: string) {
-        return this.aiService.getPageContent(url);
-    }
-
-    @Get('getFutuStockMap')
-    async getFutuStockMap(@Query('area') area: string, @Query('mapType') mapType: string) {
-        return this.aiService.getFutuStockMap(area, mapType);
-    }
-    @Get('getYuntuStockMap')
-    async getYuntuStockMap() {
-        return this.aiService.getYuntuStockMap();
     }
 }
