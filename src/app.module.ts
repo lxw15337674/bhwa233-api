@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 import { StockMarketModule } from './feature/stock-market/stock-market.module';
 import { PageScraperModule } from './feature/page-scraper/page-scraper.module';
+import { CommandModule } from './feature/command/command.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PageScraperModule } from './feature/page-scraper/page-scraper.module';
     AiModule,
     StockMarketModule,
     PageScraperModule,
+    CommandModule, 
   ],
   controllers: [AppController],
   providers: [AppService],
