@@ -5,7 +5,7 @@ import { getFutureData } from './acions/future';
 import { getHotSpot } from './acions/stockHotSpot';
 import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getUSMarketIndexData } from './acions/stockInfo';
 import { getStockSummary } from './acions/stockSummary';
-import { StockMarketService, MapType } from '../stock-market/stock-market.service';
+import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
 
 export interface CommandParams {
