@@ -17,13 +17,23 @@ export interface CommandParams {
 export class CommandService {
     constructor(private readonly stockMarketService: StockMarketService) {}
 
-    private commandMap: { key: string, callback: (params: CommandParams) => Promise<string>, msg: string, hasArgs: boolean, enable?: boolean, type?: 'text' | 'image' }[] = [
+    private commandMap: { 
+        key: string, 
+        callback: (params: CommandParams) => Promise<{ content: string, type: 'text' | 'image' }>, 
+        msg: string, 
+        hasArgs: boolean, 
+        enable?: boolean, 
+        type?: 'text' | 'image' 
+    }[] = [
         // 股市相关命令
         {
             key: 'scn',
             callback: async (params: CommandParams) => {
                 const result = await getCNMarketIndexData();
-                return result || '获取数据失败';
+                return {
+                    content: result || '获取数据失败',
+                    type: 'text'
+                };
             },
             msg: 'scn - 获取上证指数信息，包含大盘涨跌幅、成交量等核心数据',
             hasArgs: false,
@@ -32,7 +42,10 @@ export class CommandService {
             key: 'sus',
             callback: async (params: CommandParams) => {
                 const result = await getUSMarketIndexData();
-                return result || '获取美股指数数据失败';
+                return {
+                    content: result || '获取美股指数数据失败',
+                    type: 'text'
+                };
             },
             msg: 'sus - 获取美股指数信息，包含大盘涨跌幅、成交量等核心数据',
             hasArgs: false,
@@ -41,7 +54,10 @@ export class CommandService {
             key: 'shk',
             callback: async (params: CommandParams) => {
                 const result = await getHKMarketIndexData();
-                return result || '获取港股指数数据失败';
+                return {
+                    content: result || '获取港股指数数据失败',
+                    type: 'text'
+                };
             },
             msg: 'shk - 获取港股指数信息，包含大盘涨跌幅、成交量等核心数据',
             hasArgs: false,
@@ -52,7 +68,11 @@ export class CommandService {
                 if (!params.args) {
                     throw new Error('请输入股票代码，例如: s 600519 000858');
                 }
-                return getStockData(params.args);
+                const result = await getStockData(params.args);
+                return {
+                    content: result,
+                    type: 'text'
+                };
             },
             msg: 's [股票代码] - 获取股票信息,支持一次查询多只股票 例如: s 600519 000858',
             hasArgs: true,
@@ -63,7 +83,11 @@ export class CommandService {
                 if (!params.args) {
                     throw new Error('请输入股票代码，例如: sd gzmt');
                 }
-                return getStockDetailData(params.args);
+                const result = await getStockDetailData(params.args);
+                return {
+                    content: result,
+                    type: 'text'
+                };
             },
             msg: 'sd [股票代码] - 获取股票详细信息 例如: sd gzmt',
             hasArgs: true,
@@ -72,7 +96,10 @@ export class CommandService {
             key: 'dp',
             callback: async (params: CommandParams) => {
                 const result = await getStockSummary();
-                return result || '获取大盘数据失败';
+                return {
+                    content: result || '获取大盘数据失败',
+                    type: 'text'
+                };
             },
             msg: 'dp - 获取大盘市场信息，包括涨跌家数、板块概览等',
             hasArgs: false,
@@ -82,7 +109,10 @@ export class CommandService {
             callback: async (params) => {
                 if (!params.args || params.args === 'dp') {
                     const imageData = await this.stockMarketService.getYuntuStockMap();
-                    return imageData
+                    return {
+                        content: imageData,
+                        type: 'image'
+                    };
                 }
 
                 const [market, type] = params.args.split(' ');
@@ -91,7 +121,10 @@ export class CommandService {
                 }
 
                 const imageData = await this.stockMarketService.getFutuStockMap(market, type);
-                return imageData
+                return {
+                    content: imageData,
+                    type: 'image'
+                };
             },
             msg: 'm [市场] [类型] - 获取热力图\n  m - 获取云图大盘热力图\n  m cn/hk/us hy/gu - 获取富途热力图 (hy:行业图 gu:个股图)',
             hasArgs: true,
@@ -104,7 +137,11 @@ export class CommandService {
                 if (!params.args) {
                     throw new Error('请输入期货代码，例如: f XAU');
                 }
-                return getFutureData(params.args);
+                const result = await getFutureData(params.args);
+                return {
+                    content: result,
+                    type: 'text'
+                };
             },
             msg: 'f [期货代码] - 获取期货信息 例如: f XAU',
             hasArgs: true,
@@ -115,7 +152,11 @@ export class CommandService {
                 if (!params.args) {
                     throw new Error('请输入数字货币代码，例如: b btc');
                 }
-                return getBinanceData(params.args);
+                const result = await getBinanceData(params.args);
+                return {
+                    content: result,
+                    type: 'text'
+                };
             },
             msg: 'b [货币代码] - 获取数字货币信息 例如: b btc',
             hasArgs: true,
@@ -125,7 +166,10 @@ export class CommandService {
             key: 'hot',
             callback: async (params: CommandParams) => {
                 const result = await getHotSpot();
-                return result || '获取数据失败';
+                return {
+                    content: result || '获取数据失败',
+                    type: 'text'
+                };
             },
             msg: 'hot - 获取今日热点概念板块及相关个股',
             hasArgs: false,
@@ -134,7 +178,10 @@ export class CommandService {
             key: 'wb',
             callback: async (params: CommandParams) => {
                 const result = await getWeiboData();
-                return result || '获取微博热搜失败';
+                return {
+                    content: result || '获取微博热搜失败',
+                    type: 'text'
+                };
             },
             msg: 'wb - 获取微博热搜',
             hasArgs: false,
@@ -144,7 +191,10 @@ export class CommandService {
             key: 'hy',
             callback: async (params: CommandParams) => {
                 const result = await holiday();
-                return result || '获取节假日信息失败';
+                return {
+                    content: result || '获取节假日信息失败',
+                    type: 'text'
+                };
             },
             msg: 'hy - 获取节假日信息',
             hasArgs: false,
@@ -156,23 +206,30 @@ export class CommandService {
                     .filter(command => command.enable !== false)
                     .map(command => command.msg)
                     .join('\n');
-                return `命令列表：\n${commandMsg}\n项目地址：https://github.com/lxw15337674/weixin-robot`;
+                return {
+                    content: `命令列表：\n${commandMsg}\n项目地址：https://github.com/lxw15337674/weixin-robot`,
+                    type: 'text'
+                };
             },
             msg: 'hp - 获取命令帮助',
             hasArgs: false,
         },
     ];
 
-    async executeCommand(msg: string): Promise<string> {
+    async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
         for (const command of this.commandMap) {
             if (msg.startsWith(command.key)) {
                 const args = command.hasArgs ? msg.slice(command.key.length).trim() : undefined;
-                return command.callback({
+                const result = await command.callback({
                     args,
                     key: command.key,
                 });
+                return result;
             }
         }
-        return '未找到对应命令';
+        return {
+            content: '',
+            type: 'text'
+        };
     }
-} 
+}
