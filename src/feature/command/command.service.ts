@@ -11,7 +11,6 @@ import { getWeiboData } from './acions/weibo';
 export interface CommandParams {
     args?: string,
     key: string,
-    sendMessage?: (content: string, type?: 'text' | 'image') => void
 }
 
 @Injectable()
@@ -83,10 +82,7 @@ export class CommandService {
             callback: async (params) => {
                 if (!params.args || params.args === 'dp') {
                     const imageData = await this.stockMarketService.getYuntuStockMap();
-                    if (params.sendMessage) {
-                        params.sendMessage(imageData, 'image');
-                    }
-                    return '';
+                    return imageData
                 }
 
                 const [market, type] = params.args.split(' ');
@@ -95,10 +91,7 @@ export class CommandService {
                 }
 
                 const imageData = await this.stockMarketService.getFutuStockMap(market, type);
-                if (params.sendMessage) {
-                    params.sendMessage(imageData, 'image');
-                }
-                return '';
+                return imageData
             },
             msg: 'm [市场] [类型] - 获取热力图\n  m - 获取云图大盘热力图\n  m cn/hk/us hy/gu - 获取富途热力图 (hy:行业图 gu:个股图)',
             hasArgs: true,
