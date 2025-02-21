@@ -214,7 +214,7 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
             const { quote, market } = await getStockBasicData(symbol);
             const isGrowing = quote.percent > 0;
             const trend = isGrowing ? '📈' : '📉';
-            let text = `🏢 ${quote?.name}(${quote?.symbol}): ${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%`;
+            let text = `${quote?.name}(${quote?.symbol}): ${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%`;
 
             if (quote.current_ext && quote.percent_ext && quote.current !== quote.current_ext && market.status_id !== 5) {
                 const preIsGrowing = quote.percent_ext > 0;

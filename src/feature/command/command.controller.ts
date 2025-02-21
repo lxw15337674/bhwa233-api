@@ -13,4 +13,4 @@ export class CommandController {
   async getCommandList() {
     return this.commandService.getCommandList();
   }
-} 
+}

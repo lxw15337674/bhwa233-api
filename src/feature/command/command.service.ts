@@ -7,6 +7,7 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
+import { AiService } from '../ai/ai.service';
 
 export interface CommandParams {
     args?: string,
@@ -22,7 +23,10 @@ export interface Command {
 
 @Injectable()
 export class CommandService {
-    constructor(private readonly stockMarketService: StockMarketService) {}
+    constructor(
+        private readonly stockMarketService: StockMarketService,
+        private readonly aiService: AiService,
+    ) {}
 
     private commandMap: { 
         key: string, 
@@ -32,6 +36,24 @@ export class CommandService {
         enable?: boolean, 
         type?: 'text' | 'image' 
     }[] = [
+            // AI对话
+            {
+                key: 'a ',
+                callback: async (params) => {
+                    if (!params.args) {
+                        return {
+                            content: 'a [问题] - 获取鸡哥回答 例如: a 你好鸡哥',
+                            type: 'text'
+                        };
+                    }
+                    const content = await this.aiService.generateResponse(params.args);
+                    return {
+                        content,
+                        type: 'text'
+                    };
+                },
+                hasArgs: true,
+            },
         // 股市相关命令
         {
             key: 'scn',

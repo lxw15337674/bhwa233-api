@@ -2,6 +2,8 @@ import OpenAI from 'openai';
 import { Injectable } from '@nestjs/common';
 import { GenerativeModel, GoogleGenerativeAI }  from"@google/generative-ai";
 
+const aiPrompt = process.env.AI_PROMPT ?? '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔';
+
 export interface BookmarkSummary {
     title: string;
     summary: string;
@@ -35,14 +37,19 @@ export class AiService {
     ) {
         try {
             const completion = await this.openai.chat.completions.create({
-                messages: [{ role: 'system', content: prompt }],
-                model: model,
+                messages: [{
+                    role: "system", content: aiPrompt
+                },
+                {
+                    role: "user", content: prompt
+                }],
+                model,
             });
             console.log('Generated response:', completion);
-            return completion
+            return completion.choices[0].message.content
         } catch (error) {
             console.error('Error generating response:', error);
-            return { choices: [] };
+            return  '获取AI回答失败';
         }
     }
 }
