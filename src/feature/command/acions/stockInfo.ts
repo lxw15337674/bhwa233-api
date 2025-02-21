@@ -251,7 +251,7 @@ function formatIndexData(quoteData: any) {
     const trend = isGrowing ? '📈' : '📉';
     const yearTrend = quote?.current_year_percent > 0 ? '🟢' : '🔴';
 
-    let text = quote?.name ? `🏢 ${quote.name}${quote.symbol ? ` (${quote.symbol})` : ''}\n` : '';
+    let text = quote?.name ? `${quote.name}${quote.symbol ? ` (${quote.symbol})` : ''}\n` : '';
     if (quote?.current && quote?.percent !== undefined) {
         text += `💰 现价：${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
     }
@@ -321,7 +321,7 @@ export async function getStockDetailData(symbol: string): Promise<string> {
         const trend = isGrowing ? '📈' : '📉';
         const yearTrend = quote.current_year_percent > 0 ? '🟢' : '🔴';
 
-        let text = `🏢 ${quote?.name}(${quote?.symbol})\n`;
+        let text = `${quote?.name}(${quote?.symbol})\n`;
         text += `💰 现价：${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
         text += `📊 振幅：${convertToNumber(quote.amplitude)}%\n`;
         text += `⚖️ 成交均价：${convertToNumber(quote.avg_price)}\n`;

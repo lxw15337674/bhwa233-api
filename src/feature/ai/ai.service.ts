@@ -46,7 +46,7 @@ export class AiService {
                 model,
             });
             console.log('Generated response:', completion);
-            return completion.choices[0].message.content
+            return completion.choices[0].message.content??'';
         } catch (error) {
             console.error('Error generating response:', error);
             return  '获取AI回答失败';

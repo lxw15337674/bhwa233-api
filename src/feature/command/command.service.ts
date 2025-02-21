@@ -42,7 +42,7 @@ export class CommandService {
             {
                 key: 'a ',
                 callback: async (params) => {
-                    const content = await this.aiService.generateResponse(params.args);
+                    const content = await this.aiService.generateResponse(params?.args??'');
                     return {
                         content,
                         type: 'text'
