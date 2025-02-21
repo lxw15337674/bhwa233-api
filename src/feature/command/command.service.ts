@@ -159,21 +159,21 @@ export class CommandService {
             type: 'image'
         },
         // 期货与数字货币
-        {
-            key: 'f ',
-            callback: async (params) => {
-                if (!params.args) {
-                    throw new Error('请输入期货代码，例如: f XAU');
-                }
-                const result = await getFutureData(params.args);
-                return {
-                    content: result,
-                    type: 'text'
-                };
-            },
-            msg: 'f [期货代码] - 获取期货信息 例如: f XAU',
-            hasArgs: true,
-        },
+        // {
+        //     key: 'f ',
+        //     callback: async (params) => {
+        //         if (!params.args) {
+        //             throw new Error('请输入期货代码，例如: f XAU');
+        //         }
+        //         const result = await getFutureData(params.args);
+        //         return {
+        //             content: result,
+        //             type: 'text'
+        //         };
+        //     },
+        //     msg: 'f [期货代码] - 获取期货信息 例如: f XAU',
+        //     hasArgs: true,
+        // },
         {
             key: 'b ',
             callback: async (params) => {
