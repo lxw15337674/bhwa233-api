@@ -40,18 +40,13 @@ export class CommandService {
             {
                 key: 'a ',
                 callback: async (params) => {
-                    if (!params.args) {
-                        return {
-                            content: 'a [问题] - 获取鸡哥回答 例如: a 你好鸡哥',
-                            type: 'text'
-                        };
-                    }
                     const content = await this.aiService.generateResponse(params.args);
                     return {
                         content,
                         type: 'text'
                     };
                 },
+                msg: 'a [问题] - 获取鸡哥回答 例如: a 你好鸡哥',
                 hasArgs: true,
             },
         // 股市相关命令

@@ -1,7 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { chromium, Browser, BrowserContext } from 'playwright';
-import { AiService } from '../ai/ai.service';
-import { bookmarkPrompt } from './prompts';
 
 export interface PageContent {
     title: string;
