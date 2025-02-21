@@ -236,7 +236,7 @@ export async function getStockData(symbol: string): Promise<string> {
     try {
         const symbols = symbol.split(/\s+/);  // 按空格分割多个股票代码
         const results = await retryWithNewToken(() => getMultipleStocksData(symbols));
-        return results.join('\n\n');  // 用两个换行符分隔每个股票的数据，增加可读性
+        return results.join('\n');  // 用两个换行符分隔每个股票的数据，增加可读性
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取 ${symbol} 失败：${error.message}`;
@@ -273,7 +273,7 @@ export async function getCNMarketIndexData() {
             getStockBasicData('SZ399001'),
             getStockBasicData('SZ399006')
         ]);
-        return `${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取市场指数失败：${error.message}`;
@@ -289,7 +289,7 @@ export async function getUSMarketIndexData() {
             getStockBasicData('.IXIC'),
             getStockBasicData('.INX')
         ]);
-        return `${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取美国市场指数失败：${error.message}`;
@@ -305,7 +305,7 @@ export async function getHKMarketIndexData() {
             getStockBasicData('HSCEI'),
             getStockBasicData('HSTECH')
         ]);
-        return `${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取港股市场指数失败：${error.message}`;
