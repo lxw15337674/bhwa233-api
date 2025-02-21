@@ -8,6 +8,7 @@ import { getStockSummary } from './acions/stockSummary';
 import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
+import uploadBase64Image from './acions/upload';
 
 export interface CommandParams {
     args?: string,
@@ -133,8 +134,9 @@ export class CommandService {
             callback: async (params) => {
                 if (!params.args || params.args === 'dp') {
                     const imageData = await this.stockMarketService.getYuntuStockMap();
+                    const src = await uploadBase64Image(imageData);
                     return {
-                        content: imageData,
+                        content: src,
                         type: 'image'
                     };
                 }
@@ -145,8 +147,9 @@ export class CommandService {
                 }
 
                 const imageData = await this.stockMarketService.getFutuStockMap(market, type);
+                const src = await uploadBase64Image(imageData);
                 return {
-                    content: imageData,
+                    content: src,
                     type: 'image'
                 };
             },
