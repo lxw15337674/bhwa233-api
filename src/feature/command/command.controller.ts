@@ -9,4 +9,8 @@ export class CommandController {
   async executeCommand(@Query('command') command: string) {
     return this.commandService.executeCommand(command);
   }
-}
+  @Get('hp')
+  async getCommandList() {
+    return this.commandService.getCommandList();
+  }
+} 

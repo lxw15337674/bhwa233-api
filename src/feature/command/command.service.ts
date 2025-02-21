@@ -13,6 +13,13 @@ export interface CommandParams {
     key: string,
 }
 
+
+export interface Command {
+    key: string;
+    description: string;
+    type?: 'text' | 'image';
+}
+
 @Injectable()
 export class CommandService {
     constructor(private readonly stockMarketService: StockMarketService) {}
@@ -232,4 +239,14 @@ export class CommandService {
             type: 'text'
         };
     }
+    async getCommandList(): Promise<Command[]> {
+        const commandMsg = this.commandMap
+            .filter(command => command.enable !== false)
+            .map(command => ({
+                key: command.key,
+                description: command.msg,
+                type: command.type,
+            }));
+        return commandMsg;
+    }        
 }
