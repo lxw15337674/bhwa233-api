@@ -273,7 +273,7 @@ export async function getCNMarketIndexData() {
             getStockBasicData('SZ399001'),
             getStockBasicData('SZ399006')
         ]);
-        return `🇨🇳 A股市场指数\n\n${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取市场指数失败：${error.message}`;
@@ -289,7 +289,7 @@ export async function getUSMarketIndexData() {
             getStockBasicData('.IXIC'),
             getStockBasicData('.INX')
         ]);
-        return `🇺🇸 美股市场指数\n\n${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取美国市场指数失败：${error.message}`;
@@ -305,7 +305,7 @@ export async function getHKMarketIndexData() {
             getStockBasicData('HSCEI'),
             getStockBasicData('HSTECH')
         ]);
-        return `🇭🇰 港股市场指数\n\n${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取港股市场指数失败：${error.message}`;
