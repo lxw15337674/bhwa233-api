@@ -53,15 +53,15 @@ export class CommandService {
             },
         // 股市相关命令
         {
-            key: 'scn',
-            callback: async (params: CommandParams) => {
+            key: 'ss',
+            callback: async () => {
                 const result = await getCNMarketIndexData();
                 return {
                     content: result || '获取数据失败',
                     type: 'text'
                 };
             },
-            msg: 'scn - 获取上证指数信息，包含大盘涨跌幅、成交量等核心数据',
+            msg: 'ss - 获取上证指数信息，包含大盘涨跌幅、成交量等核心数据',
             hasArgs: false,
         },
         {
