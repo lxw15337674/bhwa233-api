@@ -6,14 +6,17 @@ interface GalleryUploadResponse {
 
 const GALLERY_URL = 'https://gallery233.pages.dev';
 
+// 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFla…0MnoMpPpHo7KZKKWRfQqIyR0ZDmqW+OVr/AMWon7U/cpJdtTQLhb3Y7Njjw3V4w83tynBB8yR6MdvnqO0UkMaNU+6smcC0ka9g+SmUDXFpiQY7DmlochxptKFPKKMrIGCo+pnqe2u/5QLN/ihB/aj8OoNRTZgjOtveVSmigJuQfE/NOs69od1CLnDhNQkocbcbjJ6oSUgegDtIz5u2n/8AKvd/c8L9xf3qhdFKMTHWBGyuKaqnpGZIHloU0/Kvd/c8L9xf3q923icuFF5bluS64XHHFLS9tBK1lRwNpx6701CKKT1Ee1lLGK1oObrDf2H7lJJerY02fJlPWlpxTygob1BRSAhKcZKf8nP66+RNTwI8h1xdijPJWlKQhW3CSCrJ9b58j9lRyincoy5eCqpf27nOk1J1P5Cek32IDKJtTB5zTyEDp6mVqylQ8ntSOg/+FN1xlNzZrjzTCYzasYaR2JwAPQPz0mortgNUkNDTcL//2Q=='
 async function uploadBase64Image(base64Image: string): Promise<string> {
     try {
-        // 将 base64 字符串转换为 Buffer
-        const buffer = Buffer.from(base64Image, 'base64');
+        // 移除 base64 字符串中的 data URL 前缀
+        const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+        // 将处理后的 base64 字符串转换为 Buffer
+        const buffer = Buffer.from(base64Data, 'base64');
         // 定义文件的 MIME 类型
-        const mimeType = 'image/png';
+        const mimeType = 'image/jpeg';
         // 定义文件名
-        const fileName = 'uploaded_image.png';
+        const fileName = 'uploaded_image.jpg';
 
         // 创建 FormData 对象并添加文件数据
         const formData = new FormData();

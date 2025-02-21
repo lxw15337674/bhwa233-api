@@ -9,6 +9,7 @@ import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
 import uploadBase64Image from './acions/upload';
+import axios from 'axios';
 
 export interface CommandParams {
     args?: string,
@@ -241,6 +242,7 @@ export class CommandService {
             msg: 'hp - 获取命令帮助',
             hasArgs: false,
         },
+        
     ];
 
     async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
