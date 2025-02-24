@@ -249,7 +249,6 @@ function formatIndexData(quoteData: any) {
     const quote = quoteData.quote;
     const isGrowing = quote.percent > 0;
     const trend = isGrowing ? '📈' : '📉';
-    const yearTrend = quote?.current_year_percent > 0 ? '🟢' : '🔴';
 
     let text = quote?.name ? `${quote.name}${quote.symbol ? ` (${quote.symbol})` : ''}\n` : '';
     if (quote?.current && quote?.percent !== undefined) {
@@ -261,7 +260,7 @@ function formatIndexData(quoteData: any) {
     }
 
     if (quote?.current_year_percent !== undefined) {
-        text += `📅 年初至今：${yearTrend} ${quote.current_year_percent > 0 ? '+' : ''}${convertToNumber(quote.current_year_percent)}%`;
+        text += `📅 年初至今：${quote.current_year_percent > 0 ? '+' : ''}${convertToNumber(quote.current_year_percent)}%`;
     }
     return text;
 }
@@ -319,22 +318,21 @@ export async function getStockDetailData(symbol: string): Promise<string> {
         const { quote } = await getStockBasicData(symbol);
         const isGrowing = quote.percent > 0;
         const trend = isGrowing ? '📈' : '📉';
-        const yearTrend = quote.current_year_percent > 0 ? '🟢' : '🔴';
 
         let text = `${quote?.name}(${quote?.symbol})\n`;
-        text += `💰 现价：${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
-        text += `📊 振幅：${convertToNumber(quote.amplitude)}%\n`;
-        text += `⚖️ 成交均价：${convertToNumber(quote.avg_price)}\n`;
-        text += `💎 成交额：${formatAmount(quote.amount)}\n`;
-        text += `📈 成交量：${formatAmount(quote.volume)}手\n`;
-        text += `🔄 换手率：${convertToNumber(quote.turnover_rate)}%\n`;
-        text += `💹 总市值：${formatAmount(quote.market_capital)}\n`;
-        text += `📅 年初至今：${yearTrend} ${quote.current_year_percent > 0 ? '+' : ''}${convertToNumber(quote.current_year_percent)}%\n`;
-        text += `📊 市盈率TTM：${convertToNumber(quote.pe_ttm || 0)}\n`;
-        text += `📈 市净率：${convertToNumber(quote.pb || 0)}`;
+        text += `🏷️ 现价：${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
+        text += `↕️ 振幅：${convertToNumber(quote.amplitude)}%\n`;
+        text += `⚡ 成交均价：${convertToNumber(quote.avg_price)}\n`;
+        text += `💫 成交额：${formatAmount(quote.amount)}\n`;
+        text += `📊 成交量：${formatAmount(quote.volume)}手\n`;
+        text += `🔁 换手率：${convertToNumber(quote.turnover_rate)}%\n`;
+        text += `🏢 总市值：${formatAmount(quote.market_capital)}\n`;
+        text += `📆 年初至今：${quote.current_year_percent > 0 ? '+' : ''}${convertToNumber(quote.current_year_percent)}%\n`;
+        text += `📌 市盈率TTM：${convertToNumber(quote.pe_ttm || 0)}\n`;
+        text += `📋 市净率：${convertToNumber(quote.pb || 0)}`;
 
         if (quote.dividend_yield) {
-            text += `\n💵 股息率：${convertToNumber(quote.dividend_yield)}%`;
+            text += `\n💰 股息率：${convertToNumber(quote.dividend_yield)}%`;
         }
 
         return text;
