@@ -162,7 +162,7 @@ export async function getStockBasicData(symbol: string): Promise<StockData['data
     try {
         const suggestedSymbol = await getSuggestStock(symbol);
 
-        if (!suggestedSymbol) throw new Error('❌ 未找到相关股票');
+        if (!suggestedSymbol) throw new Error('未找到相关股票');
 
         const fetchStockData = async () => {
             const response = await axios.get(STOCK_API_URL, {
