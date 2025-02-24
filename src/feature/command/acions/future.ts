@@ -12,7 +12,7 @@ function extractPrices(hq_str: string, symbol: string) {
     const data = match[0].slice(1, -1).split(',');
     const name = data.find(item => /[\u4e00-\u9fa5]/.test(item));
     const currentPrice = parseFloat(data[0]);
-    const prePrice = parseFloat(data[8]);
+    const prePrice = parseFloat(data[7]);
 
     if (isNaN(currentPrice) || isNaN(prePrice)) {
         return `${symbol}数据格式错误`;
