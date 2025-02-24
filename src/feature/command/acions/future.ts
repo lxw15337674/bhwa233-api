@@ -20,7 +20,7 @@ function extractPrices(hq_str: string, symbol: string) {
 
     const isGrowing = currentPrice > prePrice;
     const percent = ((currentPrice - prePrice) / prePrice * 100).toFixed(2);
-    return `${name}(${symbol}): ${currentPrice} (${isGrowing ? '📈' : '��'}${percent}%)`;
+    return `${name}(${symbol}): ${currentPrice} (${isGrowing ? '📈' : '📉'}${percent}%)`;
 }
 export async function getFutureSuggest(searchText = 'XAU'): Promise<string> {
     try {
