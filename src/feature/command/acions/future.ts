@@ -53,6 +53,34 @@ export async function getFutureSuggest(searchText = 'XAU'): Promise<string> {
 
 export async function getFutureData(symbol: string): Promise<string> {
     try {
+        const symbols = symbol.split(/\s+/);  // 按空格分割多个期货代码
+        const results = await getMultipleFuturesData(symbols);
+        return results.join('\n\n');  // 用两个换行符分隔每个期货的数据，增加可读性
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            return `❌ 获取 ${symbol} 失败：${error.message}`;
+        }
+        return `❌ 获取 ${symbol} 失败：未知错误`;
+    }
+}
+
+// 新增辅助函数用于并行获取多个期货数据
+async function getMultipleFuturesData(symbols: string[]): Promise<string[]> {
+    const promises = symbols.map(async (symbol) => {
+        try {
+            return await getFutureBasicData(symbol);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                return `❌ 获取 ${symbol} 失败：${error.message}`;
+            }
+            return `❌ 获取 ${symbol} 失败：未知错误`;
+        }
+    });
+    return await Promise.all(promises);
+}
+
+export async function getFutureBasicData(symbol: string): Promise<string> {
+    try {
         symbol = await getFutureSuggest(symbol)
 
         if (!symbol)
