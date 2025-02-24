@@ -48,8 +48,6 @@ export class PageScraperService implements OnModuleInit, OnModuleDestroy {
         await page.waitForTimeout(5000);
             
         try {
-            // 等待页面加载完成
-            await page.waitForLoadState('networkidle');
             let pageTitle = '';
             try {
                 pageTitle = await page.title();

@@ -227,6 +227,13 @@ export class CommandService {
                 msg: 'hy - 获取节假日信息',
                 hasArgs: false,
             },
+            // 随机图片命令
+            // {
+            //   key: 'img',
+            //   callback: getRandomImage,
+            //   msg: 'img - 获取一张随机图片',
+            //   hasArgs: false,
+            // },
             {
                 key: 'hp',
                 callback: async (params: CommandParams) => {
