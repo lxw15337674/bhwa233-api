@@ -94,22 +94,6 @@ interface StockData {
     error_description: string; // 错误描述
 }
 
-interface SuggestionResponse {
-    data: Array<{
-        code: string;
-        [key: string]: any;
-    }>;
-    error_code: number;
-    error_description: string;
-}
-
-interface AxiosResponse<T> {
-    data: T;
-    status: number;
-    headers: any;
-    [key: string]: any;
-}
-
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json' // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json' // Replace with your actual API URL
 // 读取环境变量
@@ -265,8 +249,35 @@ function formatIndexData(quoteData: any) {
     return text;
 }
 
+// 请求的 URL
+const url = 'https://d.10jqka.com.cn/v6/time/129_IF2506/last.js';
+
+// 请求头配置
+const headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Mac MacWechat/WMPF MacWechat/3.8.7(0x13080712) UnifiedPCMacWechat(0xf264020f) XWEB/13276',
+    'xweb_xhr': '1',
+    'Sec-Fetch-Site': 'cross-site',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Dest': 'empty',
+    'Accept-Language': 'zh-CN,zh;q=0.9',
+    'Content-Type': 'application/json',
+    'Accept': '*/*',
+    'Host': 'd.10jqka.com.cn',
+    'Connection': 'keep-alive'
+};
+
+
 export async function getCNMarketIndexData() {
     try {
+        // 使用 axios 发送 GET 请求
+       const res=  await axios.get(url, { headers })
+            .then(response => {
+                console.log('请求成功:', response.data);
+            })
+            .catch(error => {
+                console.error('请求失败:', error);
+            });
+        console.log(res)
         const data = await Promise.all([
             getStockBasicData('SH000001'),
             getStockBasicData('SZ399001'),
