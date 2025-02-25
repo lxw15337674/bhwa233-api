@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { getBinanceData } from './acions/binance';
+import { getCryptoData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
 import { getFutureData } from './acions/future';
 import { getHotSpot } from './acions/stockHotSpot';
@@ -9,7 +9,6 @@ import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
 import uploadBase64Image from './acions/upload';
-import axios from 'axios';
 
 export interface CommandParams {
     args?: string,
@@ -158,7 +157,7 @@ export class CommandService {
                 hasArgs: true,
                 type: 'image'
             },
-            // 期货与数字货币
+            // 期货
             {
                 key: 'f ',
                 callback: async (params) => {
@@ -174,13 +173,14 @@ export class CommandService {
                 msg: 'f [期货代码] - 获取期货信息 例如: f XAU',
                 hasArgs: true,
             },
+            // 数字货币
             {
                 key: 'b ',
                 callback: async (params) => {
                     if (!params.args) {
                         throw new Error('请输入数字货币代码，例如: b btc');
                     }
-                    const result = await getBinanceData(params.args);
+                    const result = await getCryptoData(params.args);
                     return {
                         content: result,
                         type: 'text'
