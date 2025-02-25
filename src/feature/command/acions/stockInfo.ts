@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { convertToNumber, formatAmount } from '../../../utils';
+import { getFutureSuggest, FinancialProductType } from './future';
 
 interface Market {
     status_id: number; // 市场状态ID，2代表盘前交易
@@ -96,6 +97,8 @@ interface StockData {
 
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json' // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json' // Replace with your actual API URL
+const BD_GST_API_URL = 'https://gushitong.baidu.com/opendata'
+
 // 读取环境变量
 let Cookie = '';
 let cookieTimestamp = 0;
@@ -269,21 +272,15 @@ const headers = {
 
 export async function getCNMarketIndexData() {
     try {
-        // 使用 axios 发送 GET 请求
-       const res=  await axios.get(url, { headers })
-            .then(response => {
-                console.log('请求成功:', response.data);
-            })
-            .catch(error => {
-                console.error('请求失败:', error);
-            });
-        console.log(res)
-        const data = await Promise.all([
+        const data = (await Promise.all([
             getStockBasicData('SH000001'),
             getStockBasicData('SZ399001'),
             getStockBasicData('SZ399006')
-        ]);
-        return `${data.map(formatIndexData).join('\n\n')}`;
+        ])).map(formatIndexData);
+
+        data.push(await getGzjc())
+
+        return `${data.join('\n\n')}`;
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取市场指数失败：${error.message}`;
@@ -353,5 +350,76 @@ export async function getStockDetailData(symbol: string): Promise<string> {
         }
         return `❌ 获取 ${symbol} 详情失败：未知错误`;
     }
+}
+
+export async function getGzjc() {
+    try {
+        const futureCodes = ['IF2503', 'IF2504', 'IF2506', 'IF2509'];
+
+        const results = await Promise.all(
+            futureCodes.map(async (code) => {
+                const suggest = await getFutureSuggest(code, [FinancialProductType.FUTURES]);
+                if (!suggest) {
+                    throw new Error(`❌ 获取 ${code} 期货失败`);
+                }
+
+                const detail = await fetchStockDetailData(suggest)
+
+                return {
+                    code,
+                    price: detail?.resultData.tplData.result.minute_data.cur.price,
+                    holdingAmount: detail?.resultData.tplData.result.minute_data.pankouinfos.origin_pankou.holdingAmount,
+                }
+            })
+        );
+
+        const hs300 = await getFutureSuggest('000300', [FinancialProductType.INDEX]);
+
+        if (!hs300) {
+            throw new Error(`❌ 获取 沪深300 数据失败`);
+        }
+
+        const holdingAmountTotal = results.reduce((sum, item) => sum + Number(item.holdingAmount), 0);
+        const weightedPriceSum = results.reduce((sum, item) => sum + (item.holdingAmount / holdingAmountTotal) * item.price, 0);
+
+        const diff = Number(hs300.price) - Number(weightedPriceSum);
+
+        return `沪深300股指基差：${diff.toFixed(2)}`;
+    } catch (error) {
+        return error.message;
+    }
+}
+
+export async function fetchStockDetailData(suggest: { code: string; type: string, market: string }) {
+    // 定义资源ID映射
+    const RESOURCE_IDS = {
+        'ab': '5429',
+        'hk': '5430',
+        'us': '5431',
+        'index': '5352',
+        'foreign': '5343',
+        'uk': '5566',
+        'bk': '5782',
+        'block': '50748',
+        'futures': '51287'
+    } as const;
+
+    const response = await axios.get(BD_GST_API_URL, {
+        params: {
+            openapi: "1",
+            dspName: "iphone",
+            client: "app",
+            query: suggest.code,
+            code: suggest.code,
+            word: suggest.code,
+            resource_id: RESOURCE_IDS[suggest.type as keyof typeof RESOURCE_IDS],
+            finClientType: "pc",
+            market: suggest.market
+        }
+    })
+
+    const { data } = response
+
+    return data?.Result?.[0]?.DisplayData
 }
 

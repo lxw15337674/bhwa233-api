@@ -59,7 +59,23 @@ function extractPrices(stock: Stock) {
     return `${name}(${stock.code}): ${currentPrice} (${isGrowing ? '📈' : '📉'}${stock.ratio})`;
 }
 
-export async function getFutureSuggest(searchText = '上证指数'): Promise<string | undefined> {
+// 定义金融产品类型枚举
+export enum FinancialProductType {
+    INDEX = 'index',
+    FUTURES = 'futures',
+    STOCK = 'stock',
+    FOREIGN = 'foreign'
+}
+
+export async function getFutureSuggest(
+    searchText = '上证指数',
+    type: FinancialProductType[] = [
+        FinancialProductType.INDEX,
+        FinancialProductType.FUTURES,
+        FinancialProductType.STOCK,
+        FinancialProductType.FOREIGN
+    ]
+): Promise<Stock | undefined> {
     try {
         const response = await axios.get<SuggestData>(SUGGESTION_API_URL, {
             params: {
@@ -73,18 +89,14 @@ export async function getFutureSuggest(searchText = '上证指数'): Promise<str
         });
 
         if (response.status === 200 && response.data.Result.stock.length > 0) {
-            const foundStock = response.data.Result.stock.find(stock => {
-                return ['index', 'futures', 'stock', 'foreign'].includes(stock.type);
+            return response.data.Result.stock.find(stock => {
+                return type.includes(stock.type as FinancialProductType);
             });
-
-            if (foundStock) {
-                return extractPrices(foundStock);
-            }
         }
 
         return undefined;
     } catch (err) {
-        return `没有找到${searchText}的数据`
+        return undefined;
     }
 }
 
@@ -120,5 +132,5 @@ export async function getFutureBasicData(symbol: string): Promise<string> {
     const suggestedSymbol = await getFutureSuggest(symbol)
     if (!suggestedSymbol) throw new Error('未找到相关股票');
 
-    return suggestedSymbol;
+    return extractPrices(suggestedSymbol);
 }

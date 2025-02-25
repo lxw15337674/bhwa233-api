@@ -248,8 +248,7 @@ export class CommandService {
                 },
                 msg: 'hp - 获取命令帮助',
                 hasArgs: false,
-            },
-
+            }
         ];
 
     async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
