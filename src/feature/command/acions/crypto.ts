@@ -123,14 +123,31 @@ async function getMultipleCryptosData(symbols: string[]): Promise<string[]> {
 
 export async function getCryptoBasicData(symbol: string): Promise<string> {
     try {
-        const binanceResult = await getBinanceData(symbol)
-        if (binanceResult.success) {
-            return binanceResult.text
-        }
+        // 定义数据源优先级列表
+        const dataSources = [
+            {
+                name: 'Binance',
+                fetch: () => getBinanceData(symbol)
+            },
+            {
+                name: 'Bitget',
+                fetch: () => getBitgetData(symbol)
+            }
+            // 后续可以在这里添加更多数据源
+        ];
 
-        const bitgetResult = await getBitgetData(symbol)
-        if (bitgetResult.success) {
-            return bitgetResult.text
+        // 按优先级依次尝试获取数据
+        for (const source of dataSources) {
+            try {
+                const result = await source.fetch();
+                if (result.success) {
+                    return result.text;
+                }
+                console.warn(`${source.name} 数据获取失败，尝试下一个数据源`);
+            } catch (error) {
+                console.error(`${source.name} API 调用出错:`, error);
+                continue;
+            }
         }
 
         return `获取 ${symbol} 数据失败`
