@@ -256,11 +256,13 @@ export class CommandService {
         for (const command of this.commandMap) {
             if (msg.startsWith(command.key)) {
                 const args = command.hasArgs ? msg.slice(command.key.length).trim() : undefined;
-                console.log(`[命令执行] 命令: ${command.key}, 参数: ${args || '无'}`);
                 const result = await command.callback({
                     args,
                     key: command.key,
                 });
+
+                console.log(`\x1B[32m====================[命令执行开始]====================\x1B[0m\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n\x1B[32m====================[命令执行结束]====================\x1B[0m`)
+
                 return result;
             }
         }
