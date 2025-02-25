@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { PageScraperService } from './page-scraper.service';
 
 @Controller('page-scraper')
