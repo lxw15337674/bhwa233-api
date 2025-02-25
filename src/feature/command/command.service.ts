@@ -157,12 +157,12 @@ export class CommandService {
                 hasArgs: true,
                 type: 'image'
             },
-            // 期货
+            // 股票、期货、外汇、基金、指数集合
             {
-                key: 'f ',
+                key: 'c ',
                 callback: async (params) => {
                     if (!params.args) {
-                        throw new Error('请输入期货代码，例如: f XAU');
+                        throw new Error('请输入股票代码，例如: c 小米集团');
                     }
                     const result = await getFutureData(params.args);
                     return {
@@ -170,7 +170,7 @@ export class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 'f [期货代码] - 获取期货信息 例如: f XAU',
+                msg: 'c [股票代码] - 获取股票信息 例如: c 小米集团',
                 hasArgs: true,
             },
             // 数字货币

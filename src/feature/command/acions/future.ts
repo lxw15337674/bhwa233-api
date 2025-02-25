@@ -1,61 +1,98 @@
 import axios from "axios";
-import { decode } from "querystring";
 
-const Future_API_URL = 'http://w.sinajs.cn/' // Replace with your actual API URL
-const SUGGESTION_API_URL = 'http://suggest3.sinajs.cn/suggest/' // Replace with your actual API URL
+const SUGGESTION_API_URL = 'https://finance.pae.baidu.com/selfselect/sug'
 
-// "var hq_str_hf_XAU=\"2363.44,2356.800,2363.44,2363.79,2366.23,2354.11,15:30:00,2356.80,2356.45,0,0,0,2024-07-05,伦敦金（现货黄金）\";\n"
-function extractPrices(hq_str: string, symbol: string) {
-    const match = hq_str.match(/(?:"[^"]*")/);
-    if (!match) return `获取${symbol}数据失败`;
-
-    const data = match[0].slice(1, -1).split(',');
-    const name = data.find(item => /[\u4e00-\u9fa5]/.test(item));
-    const currentPrice = parseFloat(data[0]);
-    const prePrice = parseFloat(data[7]);
-
-    if (isNaN(currentPrice) || isNaN(prePrice)) {
-        return `${symbol}数据格式错误`;
-    }
-
-    const isGrowing = currentPrice > prePrice;
-    const percent = ((currentPrice - prePrice) / prePrice * 100).toFixed(2);
-    return `${name}(${symbol}): ${currentPrice} (${isGrowing ? '📈' : '📉'}${percent}%)`;
+interface SuggestData {
+    QueryID: string;
+    ResultCode: string;
+    Result: {
+        stock: Stock[];
+        index: any[];
+        deal_status: string;
+        stock_status: {
+            is_trend: string;
+            time_sort: string;
+        };
+        refresh_time: string;
+        labelMap: {
+            text: string;
+            ename: string;
+        }[];
+        isNew: string;
+        follow_num: string;
+    };
 }
-export async function getFutureSuggest(searchText = 'XAU'): Promise<string> {
+
+interface Stock {
+    code: string;
+    type: string;
+    market: string;
+    follow_status: string;
+    amount: string;
+    exchange: string;
+    name: string;
+    price: string;
+    increase: string;
+    ratio: string;
+    amplitudeRatio: string;
+    turnoverRatio: string;
+    holdingAmount: string;
+    volume: string;
+    capitalization: string;
+    stockStatus?: string;
+    status: string;
+    stockStatusInfo: string;
+    subType: string;
+    src_loc: string;
+    peRate: string;
+    pbRate: string;
+    sf_url: string;
+    pv: string;
+    CNYPrice: string;
+}
+
+function extractPrices(stock: Stock) {
+    const name = stock.name;
+    const currentPrice = parseFloat(stock.price);
+
+    const isGrowing = Number(stock.increase) >= 0;
+    return `${name}(${stock.code}): ${currentPrice} (${isGrowing ? '📈' : '📉'}${stock.ratio})`;
+}
+
+export async function getFutureSuggest(searchText = '上证指数'): Promise<string | undefined> {
     try {
-        const futureResponse = await axios.get(SUGGESTION_API_URL, {
+        const response = await axios.get<SuggestData>(SUGGESTION_API_URL, {
             params: {
-                type: '85,86,88',
-                key: encodeURIComponent(searchText)
-            }
+                wd: searchText,
+                skip_login: 1,
+                finClientType: 'pc'
+            },
+            headers: {
+                Host: 'finance.pae.baidu.com'
+            },
         });
-        const text = futureResponse.data.slice(18, -2)
-        if (text === '') {
-            return ''
+
+        if (response.status === 200 && response.data.Result.stock.length > 0) {
+            const foundStock = response.data.Result.stock.find(stock => {
+                return ['index', 'futures', 'stock', 'foreign'].includes(stock.type);
+            });
+
+            if (foundStock) {
+                return extractPrices(foundStock);
+            }
         }
-        const arr = text.split(',');
-        let code = arr[3];
-        const market = arr[1];
-        code = code.toUpperCase();
-        // 国内交易所
-        if (market === '85' || market === '88') {
-            code = 'nf_' + code;
-        } else if (market === '86') {
-            // 海外交易所
-            code = 'hf_' + code;
-        }
-        return code
+
+        return undefined;
     } catch (err) {
-        return `没有找到${searchText}的期货数据`
+        return `没有找到${searchText}的数据`
     }
 }
 
 export async function getFutureData(symbol: string): Promise<string> {
     try {
-        const symbols = symbol.split(/\s+/);  // 按空格分割多个期货代码
+        const symbols = symbol.split(/\s+/);  // 按空格分割多个股票代码
         const results = await getMultipleFuturesData(symbols);
-        return results.join('\n\n');  // 用两个换行符分隔每个期货的数据，增加可读性
+        return results.join('\n\n');  // 用两个换行符分隔每个股票的数据，增加可读性
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取 ${symbol} 失败：${error.message}`;
@@ -64,7 +101,7 @@ export async function getFutureData(symbol: string): Promise<string> {
     }
 }
 
-// 新增辅助函数用于并行获取多个期货数据
+// 新增辅助函数用于并行获取多个股票数据
 async function getMultipleFuturesData(symbols: string[]): Promise<string[]> {
     const promises = symbols.map(async (symbol) => {
         try {
@@ -80,37 +117,8 @@ async function getMultipleFuturesData(symbols: string[]): Promise<string[]> {
 }
 
 export async function getFutureBasicData(symbol: string): Promise<string> {
-    try {
-        symbol = await getFutureSuggest(symbol)
+    const suggestedSymbol = await getFutureSuggest(symbol)
+    if (!suggestedSymbol) throw new Error('未找到相关股票');
 
-        if (!symbol)
-            return `Failed to fetch  data for ${symbol}`
-
-        const response = await axios.get<any>(Future_API_URL, {
-            // axios 乱码解决
-            responseType: 'arraybuffer',
-            transformResponse: [
-                (data) => {
-                    const decoder = new TextDecoder('GB18030');
-                    return decoder.decode(data);
-                },
-            ],
-            params: {
-                list: symbol,
-            },
-            headers: {
-                Referer: 'https://gu.sina.cn/ft/hq/hf.php',
-            },
-        })
-
-        if (response.status === 200) {
-            return extractPrices(response.data, symbol)
-        }
-        else {
-            return `获取${symbol}的期货数据失败`
-        }
-    }
-    catch (error) {
-        return `没有找到${symbol}的期货数据`
-    }
+    return suggestedSymbol;
 }
