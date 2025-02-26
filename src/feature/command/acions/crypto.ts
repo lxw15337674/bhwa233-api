@@ -2,6 +2,7 @@ import axios from "axios";
 
 const Binance_API_URL = 'https://data-api.binance.vision/api/v3/ticker/24hr'
 const Bitget_API_URL = 'https://api.bitget.com/api/v2/spot/market/tickers'
+const Bybit_API_URL = 'https://api.bybit.com/v5/market/tickers'
 
 interface BinanceData {
     // 交易对名称，例如 BTCUSDT
@@ -88,6 +89,52 @@ interface BitgetData {
     }[];
 }
 
+interface BybitData {
+    // 返回码，0 表示成功
+    retCode: number;
+    // 返回信息
+    retMsg: string;
+    result: {
+        // 产品类型
+        category: string;
+        list: {
+            // 交易对名称
+            symbol: string;
+            // 最优买一价
+            bid1Price: string;
+            // 最优买一量
+            bid1Size: string;
+            // 最优卖一价
+            ask1Price: string;
+            // 最优卖一量
+            ask1Size: string;
+            // 最新成交价
+            lastPrice: string;
+            // 24小时前的市场价格
+            prevPrice24h: string;
+            // 24小时价格变化百分比
+            price24hPcnt: string;
+            // 24小时内最高价
+            highPrice24h: string;
+            // 24小时内最低价
+            lowPrice24h: string;
+            // 24小时成交额
+            turnover24h: string;
+            // 24小时成交量
+            volume24h: string;
+            // USD指数价格，用于计算统一账户中资产的美元价值
+            // 非抵押保证金币种返回空字符串
+            // 仅 XXX/USDT 或 XXX/USDC 类型的交易对有此值
+            usdIndexPrice: string;
+        }[];
+    };
+    // 额外返回信息
+    retExtInfo: {
+    };
+    // 时间戳
+    time: number;
+}
+
 interface Response {
     success: boolean;
     text: string;
@@ -132,6 +179,10 @@ export async function getCryptoBasicData(symbol: string): Promise<string> {
             {
                 name: 'Bitget',
                 fetch: () => getBitgetData(symbol)
+            },
+            {
+                name: 'Bybit',
+                fetch: () => getBybitData(symbol)
             }
             // 后续可以在这里添加更多数据源
         ];
@@ -158,22 +209,23 @@ export async function getCryptoBasicData(symbol: string): Promise<string> {
 
 export async function getBitgetData(symbol: string) {
     try {
-        console.log(`${symbol.toLocaleUpperCase()}USDT`,)
+        const formatSymbol = `${symbol.toLocaleUpperCase()}USDT`;
+
         const response = await axios.get<BitgetData>(Bitget_API_URL, {
             params: {
-                symbol: `${symbol.toLocaleUpperCase()}USDT`,
+                symbol: formatSymbol,
             },
         })
 
         if (response.status === 200 && response.data.code == '00000') {
             const { data } = response
 
-            const result = data.data.find(item => item.symbol == `${symbol.toLocaleUpperCase()}USDT`)
+            const result = data.data.find(item => item.symbol == formatSymbol)
 
             if (!result) {
                 return {
                     success: false,
-                    text: `未找到 ${symbol.toLocaleUpperCase()}USDT 的数据`
+                    text: `未找到 ${symbol} 的数据`
                 }
             }
 
@@ -201,10 +253,11 @@ export async function getBitgetData(symbol: string) {
 
 export async function getBinanceData(symbol: string): Promise<Response> {
     try {
-        console.log(`${symbol.toLocaleUpperCase()}USDT`,)
+        const formatSymbol = `${symbol.toLocaleUpperCase()}USDT`;
+
         const response = await axios.get<BinanceData>(Binance_API_URL, {
             params: {
-                symbol: `${symbol.toLocaleUpperCase()}USDT`,
+                symbol: formatSymbol,
             },
         })
 
@@ -212,6 +265,49 @@ export async function getBinanceData(symbol: string): Promise<Response> {
             const { data } = response
             const price = Number(data.lastPrice)
             const percent = Number(data.priceChangePercent).toFixed(2)
+            const isGrowing = Number(percent) > 0;
+            const text = `${data.symbol}: $${price} (${isGrowing ? '📈' : '📉'}${percent}%)`
+            return {
+                success: true,
+                text
+            }
+        } else {
+            return {
+                success: false,
+                text: `获取 ${symbol} 数据失败: ${response.status}`
+            }
+        }
+    } catch (error) {
+        return {
+            success: false,
+            text: `获取 ${symbol} 数据失败: ${error.message}`
+        }
+    }
+}
+
+export async function getBybitData(symbol: string): Promise<Response> {
+    try {
+        const formatSymbol = `${symbol.toLocaleUpperCase()}USDT`;
+
+        const response = await axios.get<BybitData>(Bybit_API_URL, {
+            params: {
+                category: 'spot',
+                symbol: formatSymbol,
+            },
+        })
+
+        if (response.status === 200 && response.data.retCode == 0) {
+            const data = response.data.result.list.find(item => item.symbol == formatSymbol)
+
+            if (!data) {
+                return {
+                    success: false,
+                    text: `未找到 ${symbol} 的数据`
+                }
+            }
+
+            const price = Number(data.lastPrice)
+            const percent = (Number(data.price24hPcnt) * 100).toFixed(2)
             const isGrowing = Number(percent) > 0;
             const text = `${data.symbol}: $${price} (${isGrowing ? '📈' : '📉'}${percent}%)`
             return {
