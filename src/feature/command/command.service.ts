@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { getCryptoData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
-import { getFutureData } from './acions/future';
+import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
 import { getHotSpot } from './acions/stockHotSpot';
 import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getUSMarketIndexData } from './acions/stockInfo';
 import { getStockSummary } from './acions/stockSummary';
@@ -164,13 +164,28 @@ export class CommandService {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: c 小米集团');
                     }
-                    const result = await getFutureData(params.args);
+                    const result = await getStockNewData(params.args);
                     return {
                         content: result,
                         type: 'text'
                     };
                 },
                 msg: 'c [股票代码] - 获取股票信息 例如: c 小米集团',
+                hasArgs: true,
+            },
+            {
+                key: 'cd ',
+                callback: async (params) => {
+                    if (!params.args) {
+                        throw new Error('请输入股票代码，例如: cd 小米集团');
+                    }
+                    const result = await getStockDetailNewData(params.args);
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'cd [股票代码] - 获取股票详细信息 例如: cd 小米集团',
                 hasArgs: true,
             },
             // 数字货币

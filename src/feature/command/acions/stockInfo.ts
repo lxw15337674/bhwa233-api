@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { convertToNumber, formatAmount } from '../../../utils';
-import { getFutureSuggest, FinancialProductType } from './future';
+import { getStockSuggest, FinancialProductType, fetchStockDetailData } from './stock';
 
 interface Market {
     status_id: number; // 市场状态ID，2代表盘前交易
@@ -252,24 +252,6 @@ function formatIndexData(quoteData: any) {
     return text;
 }
 
-// 请求的 URL
-const url = 'https://d.10jqka.com.cn/v6/time/129_IF2506/last.js';
-
-// 请求头配置
-const headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Mac MacWechat/WMPF MacWechat/3.8.7(0x13080712) UnifiedPCMacWechat(0xf264020f) XWEB/13276',
-    'xweb_xhr': '1',
-    'Sec-Fetch-Site': 'cross-site',
-    'Sec-Fetch-Mode': 'cors',
-    'Sec-Fetch-Dest': 'empty',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Content-Type': 'application/json',
-    'Accept': '*/*',
-    'Host': 'd.10jqka.com.cn',
-    'Connection': 'keep-alive'
-};
-
-
 export async function getCNMarketIndexData() {
     try {
         const data = (await Promise.all([
@@ -358,7 +340,7 @@ export async function getGzjc() {
 
         const results = await Promise.all(
             futureCodes.map(async (code) => {
-                const suggest = await getFutureSuggest(code, [FinancialProductType.FUTURES]);
+                const suggest = await getStockSuggest(code, [FinancialProductType.FUTURES]);
                 if (!suggest) {
                     throw new Error(`❌ 获取 ${code} 期货失败`);
                 }
@@ -367,20 +349,20 @@ export async function getGzjc() {
 
                 return {
                     code,
-                    price: detail?.resultData.tplData.result.minute_data.cur.price,
-                    holdingAmount: detail?.resultData.tplData.result.minute_data.pankouinfos.origin_pankou.holdingAmount,
+                    price: detail.resultData.tplData.result.minute_data?.cur.price,
+                    holdingAmount: detail.resultData.tplData.result.minute_data?.pankouinfos.origin_pankou.holdingAmount,
                 }
             })
         );
 
-        const hs300 = await getFutureSuggest('000300', [FinancialProductType.INDEX]);
+        const hs300 = await getStockSuggest('000300', [FinancialProductType.INDEX]);
 
         if (!hs300) {
             throw new Error(`❌ 获取 沪深300 数据失败`);
         }
 
         const holdingAmountTotal = results.reduce((sum, item) => sum + Number(item.holdingAmount), 0);
-        const weightedPriceSum = results.reduce((sum, item) => sum + (item.holdingAmount / holdingAmountTotal) * item.price, 0);
+        const weightedPriceSum = results.reduce((sum, item) => sum + ((Number(item.holdingAmount) || 0) / holdingAmountTotal) * (Number(item.price) || 0), 0);
 
         const diff = Number(hs300.price) - Number(weightedPriceSum);
 
@@ -388,38 +370,5 @@ export async function getGzjc() {
     } catch (error) {
         return error.message;
     }
-}
-
-export async function fetchStockDetailData(suggest: { code: string; type: string, market: string }) {
-    // 定义资源ID映射
-    const RESOURCE_IDS = {
-        'ab': '5429',
-        'hk': '5430',
-        'us': '5431',
-        'index': '5352',
-        'foreign': '5343',
-        'uk': '5566',
-        'bk': '5782',
-        'block': '50748',
-        'futures': '51287'
-    } as const;
-
-    const response = await axios.get(BD_GST_API_URL, {
-        params: {
-            openapi: "1",
-            dspName: "iphone",
-            client: "app",
-            query: suggest.code,
-            code: suggest.code,
-            word: suggest.code,
-            resource_id: RESOURCE_IDS[suggest.type as keyof typeof RESOURCE_IDS],
-            finClientType: "pc",
-            market: suggest.market
-        }
-    })
-
-    const { data } = response
-
-    return data?.Result?.[0]?.DisplayData
 }
 
