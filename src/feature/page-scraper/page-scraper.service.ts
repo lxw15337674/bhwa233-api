@@ -56,9 +56,8 @@ export class PageScraperService implements OnModuleInit, OnModuleDestroy {
                 }
             } catch (titleError) {
                 console.error('Error getting page title:', titleError);
-                pageTitle = await page.$eval('h1', (el) => el.textContent) || '';
+                pageTitle = '';
             }
-
             const content = await page.content();
             return {
                 title: pageTitle,
