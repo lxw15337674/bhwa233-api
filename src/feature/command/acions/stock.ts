@@ -77,98 +77,7 @@ export interface StockDetail {
                         stockType?: string;
                         foreign_key?: string;
                         releaseNotes?: string;
-                        minute_data?: {
-                            priceinfo: {
-                                time: string;
-                                price: string;
-                                ratio: string;
-                                increase: string;
-                                volume: string;
-                                avgPrice: string;
-                                amount: string;
-                                timeKey: string;
-                                datetime: string;
-                                oriAmount: string;
-                                show: string;
-                            }[];
-                            pankouinfos: {
-                                indicatorTitle: string;
-                                indicatorUrl: string;
-                                list: {
-                                    ename: string;
-                                    name: string;
-                                    value: string;
-                                    status?: string;
-                                    helpIcon?: string;
-                                }[];
-                                origin_pankou: {
-                                    open: string;
-                                    preClose: string;
-                                    volume: string;
-                                    turnoverRatio: string;
-                                    high: string;
-                                    low: string;
-                                    limitUp: string;
-                                    limitDown: string;
-                                    inside: string;
-                                    outside: string;
-                                    amount: string;
-                                    amplitudeRatio: string;
-                                    weibiRatio: string;
-                                    volumeRatio: string;
-                                    currencyValue: string;
-                                    capitalization: string;
-                                    peratio: string;
-                                    lyr: string;
-                                    bvRatio: string;
-                                    perShareEarn: string;
-                                    netAssetsPerShare: string;
-                                    circulatingCapital: string;
-                                    totalShareCapital: string;
-                                    priceLimit: string;
-                                    w52_low: string;
-                                    w52_high: string;
-                                    expire_date: string;
-                                    holdingAmount: string;
-                                    prevSettlement: string;
-                                    settlement: string;
-                                    amountDelta: string;
-                                    currentPrice: string;
-                                }
-                            };
-                            outMarketInfo: {
-                                type: string;
-                                price: string;
-                                increase: string;
-                                ratio: string;
-                                time: string;
-                            };
-                            basicinfos: {
-                                exchange: string;
-                                code: string;
-                                name: string;
-                                stockStatus: string;
-                                stock_market_code: string;
-                            };
-                            provider: string;
-                            cur: {
-                                time: string;
-                                price: string;
-                                ratio: string;
-                                increase: string;
-                                volume: string;
-                                avgPrice: string;
-                                amount: string;
-                                timeKey: string;
-                                datetime: string;
-                                oriAmount: string;
-                                show: string;
-                                unit: string;
-                            };
-                            upDownStatus: string;
-                            isKc: string;
-                            adr_info: any[];
-                        };
+                        minute_data?: MinuteData;
                         market?: string;
                         selectTab?: string;
                     };
@@ -176,6 +85,101 @@ export interface StockDetail {
             };
         };
     }[];
+}
+
+interface MinuteData {
+    priceinfo: {
+        time: string;
+        price: string;
+        ratio: string;
+        increase: string;
+        volume: string;
+        avgPrice: string;
+        amount: string;
+        timeKey: string;
+        datetime: string;
+        oriAmount: string;
+        show: string;
+    }[];
+    pankouinfos: {
+        indicatorTitle: string;
+        indicatorUrl: string;
+        list: {
+            ename: string;
+            name: string;
+            value: string;
+            status?: string;
+            helpIcon?: string;
+        }[];
+        origin_pankou: {
+            open: string;
+            preClose: string;
+            volume: string;
+            turnoverRatio: string;
+            high: string;
+            low: string;
+            limitUp: string;
+            limitDown: string;
+            inside: string;
+            outside: string;
+            amount: string;
+            amplitudeRatio: string;
+            weibiRatio: string;
+            volumeRatio: string;
+            currencyValue: string;
+            capitalization: string;
+            peratio: string;
+            lyr: string;
+            bvRatio: string;
+            perShareEarn: string;
+            netAssetsPerShare: string;
+            circulatingCapital: string;
+            totalShareCapital: string;
+            priceLimit: string;
+            w52_low: string;
+            w52_high: string;
+            expire_date: string;
+            holdingAmount: string;
+            prevSettlement: string;
+            settlement: string;
+            amountDelta: string;
+            currentPrice: string;
+        }
+    };
+    outMarketInfo: outMarketInfo;
+    basicinfos: {
+        exchange: string;
+        code: string;
+        name: string;
+        stockStatus: string;
+        stock_market_code: string;
+    };
+    provider: string;
+    cur: {
+        time: string;
+        price: string;
+        ratio: string;
+        increase: string;
+        volume: string;
+        avgPrice: string;
+        amount: string;
+        timeKey: string;
+        datetime: string;
+        oriAmount: string;
+        show: string;
+        unit: string;
+    };
+    upDownStatus: string;
+    isKc: string;
+    adr_info: any[];
+}
+
+interface outMarketInfo {
+    type: string;
+    price: string;
+    increase: string;
+    ratio: string;
+    time: string;
 }
 
 // 定义金融产品类型枚举
@@ -247,6 +251,30 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
     return await Promise.all(promises);
 }
 
+function formatOutMarketInfo(data: MinuteData): string {
+    const { outMarketInfo } = data
+
+    const outMarketPrice = parseFloat(outMarketInfo.price);
+    const outMarketIsGrowing = parseFloat(outMarketInfo.increase) >= 0;
+    const typeMap: Record<string, string> = {
+        '1': '盘前',
+        '2': '盘后'
+    };
+    const type = typeMap[outMarketInfo.type] || '';
+
+    return `${type}：${outMarketPrice} (${outMarketIsGrowing ? '📈' : '📉'}${outMarketInfo.ratio})`
+}
+
+function formatBasicInfo(data: MinuteData) {
+    const { basicinfos, cur } = data
+
+    const name = basicinfos.name;
+    const currentPrice = parseFloat(cur.price);
+    const isGrowing = parseFloat(cur.increase) >= 0;
+
+    return `${name}(${basicinfos.code}): ${currentPrice} (${isGrowing ? '📈' : '📉'}${cur.ratio})`
+}
+
 export async function getStockBasicData(symbol: string): Promise<string> {
     const suggestedSymbol = await getStockSuggest(symbol)
     if (!suggestedSymbol) throw new Error('未找到相关股票');
@@ -256,27 +284,15 @@ export async function getStockBasicData(symbol: string): Promise<string> {
     const data = result.resultData.tplData.result.minute_data
     if (!data) throw new Error('未找到相关股票');
 
-    const { basicinfos, cur, outMarketInfo } = data
+    const text: string[] = []
 
-    const name = basicinfos.name;
-    const currentPrice = parseFloat(cur.price);
-    const isGrowing = parseFloat(cur.increase) >= 0;
-    let text = `${name}(${basicinfos.code}): ${currentPrice} (${isGrowing ? '📈' : '📉'}${cur.ratio})`
+    text.push(formatBasicInfo(data))
 
-    if (outMarketInfo) {
-        const outMarketPrice = parseFloat(outMarketInfo.price);
-        const outMarketIsGrowing = parseFloat(outMarketInfo.increase) >= 0;
-        const outMarketTrend = outMarketIsGrowing ? '📈' : '📉';
-        const typeMap: Record<string, string> = {
-            '1': '盘前',
-            '2': '盘后'
-        };
-        const type = typeMap[outMarketInfo.type] || '';
-
-        text += `\n${type}：${outMarketPrice} (${outMarketTrend}${outMarketInfo.ratio})`
+    if (data.outMarketInfo) {
+        text.push(formatOutMarketInfo(data))
     }
 
-    return text;
+    return text.join('\n');
 }
 
 export async function getStockDetailData(symbol: string) {
@@ -288,33 +304,20 @@ export async function getStockDetailData(symbol: string) {
     const data = result.resultData.tplData.result.minute_data
     if (!data) throw new Error('未找到相关股票');
 
-    const { pankouinfos, basicinfos, cur, outMarketInfo } = data
-    const pankouData: string[] = [];
+    const text: string[] = [];
 
-    pankouData.push(`${basicinfos.name}(${basicinfos.code})`)
+    text.push(formatBasicInfo(data))
 
-    const isGrowing = parseFloat(cur.increase) >= 0;
-    const trend = isGrowing ? '📈' : '📉';
-    pankouData.push(`现价：${cur.price} ${trend} ${cur.ratio}`)
-
-    if (outMarketInfo) {
-        const outMarketPrice = parseFloat(outMarketInfo.price);
-        const outMarketIsGrowing = parseFloat(outMarketInfo.increase) >= 0;
-        const outMarketTrend = outMarketIsGrowing ? '📈' : '📉';
-        const typeMap: Record<string, string> = {
-            '1': '盘前',
-            '2': '盘后'
-        };
-        const type = typeMap[outMarketInfo.type] || '';
-
-        pankouData.push(`${type}：${outMarketPrice} (${outMarketTrend}${outMarketInfo.ratio})`)
+    if (data.outMarketInfo) {
+        text.push(formatOutMarketInfo(data))
     }
 
+    const { pankouinfos } = data
     pankouinfos.list.forEach(item => {
-        pankouData.push(`${item.name}: ${item.value}`)
+        text.push(`${item.name}: ${item.value}`)
     })
 
-    return pankouData.join('\n');
+    return text.join('\n');
 }
 
 export async function fetchStockDetailData(suggest: { code: string; type: string, market: string }) {
