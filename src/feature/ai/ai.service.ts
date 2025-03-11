@@ -35,7 +35,7 @@ export class AiService {
     async generateResponse(
         body: AIRequest
     ) {
-        const { prompt, model = process.env.AI_MODE ??'deepseek-chat' , rolePrompt = aiPrompt } = body;
+        const { prompt, model = process.env.AI_MODE ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;
         try {
             const completion = await this.openai.chat.completions.create({
                 messages: [{
@@ -46,7 +46,6 @@ export class AiService {
                 }],
                 model,
             });
-            console.log('Generated response:', completion);
             return completion.choices[0].message.content ?? '';
         } catch (error) {
             console.error('Error generating response:', error);
