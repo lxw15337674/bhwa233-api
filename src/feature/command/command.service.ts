@@ -8,7 +8,8 @@ import { getStockSummary } from './acions/stockSummary';
 import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
-import uploadBase64Image from './acions/upload';
+import uploadBase64Image from '../../utils/upload';
+import { textToImage } from '../../utils/textToImage';
 
 export interface CommandParams {
     args?: string,
@@ -41,7 +42,7 @@ export class CommandService {
             {
                 key: 'a ',
                 callback: async (params) => {
-                    const content = await this.aiService.generateResponse({ prompt: params?.args ?? '', rolePrompt : '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔' });
+                    const content = await this.aiService.generateResponse({ prompt: params?.args ?? '', rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔' });
                     return {
                         content,
                         type: 'text'
@@ -256,13 +257,30 @@ export class CommandService {
                         .filter(command => command.enable !== false)
                         .map(command => command.msg)
                         .join('\n');
-                    return {
-                        content: `命令列表：\n${commandMsg}\n项目地址：https://github.com/lxw15337674/weixin-robot`,
-                        type: 'text'
-                    };
+
+                    const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
+                    try {
+                        const imageUrl = await textToImage(content, {
+                            title: '命令帮助',
+                            fontSize: 16,
+                            lineHeight: 22
+                        });
+
+                        return {
+                            content: imageUrl,
+                            type: 'image'
+                        };
+                    } catch (error) {
+                        console.error('Error creating help image:', error);
+                        return {
+                            content,
+                            type: 'text'
+                        };
+                    }
                 },
                 msg: 'hp - 获取命令帮助',
                 hasArgs: false,
+                type: 'image'
             }
         ];
 
