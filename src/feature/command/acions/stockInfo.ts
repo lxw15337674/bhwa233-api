@@ -97,7 +97,6 @@ interface StockData {
 
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json' // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json' // Replace with your actual API URL
-const BD_GST_API_URL = 'https://gushitong.baidu.com/opendata'
 
 // 读取环境变量
 let Cookie = '';
