@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { convertToNumber, formatAmount } from '../../../utils';
 import { getStockSuggest, FinancialProductType, fetchStockDetailData } from './stock';
-import { textToImage } from '../../../utils/textToImage';
 
 interface Market {
     status_id: number; // 市场状态ID，2代表盘前交易
@@ -223,15 +222,8 @@ export async function getStockData(symbol: string): Promise<string> {
         const symbols = symbol.split(/\s+/);  // 按空格分割多个股票代码
         const results = await retryWithNewToken(() => getMultipleStocksData(symbols));
         const textContent = results.join('\n');  // 用换行符分隔每个股票的数据
-
-        // Convert text to image
         try {
-            const imageUrl = await textToImage(textContent, {
-                title: '股票信息',
-                fontSize: 16,
-                lineHeight: 22
-            });
-            return imageUrl;
+            return textContent
         } catch (error) {
             console.error('Error converting stock data to image:', error);
             // Fallback to text if image creation fails
