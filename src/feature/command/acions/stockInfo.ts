@@ -201,8 +201,7 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
             const { quote, market } = await getStockBasicData(symbol);
             const isGrowing = quote.percent > 0;
             const trend = isGrowing ? '📈' : '📉';
-            let text = `${quote?.name}(${quote?.symbol}): ${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%`;
-
+            let text = `${quote?.name}(${quote?.symbol}): ${quote.current} (${trend}${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%)`;
             if (quote.current_ext && quote.percent_ext && quote.current !== quote.current_ext && market.status_id !== 5) {
                 const preIsGrowing = quote.percent_ext > 0;
                 const preTrend = preIsGrowing ? '📈' : '📉';
@@ -223,7 +222,7 @@ export async function getStockData(symbol: string): Promise<string> {
     try {
         const symbols = symbol.split(/\s+/);  // 按空格分割多个股票代码
         const results = await retryWithNewToken(() => getMultipleStocksData(symbols));
-        return results.join('\n\n');  // 用两个换行符分隔每个股票的数据，增加可读性
+        return results.join('\n');  // 用两个换行符分隔每个股票的数据，增加可读性
     } catch (error: unknown) {
         if (error instanceof Error) {
             return `❌ 获取 ${symbol} 失败：${error.message}`;
