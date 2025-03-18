@@ -13,10 +13,6 @@ COPY package*.json ./
 # Install the application dependencies
 RUN pnpm install
 
-# Install Playwright browsers and dependencies
-RUN npx playwright install chromium --with-deps
-RUN npx playwright install-deps chromium
-
 # Copy the rest of the application files
 COPY . .
 
