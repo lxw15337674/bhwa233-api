@@ -6,7 +6,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     cors: true,
   });
-  app.setGlobalPrefix('api');
   const config = new DocumentBuilder()
     .setTitle('工具文档')
     .setDescription('The cats API description')
