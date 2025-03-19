@@ -260,6 +260,12 @@ export class CommandService {
 
                     const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
                     try {
+                        if (params.args === 'text') {
+                            return {
+                                content,
+                                type: 'text'
+                            };
+                        }
                         const imageUrl = await textToImage(content, {
                             title: '命令帮助',
                             fontSize: 16,
@@ -279,7 +285,7 @@ export class CommandService {
                     }
                 },
                 msg: 'hp - 获取命令帮助',
-                hasArgs: false,
+                hasArgs: true,
                 type: 'image'
             }
         ];
