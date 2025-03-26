@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { Injectable } from '@nestjs/common';
-import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { AIRequest } from './type';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
@@ -15,24 +15,37 @@ export interface BookmarkSummary {
 @Injectable()
 export class AiService {
     private openai: OpenAI;
-    private googleModel: GenerativeModel;
+    private googleAI: GoogleGenAI;
 
     constructor() {
         this.openai = new OpenAI({
             baseURL: process.env.AI_BASE_URL,
             apiKey: process.env.AI_API_KEY,
         });
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-        this.googleModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro-exp-03-25" });
+        this.googleAI = new GoogleGenAI({
+            apiKey: process.env.GOOGLE_API_KEY
+        });
     }
 
     async genGoogleResponse(prompt: string) {
         try {
-            const result = await this.googleModel.generateContent(prompt);
-            const text = result.response.text();
-            return text;
+            const startTime = new Date();
+            console.info(`[AI Service] Google AI request started at: ${startTime.toISOString()}`);
+
+            const options = {
+                model: 'gemini-2.5-pro-exp-03-25',
+                contents: prompt,
+            };
+
+            const response = await this.googleAI.models.generateContent(options);
+
+            const endTime = new Date();
+            const duration = endTime.getTime() - startTime.getTime();
+            console.info(`[AI Service] Google AI response completed duration: ${duration}ms`);
+
+            return response.text;
         } catch (error) {
-            console.error('Error generating Google AI response:', error);
+            console.error('[AI Service] Error generating Google AI response:', error);
             return '获取Google AI回答失败';
         }
     }
@@ -42,6 +55,9 @@ export class AiService {
     ) {
         const { prompt, model = process.env.AI_MODE ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;
         try {
+            const startTime = new Date();
+            console.info(`[AI Service] OpenAI request started at: ${startTime.toISOString()}`);
+
             const completion = await this.openai.chat.completions.create({
                 messages: [{
                     role: "system", content: rolePrompt
@@ -51,9 +67,14 @@ export class AiService {
                 }],
                 model,
             });
+
+            const endTime = new Date();
+            const duration = endTime.getTime() - startTime.getTime();
+            console.info(`[AI Service] OpenAI response completed at: ${endTime.toISOString()}, duration: ${duration}ms`);
+
             return completion.choices[0].message.content ?? '';
         } catch (error) {
-            console.error('Error generating response:', error);
+            console.error('[AI Service] Error generating OpenAI response:', error);
             return  '获取AI回答失败';
         }
     }
