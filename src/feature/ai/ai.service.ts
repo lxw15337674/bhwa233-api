@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { Injectable } from '@nestjs/common';
-import { GenerativeModel, GoogleGenerativeAI }  from"@google/generative-ai";
+import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
 import { AIRequest } from './type';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
@@ -23,13 +23,18 @@ export class AiService {
             apiKey: process.env.AI_API_KEY,
         });
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-        this.googleModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        this.googleModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro-exp-03-25" });
     }
 
     async genGoogleResponse(prompt: string) {
-        const result = await this.googleModel.generateContent(prompt);
-        const text = result.response.text()
-        return text;
+        try {
+            const result = await this.googleModel.generateContent(prompt);
+            const text = result.response.text();
+            return text;
+        } catch (error) {
+            console.error('Error generating Google AI response:', error);
+            return '获取Google AI回答失败';
+        }
     }
 
     async generateResponse(
