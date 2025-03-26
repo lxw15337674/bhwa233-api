@@ -360,7 +360,7 @@ export async function getBybitData(symbol: string): Promise<Response> {
 
 export async function getGateioData(symbol: string): Promise<Response> {
   try {
-    const formatSymbol = `${symbol.toLocaleUpperCase()}USDT`;
+    const formatSymbol = `${symbol.toLocaleUpperCase()}_USDT`;
 
     const response = await axios.get<GateioData>(
       Gateio_API_URL + '/' + formatSymbol,
@@ -370,7 +370,7 @@ export async function getGateioData(symbol: string): Promise<Response> {
       const { data } = response;
 
       const price = Number(data.data.rate);
-      const percent = (Number(data.data.change) * 100).toFixed(2);
+      const percent = Number(data.data.change).toFixed(2);
       const isGrowing = Number(percent) > 0;
       const text = `${formatSymbol}: $${price} (${isGrowing ? '📈' : '📉'}${percent}%)`;
       return {
