@@ -372,7 +372,7 @@ export async function getGateioData(symbol: string): Promise<Response> {
       const price = Number(data.data.rate);
       const percent = Number(data.data.change).toFixed(2);
       const isGrowing = Number(percent) > 0;
-      const text = `${formatSymbol}: $${price} (${isGrowing ? '📈' : '📉'}${percent}%)`;
+      const text = `${symbol.toLocaleUpperCase()}USDT: $${price} (${isGrowing ? '📈' : '📉'}${percent}%)`;
       return {
         success: true,
         text,
