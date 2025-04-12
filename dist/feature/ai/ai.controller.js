@@ -22,6 +22,9 @@ let AiController = class AiController {
     constructor(aiService) {
         this.aiService = aiService;
     }
+    async get() {
+        return 'Hello ai';
+    }
     async chat(body) {
         return this.aiService.generateResponse(body);
     }
@@ -30,6 +33,13 @@ let AiController = class AiController {
     }
 };
 exports.AiController = AiController;
+__decorate([
+    (0, common_1.Get)(''),
+    openapi.ApiResponse({ status: 200, type: String }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AiController.prototype, "get", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Generate AI response from prompt' }),
     (0, swagger_1.ApiBody)({ type: type_1.AIRequest }),
