@@ -4,7 +4,6 @@
     "outputDirectory": "dist",
     "devCommand": "pnpm start:dev",
     "installCommand": "pnpm install",
-    "framework": "nestjs",
     "regions": ["iad1"],
     "routes": [
         {
