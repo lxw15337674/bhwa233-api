@@ -10,13 +10,5 @@
   },
   "generateOptions": {
     "spec": false
-  },
-  "projects": {
-    "dev": {
-      "compilerOptions": {
-        "builder": "swc",
-        "typeCheck": false
-      }
-    }
   }
 }
