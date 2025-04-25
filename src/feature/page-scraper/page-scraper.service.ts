@@ -37,7 +37,7 @@ export class PageScraperService implements OnModuleInit, OnModuleDestroy {
         const mobileContext = await this.browser.newContext({
             viewport: { width: 375, height: 667 },
             isMobile: true,
-            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1',
+            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/135.0.0.0',
             locale: 'zh-CN',
             timezoneId: 'Asia/Shanghai',
         });
