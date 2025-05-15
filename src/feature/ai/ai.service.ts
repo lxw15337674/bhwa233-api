@@ -33,7 +33,7 @@ export class AiService {
             console.info(`[AI Service] Google AI request started at: ${startTime.toISOString()}`);
 
             const options = {
-                model: 'gemini-2.5-pro-exp-03-25',
+                model: 'gemini-2.5-flash-preview-04-17',
                 contents: prompt,
             };
 
