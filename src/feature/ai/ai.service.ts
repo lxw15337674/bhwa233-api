@@ -4,13 +4,6 @@ import { AIRequest } from './type';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
 
-export interface BookmarkSummary {
-    title: string;
-    summary: string;
-    tags: string[];
-    image?: string;
-}
-
 @Injectable()
 export class AiService {
     private openai: OpenAI;
@@ -38,7 +31,6 @@ export class AiService {
                 }],
                 model,
             });
-
             const endTime = new Date();
             const duration = endTime.getTime() - startTime.getTime();
             console.info(`[AI Service] OpenAI response completed at: ${endTime.toISOString()}, duration: ${duration}ms`);
