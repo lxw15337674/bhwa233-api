@@ -1,15 +1,16 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { PageScraperService } from './page-scraper.service';
+import { ScrapeUrlDto } from './dto/scrape-url.dto';
 
 @Controller('page-scraper')
 export class PageScraperController {
     constructor(private readonly pageScraperService: PageScraperService) {}
 
-    @Get('content')
-    async getPageContent(@Query('url') url: string) {
-        const content = await this.pageScraperService.getPageContent(url);
+    @Post('')
+    async getPageContent(@Body() scrapeUrlDto: ScrapeUrlDto) {
+        const content = await this.pageScraperService.getPageContent(scrapeUrlDto.url);
         return {
             ...content,
         };
     }
-}
+}  
