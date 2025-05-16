@@ -11,8 +11,4 @@ export class AiController {
         return this.aiService.generateResponse(body);
     }
 
-    @Post('google-chat')
-    async googleChat(@Body() body: { prompt: string }) {
-        return this.aiService.genGoogleResponse(body.prompt);
-    }
 }
