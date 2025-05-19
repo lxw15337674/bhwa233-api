@@ -29,6 +29,7 @@
     "@nestjs/platform-socket.io": "^10.4.17",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/websockets": "^10.4.17",
+    "@tavily/core": "^0.5.2",
     "axios": "^1.9.0",
     "class-transformer": "^0.5.1",
     "dayjs": "^1.11.13",
@@ -37,7 +38,7 @@
     "openai": "^4.98.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "sharp": "^0.33.5",
+    "sharp": "^0.34.1",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
@@ -84,5 +85,10 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp"
+    ]
   }
 }
