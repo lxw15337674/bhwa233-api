@@ -25,14 +25,4 @@ export class AiController {
         return this.aiService.generateResponse(body);
     }
 
-    @ApiOperation({ summary: 'Generate Google AI response' })
-    @ApiBody({ type: GoogleChatRequest })
-    @ApiResponse({ 
-        status: 200, 
-        description: 'Returns the Google AI generated response'
-    })
-    @Post('google-chat')
-    async googleChat(@Body() body: GoogleChatRequest) {
-        return this.aiService.genGoogleResponse(body.prompt);
-    }
 }
