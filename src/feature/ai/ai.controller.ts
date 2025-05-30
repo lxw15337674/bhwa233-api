@@ -1,6 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AiService } from './ai.service';
-import { AIRequest } from './type';
+import { AIRequest, WebSearchRequest } from './type';
 
 @Controller('ai')
 export class AiController {
@@ -11,4 +11,8 @@ export class AiController {
         return this.aiService.generateResponse(body);
     }
 
+    @Post('search')
+    async webSearch(@Body() body: WebSearchRequest) {
+        return this.aiService.generateResponseWithWebSearch(body);
+    }
 }

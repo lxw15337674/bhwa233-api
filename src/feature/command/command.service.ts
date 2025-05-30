@@ -5,7 +5,6 @@ import { getStockData as getStockNewData, getStockDetailData as getStockDetailNe
 import { getHotSpot } from './acions/stockHotSpot';
 import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getUSMarketIndexData } from './acions/stockInfo';
 import { getStockSummary } from './acions/stockSummary';
-import { StockMarketService } from '../stock-market/stock-market.service';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
 import uploadBase64Image from '../../utils/upload';
@@ -26,7 +25,6 @@ export interface Command {
 @Injectable()
 export class CommandService {
     constructor(
-        private readonly stockMarketService: StockMarketService,
         private readonly aiService: AiService,
     ) { }
 
@@ -129,34 +127,6 @@ export class CommandService {
                 },
                 msg: 'dp - 获取大盘市场信息，包括涨跌家数、板块概览等',
                 hasArgs: false,
-            },
-            {
-                key: 'm',
-                callback: async (params) => {
-                    if (!params.args || params.args === 'dp') {
-                        const imageData = await this.stockMarketService.getYuntuStockMap();
-                        const src = await uploadBase64Image(imageData);
-                        return {
-                            content: src,
-                            type: 'image'
-                        };
-                    }
-
-                    const [market, type] = params.args.split(' ');
-                    if (!['cn', 'hk', 'us'].includes(market)) {
-                        throw new Error('市场类型无效，请使用: cn (A股) 或 hk (港股) 或 us (美股)');
-                    }
-
-                    const imageData = await this.stockMarketService.getFutuStockMap(market, type);
-                    const src = await uploadBase64Image(imageData);
-                    return {
-                        content: src,
-                        type: 'image'
-                    };
-                },
-                msg: 'm [市场] [类型] - 获取热力图\n  m - 获取云图大盘热力图\n  m cn/hk/us hy/gu - 获取富途热力图 (hy:行业图 gu:个股图)',
-                hasArgs: true,
-                type: 'image'
             },
             // 股票、期货、外汇、基金、指数集合
             {
