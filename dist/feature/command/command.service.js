@@ -19,7 +19,6 @@ const stockInfo_1 = require("./acions/stockInfo");
 const stockSummary_1 = require("./acions/stockSummary");
 const weibo_1 = require("./acions/weibo");
 const ai_service_1 = require("../ai/ai.service");
-const textToImage_1 = require("../../utils/textToImage");
 let CommandService = class CommandService {
     constructor(aiService) {
         this.aiService = aiService;
@@ -204,20 +203,9 @@ let CommandService = class CommandService {
                         .join('\n');
                     const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
                     try {
-                        if (params.args === 'text') {
-                            return {
-                                content,
-                                type: 'text'
-                            };
-                        }
-                        const imageUrl = await (0, textToImage_1.textToImage)(content, {
-                            title: '命令帮助',
-                            fontSize: 16,
-                            lineHeight: 22
-                        });
                         return {
-                            content: imageUrl,
-                            type: 'image'
+                            content,
+                            type: 'text'
                         };
                     }
                     catch (error) {
