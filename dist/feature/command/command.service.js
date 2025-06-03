@@ -1,41 +1,29 @@
-import { Injectable } from '@nestjs/common';
-import { getCryptoData } from './acions/crypto';
-import { holiday } from './acions/fishingTime';
-import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
-import { getHotSpot } from './acions/stockHotSpot';
-import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getUSMarketIndexData } from './acions/stockInfo';
-import { getStockSummary } from './acions/stockSummary';
-import { getWeiboData } from './acions/weibo';
-import { AiService } from '../ai/ai.service';
-import { textToImage } from '../../utils/textToImage';
-
-export interface CommandParams {
-    args?: string,
-    key: string,
-}
-
-
-export interface Command {
-    key: string;
-    description: string;
-    type?: 'text' | 'image';
-}
-
-@Injectable()
-export class CommandService {
-    constructor(
-        private readonly aiService: AiService,
-    ) { }
-
-    private commandMap: {
-        key: string,
-        callback: (params: CommandParams) => Promise<{ content: string, type: 'text' | 'image' }>,
-        msg: string,
-        hasArgs: boolean,
-        enable?: boolean,
-        type?: 'text' | 'image'
-    }[] = [
-            // AI对话
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CommandService = void 0;
+const common_1 = require("@nestjs/common");
+const crypto_1 = require("./acions/crypto");
+const fishingTime_1 = require("./acions/fishingTime");
+const stock_1 = require("./acions/stock");
+const stockHotSpot_1 = require("./acions/stockHotSpot");
+const stockInfo_1 = require("./acions/stockInfo");
+const stockSummary_1 = require("./acions/stockSummary");
+const weibo_1 = require("./acions/weibo");
+const ai_service_1 = require("../ai/ai.service");
+const textToImage_1 = require("../../utils/textToImage");
+let CommandService = class CommandService {
+    constructor(aiService) {
+        this.aiService = aiService;
+        this.commandMap = [
             {
                 key: 'a ',
                 callback: async (params) => {
@@ -48,11 +36,10 @@ export class CommandService {
                 msg: 'a [问题] - 获取鸡哥回答 例如: a 你好鸡哥',
                 hasArgs: true,
             },
-            // 股市相关命令
             {
                 key: 'ss',
                 callback: async () => {
-                    const result = await getCNMarketIndexData();
+                    const result = await (0, stockInfo_1.getCNMarketIndexData)();
                     return {
                         content: result || '获取数据失败',
                         type: 'text'
@@ -63,8 +50,8 @@ export class CommandService {
             },
             {
                 key: 'sus',
-                callback: async (params: CommandParams) => {
-                    const result = await getUSMarketIndexData();
+                callback: async (params) => {
+                    const result = await (0, stockInfo_1.getUSMarketIndexData)();
                     return {
                         content: result || '获取美股指数数据失败',
                         type: 'text'
@@ -75,8 +62,8 @@ export class CommandService {
             },
             {
                 key: 'shk',
-                callback: async (params: CommandParams) => {
-                    const result = await getHKMarketIndexData();
+                callback: async (params) => {
+                    const result = await (0, stockInfo_1.getHKMarketIndexData)();
                     return {
                         content: result || '获取港股指数数据失败',
                         type: 'text'
@@ -91,7 +78,7 @@ export class CommandService {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: s 600519 000858');
                     }
-                    const result = await getStockData(params.args);
+                    const result = await (0, stockInfo_1.getStockData)(params.args);
                     return {
                         content: result,
                         type: 'text'
@@ -106,7 +93,7 @@ export class CommandService {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: sd gzmt');
                     }
-                    const result = await getStockDetailData(params.args);
+                    const result = await (0, stockInfo_1.getStockDetailData)(params.args);
                     return {
                         content: result,
                         type: 'text'
@@ -117,8 +104,8 @@ export class CommandService {
             },
             {
                 key: 'dp',
-                callback: async (params: CommandParams) => {
-                    const result = await getStockSummary();
+                callback: async (params) => {
+                    const result = await (0, stockSummary_1.getStockSummary)();
                     return {
                         content: result || '获取大盘数据失败',
                         type: 'text'
@@ -127,14 +114,13 @@ export class CommandService {
                 msg: 'dp - 获取大盘市场信息，包括涨跌家数、板块概览等',
                 hasArgs: false,
             },
-            // 股票、期货、外汇、基金、指数集合
             {
                 key: 'c ',
                 callback: async (params) => {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: c 小米集团');
                     }
-                    const result = await getStockNewData(params.args);
+                    const result = await (0, stock_1.getStockData)(params.args);
                     return {
                         content: result,
                         type: 'text'
@@ -149,7 +135,7 @@ export class CommandService {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: cd 小米集团');
                     }
-                    const result = await getStockDetailNewData(params.args);
+                    const result = await (0, stock_1.getStockDetailData)(params.args);
                     return {
                         content: result,
                         type: 'text'
@@ -158,14 +144,13 @@ export class CommandService {
                 msg: 'cd [股票代码] - 获取股票详细信息 例如: cd 小米集团',
                 hasArgs: true,
             },
-            // 数字货币
             {
                 key: 'b ',
                 callback: async (params) => {
                     if (!params.args) {
                         throw new Error('请输入数字货币代码，例如: b btc');
                     }
-                    const result = await getCryptoData(params.args);
+                    const result = await (0, crypto_1.getCryptoData)(params.args);
                     return {
                         content: result,
                         type: 'text'
@@ -174,11 +159,10 @@ export class CommandService {
                 msg: 'b [货币代码] - 获取数字货币信息 例如: b btc',
                 hasArgs: true,
             },
-            // 热点资讯
             {
                 key: 'hot',
-                callback: async (params: CommandParams) => {
-                    const result = await getHotSpot();
+                callback: async (params) => {
+                    const result = await (0, stockHotSpot_1.getHotSpot)();
                     return {
                         content: result || '获取数据失败',
                         type: 'text'
@@ -189,8 +173,8 @@ export class CommandService {
             },
             {
                 key: 'wb',
-                callback: async (params: CommandParams) => {
-                    const result = await getWeiboData();
+                callback: async (params) => {
+                    const result = await (0, weibo_1.getWeiboData)();
                     return {
                         content: result || '获取微博热搜失败',
                         type: 'text'
@@ -199,11 +183,10 @@ export class CommandService {
                 msg: 'wb - 获取微博热搜',
                 hasArgs: false,
             },
-            // 其他工具
             {
                 key: 'hy',
-                callback: async (params: CommandParams) => {
-                    const result = await holiday();
+                callback: async (params) => {
+                    const result = await (0, fishingTime_1.holiday)();
                     return {
                         content: result || '获取节假日信息失败',
                         type: 'text'
@@ -212,21 +195,13 @@ export class CommandService {
                 msg: 'hy - 获取节假日信息',
                 hasArgs: false,
             },
-            // 随机图片命令
-            // {
-            //   key: 'img',
-            //   callback: getRandomImage,
-            //   msg: 'img - 获取一张随机图片',
-            //   hasArgs: false,
-            // },
             {
                 key: 'hp',
-                callback: async (params: CommandParams) => {
+                callback: async (params) => {
                     const commandMsg = this.commandMap
                         .filter(command => command.enable !== false)
                         .map(command => command.msg)
                         .join('\n');
-
                     const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
                     try {
                         if (params.args === 'text') {
@@ -235,17 +210,17 @@ export class CommandService {
                                 type: 'text'
                             };
                         }
-                        const imageUrl = await textToImage(content, {
+                        const imageUrl = await (0, textToImage_1.textToImage)(content, {
                             title: '命令帮助',
                             fontSize: 16,
                             lineHeight: 22
                         });
-
                         return {
                             content: imageUrl,
                             type: 'image'
                         };
-                    } catch (error) {
+                    }
+                    catch (error) {
                         console.error('Error creating help image:', error);
                         return {
                             content,
@@ -258,8 +233,8 @@ export class CommandService {
                 type: 'image'
             }
         ];
-
-    async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
+    }
+    async executeCommand(msg) {
         for (const command of this.commandMap) {
             if (msg.startsWith(command.key)) {
                 const args = command.hasArgs ? msg.slice(command.key.length).trim() : undefined;
@@ -267,9 +242,7 @@ export class CommandService {
                     args,
                     key: command.key,
                 });
-
-                console.log(`\x1B[32m====================[命令执行开始]====================\x1B[0m\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n\x1B[32m====================[命令执行结束]====================\x1B[0m`)
-
+                console.log(`\x1B[32m====================[命令执行开始]====================\x1B[0m\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n\x1B[32m====================[命令执行结束]====================\x1B[0m`);
                 return result;
             }
         }
@@ -278,15 +251,20 @@ export class CommandService {
             type: 'text'
         };
     }
-
-    async getCommandList(): Promise<Command[]> {
+    async getCommandList() {
         const commandMsg = this.commandMap
             .filter(command => command.enable !== false)
             .map(command => ({
-                key: command.key,
-                description: command.msg,
-                type: command.type,
-            }));
+            key: command.key,
+            description: command.msg,
+            type: command.type,
+        }));
         return commandMsg;
     }
-}
+};
+exports.CommandService = CommandService;
+exports.CommandService = CommandService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [ai_service_1.AiService])
+], CommandService);
+//# sourceMappingURL=command.service.js.map
