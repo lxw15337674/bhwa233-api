@@ -7,7 +7,6 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
-import { textToImage } from '../../utils/textToImage';
 
 export interface CommandParams {
     args?: string,
@@ -229,22 +228,26 @@ export class CommandService {
 
                     const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
                     try {
-                        if (params.args === 'text') {
-                            return {
-                                content,
-                                type: 'text'
-                            };
-                        }
-                        const imageUrl = await textToImage(content, {
-                            title: '命令帮助',
-                            fontSize: 16,
-                            lineHeight: 22
-                        });
-
                         return {
-                            content: imageUrl,
-                            type: 'image'
+                            content,
+                            type: 'text'
                         };
+                        // if (params.args === 'text') {
+                        //     return {
+                        //         content,
+                        //         type: 'text'
+                        //     };
+                        // }
+                        // const imageUrl = await textToImage(content, {
+                        //     title: '命令帮助',
+                        //     fontSize: 16,
+                        //     lineHeight: 22
+                        // });
+
+                        // return {
+                        //     content: imageUrl,
+                        //     type: 'image'
+                        // };
                     } catch (error) {
                         console.error('Error creating help image:', error);
                         return {
