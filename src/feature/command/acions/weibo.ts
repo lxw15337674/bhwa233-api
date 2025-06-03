@@ -1,4 +1,4 @@
-const dayjs = require("dayjs");
+import * as dayjs from "dayjs";
 import axios from 'axios';
 
 
