@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GoogleChatRequest = exports.AIRequest = void 0;
 const swagger_1 = require("@nestjs/swagger");
+const class_validator_1 = require("class-validator");
 class AIRequest {
 }
 exports.AIRequest = AIRequest;
@@ -19,6 +20,8 @@ __decorate([
         description: 'The prompt text to generate a response for',
         example: 'Tell me about artificial intelligence'
     }),
+    (0, class_validator_1.IsNotEmpty)({ message: 'Prompt cannot be empty' }),
+    (0, class_validator_1.IsString)({ message: 'Prompt must be a string' }),
     __metadata("design:type", String)
 ], AIRequest.prototype, "prompt", void 0);
 __decorate([
@@ -27,13 +30,18 @@ __decorate([
         example: 'deepseek-chat',
         required: false
     }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'Model must be a string' }),
     __metadata("design:type", String)
 ], AIRequest.prototype, "model", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'System role prompt for the AI',
-        example: 'You are a helpful assistant'
+        example: 'You are a helpful assistant',
+        required: false
     }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'Role prompt must be a string' }),
     __metadata("design:type", String)
 ], AIRequest.prototype, "rolePrompt", void 0);
 class GoogleChatRequest {

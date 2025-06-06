@@ -21,17 +21,33 @@ let AiService = class AiService {
         });
     }
     async generateResponse(body) {
+        console.info('[AI Service] Received request:', JSON.stringify(body, null, 2));
         const { prompt, model = process.env.AI_MODEL ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;
+        if (!prompt || prompt.trim() === '') {
+            console.error('[AI Service] Empty prompt provided:', { prompt, type: typeof prompt });
+            throw new common_1.BadRequestException('Prompt cannot be empty');
+        }
+        const systemPrompt = (rolePrompt && rolePrompt.trim()) ? rolePrompt.trim() : '你是一个AI助手，擅长回答用户的问题。';
+        const userPrompt = prompt.trim();
+        console.info(`[AI Service] System prompt: "${systemPrompt.substring(0, 50)}..."`);
+        console.info(`[AI Service] User prompt: "${userPrompt.substring(0, 50)}..."`);
+        console.info(`[AI Service] Model: "${model}"`);
+        const messages = [
+            {
+                role: "system",
+                content: systemPrompt
+            },
+            {
+                role: "user",
+                content: userPrompt
+            }
+        ];
+        console.info('[AI Service] Messages to send:', JSON.stringify(messages, null, 2));
         try {
             const startTime = new Date();
             console.info(`[AI Service] OpenAI request started at: ${startTime.toISOString()}`);
             const completion = await this.openai.chat.completions.create({
-                messages: [{
-                        role: "system", content: rolePrompt || '你是一个AI助手，擅长回答用户的问题。'
-                    },
-                    {
-                        role: "user", content: prompt
-                    }],
+                messages,
                 model,
             });
             const endTime = new Date();

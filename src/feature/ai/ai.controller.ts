@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, ValidationPipe, UsePipes } from '@nestjs/common';
+import { Controller, Post, Body, Get, ValidationPipe, UsePipes, BadRequestException } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { AIRequest, GoogleChatRequest } from './type';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
@@ -21,10 +21,19 @@ export class AiController {
     @ApiResponse({
         status: 400,
         description: 'Bad request - invalid input data'
-    })
-    @Post('chat')
-    @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    })    @Post('chat')
+    @UsePipes(new ValidationPipe({ 
+        whitelist: true, 
+        forbidNonWhitelisted: true,
+        transform: true,
+        validateCustomDecorators: true
+    }))
     async chat(@Body() body: AIRequest) {
+        // 额外的运行时验证
+        if (!body.prompt || typeof body.prompt !== 'string' || body.prompt.trim() === '') {
+            throw new BadRequestException('Prompt is required and cannot be empty');
+        }
+        
         return this.aiService.generateResponse(body);
     }
 }
