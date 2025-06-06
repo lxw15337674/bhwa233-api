@@ -28,11 +28,3 @@ export class AIRequest {
     @IsString({ message: 'Role prompt must be a string' })
     rolePrompt?: string;
 }
-
-export class GoogleChatRequest {
-    @ApiProperty({
-        description: 'The prompt text to generate a response for',
-        example: 'Tell me about artificial intelligence'
-    })
-    prompt: string;
-}

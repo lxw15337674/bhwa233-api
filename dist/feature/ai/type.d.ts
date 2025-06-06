@@ -3,6 +3,3 @@ export declare class AIRequest {
     model?: string;
     rolePrompt?: string;
 }
-export declare class GoogleChatRequest {
-    prompt: string;
-}

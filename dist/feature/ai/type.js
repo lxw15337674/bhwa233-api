@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GoogleChatRequest = exports.AIRequest = void 0;
+exports.AIRequest = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class AIRequest {
@@ -44,14 +44,4 @@ __decorate([
     (0, class_validator_1.IsString)({ message: 'Role prompt must be a string' }),
     __metadata("design:type", String)
 ], AIRequest.prototype, "rolePrompt", void 0);
-class GoogleChatRequest {
-}
-exports.GoogleChatRequest = GoogleChatRequest;
-__decorate([
-    (0, swagger_1.ApiProperty)({
-        description: 'The prompt text to generate a response for',
-        example: 'Tell me about artificial intelligence'
-    }),
-    __metadata("design:type", String)
-], GoogleChatRequest.prototype, "prompt", void 0);
 //# sourceMappingURL=type.js.map

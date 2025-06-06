@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, ValidationPipe, UsePipes, BadRequestException } from '@nestjs/common';
 import { AiService } from './ai.service';
-import { AIRequest, GoogleChatRequest } from './type';
+import { AIRequest } from './type';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('AI')
