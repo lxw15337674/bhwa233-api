@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { AIRequest } from './type';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
@@ -18,7 +18,14 @@ export class AiService {
     async generateResponse(
         body: AIRequest
     ) {
-        const { prompt, model = process.env.AI_MODEL ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;        
+        const { prompt, model = process.env.AI_MODEL ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;
+        
+        // 验证 prompt 是否为空
+        if (!prompt || prompt.trim() === '') {
+            console.error('[AI Service] Empty prompt provided');
+            throw new BadRequestException('Prompt cannot be empty');
+        }
+        
         try {
             const startTime = new Date();
             console.info(`[AI Service] OpenAI request started at: ${startTime.toISOString()}`);
