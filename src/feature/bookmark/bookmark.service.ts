@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaClient, Bookmark, BookmarkTag } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import type { Bookmark, BookmarkTag } from '@prisma/client';
 import { CreateBookmarkDto } from './bookmark.dto';
 import { AiService } from '../ai/ai.service';
 
@@ -49,7 +50,7 @@ export class BookmarkService {
                 await prisma.bookmark.update({
                     where: { id: newBookmark.id },
                     data: { loading: false },
-                }).catch(updateError => {
+                }).catch((updateError: any) => {
                     console.error('更新loading状态失败:', updateError);
                 });
             }
@@ -114,7 +115,7 @@ export class BookmarkService {
 
             // 2. 获取现有标签作为AI参考
             const existingTags = await this.getBookmarkTags();
-            const existingTagNames = existingTags.map(tag => tag.name);
+            const existingTagNames = existingTags.map((t: BookmarkTag) => t.name);
 
             // 3. 构建AI请求
             const aiPrompt = this.buildAiPrompt(truncatedContent, existingTagNames);
@@ -281,7 +282,7 @@ ${content}`;
         });
 
         // 创建缺失的标签
-        const existingTagNames = existingTags.map(t => t.name);
+        const existingTagNames = existingTags.map((t: BookmarkTag) => t.name);
         const missingTagNames = tagNames.filter(name => !existingTagNames.includes(name));
 
         const newTags = await Promise.all(
