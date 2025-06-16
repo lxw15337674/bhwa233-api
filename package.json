@@ -89,6 +89,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@prisma/client",
       "sharp"
     ]
   }
