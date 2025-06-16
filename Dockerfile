@@ -10,6 +10,9 @@ RUN npm install -g pnpm
 # Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
+# Copy the Prisma schema file (needed for postinstall script)
+COPY prisma/ ./prisma/
+
 # Install the application dependencies
 RUN pnpm install
 
