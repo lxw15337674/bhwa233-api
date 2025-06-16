@@ -92,11 +92,9 @@ let BookmarkService = BookmarkService_1 = class BookmarkService {
         this.logger.log(`开始为书签 ${id} 生成AI摘要`);
         try {
             const truncatedContent = this.truncateContent(content, 10000);
-            this.logger.log(`内容已截断至 ${truncatedContent.length} 字符`);
             const existingTags = await this.getBookmarkTags();
             const existingTagNames = existingTags.map((t) => t.name);
             const aiPrompt = this.buildAiPrompt(truncatedContent, existingTagNames);
-            this.logger.log(`开始AI分析，现有标签数量: ${existingTagNames.length}`);
             const aiResponse = await this.callAiWithTimeout(aiPrompt, 30000);
             const parsedData = this.parseAiResponse(aiResponse);
             if (!parsedData) {

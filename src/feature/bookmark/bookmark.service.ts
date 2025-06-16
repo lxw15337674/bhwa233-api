@@ -111,7 +111,6 @@ export class BookmarkService {
         try {
             // 1. 内容预处理 - 限制10,000字符
             const truncatedContent = this.truncateContent(content, 10000);
-            this.logger.log(`内容已截断至 ${truncatedContent.length} 字符`);
 
             // 2. 获取现有标签作为AI参考
             const existingTags = await this.getBookmarkTags();
@@ -121,7 +120,6 @@ export class BookmarkService {
             const aiPrompt = this.buildAiPrompt(truncatedContent, existingTagNames);
 
             // 4. 调用AI服务 - 30秒超时
-            this.logger.log(`开始AI分析，现有标签数量: ${existingTagNames.length}`);
             const aiResponse = await this.callAiWithTimeout(aiPrompt, 30000);
 
             // 5. 解析AI响应
