@@ -40,5 +40,4 @@ lerna-debug.log*
 .vercel
 .env*.local
 
-
-/dist
+# /dist
