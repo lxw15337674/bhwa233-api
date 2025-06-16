@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TrackMeta {
+  id         String      @id @default(uuid())
+  name       String
+  type       String
+  remark     String      @default("")
+  createTime DateTime    @default(now())
+  updateTime DateTime    @default(now())
+  deletedAt  DateTime?
+  countItems TrackItem[]
+}
+
+model TrackItem {
+  id          String     @id @default(uuid())
+  remark      String
+  createTime  DateTime   @default(now())
+  updateTime  DateTime   @default(now())
+  countMetaId String?
+  deletedAt   DateTime?
+  countMeta   TrackMeta? @relation(fields: [countMetaId], references: [id])
+}
+
+model Task {
+  id         String    @id @default(uuid())
+  name       String
+  remark     String
+  createTime DateTime  @default(now())
+  updateTime DateTime  @default(now())
+  deletedAt  DateTime?
+  status     String
+  priority   Priority? @default(NOT_IMPORTANT_NOT_URGENT)
+  tags       TaskTag[] @relation("TaskToTaskTag")
+}
+
+model Bookmark {
+  id         String        @id @default(uuid())
+  url        String        @unique
+  remark     String?
+  createTime DateTime      @default(now())
+  updateTime DateTime      @default(now())
+  deletedAt  DateTime?
+  image      String?
+  summary    String?
+  title      String?
+  loading    Boolean       @default(true)
+  tags       BookmarkTag[] @relation("BookmarkToBookmarkTag")
+}
+
+model BookmarkTag {
+  id         String     @id @default(uuid())
+  name       String
+  remark     String?
+  createTime DateTime   @default(now())
+  updateTime DateTime   @default(now())
+  deletedAt  DateTime?
+  bookmarks  Bookmark[] @relation("BookmarkToBookmarkTag")
+}
+
+model Anniversary {
+  id         String    @id @default(uuid())
+  name       String
+  remark     String
+  createTime DateTime  @default(now())
+  updateTime DateTime  @default(now())
+  deletedAt  DateTime?
+  date       DateTime
+}
+
+model Media {
+  id              Int          @id @default(autoincrement())
+  width           Int?
+  height          Int?
+  postId          String?
+  originSrc       String?
+  userId          String?
+  createTime      DateTime?    @default(now())
+  deletedAt       DateTime?
+  updateTime      DateTime     @default(now()) @updatedAt
+  galleryMediaUrl String?
+  originMediaUrl  String?
+  status          UploadStatus @default(PENDING)
+  producerId      String?
+  thumbnailUrl    String?
+  post            Post?        @relation("PostMedia", fields: [postId], references: [id])
+  producer        Producer?    @relation("Media", fields: [producerId], references: [id])
+
+  @@index([userId])
+  @@index([createTime])
+  @@index([postId])
+  @@index([producerId])
+  @@index([status, createTime])
+}
+
+model Producer {
+  id                    String                  @id @default(cuid())
+  name                  String?
+  createTime            DateTime                @default(now())
+  updateTime            DateTime                @default(now()) @updatedAt
+  deletedAt             DateTime?
+  type                  ProducerType            @default(WEIBO_PERSONAL)
+  producerId            String?
+  lastPostTime          DateTime?
+  medias                Media[]                 @relation("Media")
+  posts                 Post[]                  @relation("ProducerPosts")
+  ProducerToProducerTag ProducerToProducerTag[]
+
+  @@index([type, createTime])
+  @@map("producer")
+}
+
+model ProducerTag {
+  id                    String                  @id @default(uuid())
+  name                  String                  @unique
+  remark                String?
+  createTime            DateTime                @default(now())
+  updateTime            DateTime                @default(now())
+  deletedAt             DateTime?
+  ProducerToProducerTag ProducerToProducerTag[]
+}
+
+model TaskTag {
+  id         String    @id @default(uuid())
+  name       String    @unique
+  remark     String?
+  createTime DateTime  @default(now())
+  updateTime DateTime  @default(now())
+  deletedAt  DateTime?
+  tasks      Task[]    @relation("TaskToTaskTag")
+}
+
+model Post {
+  id         String       @id @default(uuid())
+  producerId String
+  userId     String
+  platform   Platform
+  platformId String
+  createTime DateTime     @default(now())
+  updateTime DateTime     @default(now()) @updatedAt
+  deletedAt  DateTime?
+  status     UploadStatus @default(PENDING)
+  medias     Media[]      @relation("PostMedia")
+  producer   Producer     @relation("ProducerPosts", fields: [producerId], references: [id])
+
+  @@unique([platform, platformId])
+  @@index([userId])
+  @@index([createTime])
+  @@index([status, createTime])
+  @@index([producerId, createTime])
+}
+
+model ProducerToProducerTag {
+  A           String
+  B           String
+  producer    Producer    @relation(fields: [A], references: [id], onDelete: Cascade)
+  ProducerTag ProducerTag @relation(fields: [B], references: [id], onDelete: Cascade)
+
+  @@id([A, B], map: "_ProducerToProducerTag_AB_pkey")
+  @@index([B], map: "_ProducerToProducerTag_B_index")
+  @@map("_ProducerToProducerTag")
+}
+
+model Asset {
+  id          String   @id @default(uuid())
+  name        String
+  amount      Float
+  date        DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Priority {
+  IMPORTANT_URGENT
+  IMPORTANT_NOT_URGENT
+  URGENT_NOT_IMPORTANT
+  NOT_IMPORTANT_NOT_URGENT
+}
+
+enum UploadStatus {
+  PENDING
+  UPLOADED
+  FAILED
+  PROCESSING
+}
+
+enum ProducerType {
+  WEIBO_PERSONAL
+  WEIBO_SUPER_TOPIC
+  XIAOHONGSHU_PERSONAL
+  XIAOHONGSHU_SUPER_TOPIC
+  DOUYIN_PERSONAL
+  DOUYIN_SUPER_TOPIC
+}
+
+enum Platform {
+  WEIBO
+  XIAOHONGSHU
+  DOUYIN
+}

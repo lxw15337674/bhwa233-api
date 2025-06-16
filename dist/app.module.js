@@ -14,7 +14,14 @@ const ai_module_1 = require("./feature/ai/ai.module");
 const config_1 = require("@nestjs/config");
 const fishing_time_module_1 = require("./feature/fishing-time/fishing-time.module");
 const command_module_1 = require("./feature/command/command.module");
+const bookmark_module_1 = require("./feature/bookmark/bookmark.module");
+const logging_middleware_1 = require("./middleware/logging.middleware");
 let AppModule = class AppModule {
+    configure(consumer) {
+        consumer
+            .apply(logging_middleware_1.LoggingMiddleware)
+            .forRoutes('*');
+    }
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
@@ -26,6 +33,7 @@ exports.AppModule = AppModule = __decorate([
             fishing_time_module_1.FishingTimeModule,
             ai_module_1.AiModule,
             command_module_1.CommandModule,
+            bookmark_module_1.BookmarkModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

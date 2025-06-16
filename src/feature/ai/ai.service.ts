@@ -13,11 +13,11 @@ export class AiService {
             baseURL: process.env.AI_BASE_URL,
             apiKey: process.env.AI_API_KEY,
         });
-    }    async generateResponse(
+    }
+
+    async generateResponse(
         body: AIRequest
     ) {
-        console.info('[AI Service] Received request:', JSON.stringify(body, null, 2));
-        
         const { prompt, model = process.env.AI_MODEL ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;
         
         // 验证 prompt 是否为空
@@ -29,11 +29,7 @@ export class AiService {
         // 确保 rolePrompt 不为空
         const systemPrompt = (rolePrompt && rolePrompt.trim()) ? rolePrompt.trim() : '你是一个AI助手，擅长回答用户的问题。';
         const userPrompt = prompt.trim();
-        
-        console.info(`[AI Service] System prompt: "${systemPrompt.substring(0, 50)}..."`);
-        console.info(`[AI Service] User prompt: "${userPrompt.substring(0, 50)}..."`);
-        console.info(`[AI Service] Model: "${model}"`);
-        
+
         // 构建消息数组
         const messages = [
             {
@@ -45,20 +41,12 @@ export class AiService {
                 content: userPrompt
             }
         ];
-        
-        console.info('[AI Service] Messages to send:', JSON.stringify(messages, null, 2));
-        
-        try {
-            const startTime = new Date();
-            console.info(`[AI Service] OpenAI request started at: ${startTime.toISOString()}`);
 
+        try {
             const completion = await this.openai.chat.completions.create({
                 messages,
                 model,
             });
-            const endTime = new Date();
-            const duration = endTime.getTime() - startTime.getTime();
-            console.info(`[AI Service] OpenAI response completed at: ${endTime.toISOString()}, duration: ${duration}ms`);
 
             return completion.choices[0].message.content ?? '';
         } catch (error) {

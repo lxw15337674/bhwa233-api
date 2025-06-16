@@ -17,6 +17,12 @@ async function bootstrap() {
         .setTitle('工具文档')
         .setDescription('The cats API description')
         .setVersion('1.0')
+        .addApiKey({
+        type: 'apiKey',
+        name: 'x-api-key',
+        in: 'header',
+        description: 'API Key for authentication'
+    }, 'api-key')
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('doc', app, document);
