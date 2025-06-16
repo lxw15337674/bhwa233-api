@@ -1,11 +1,8 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "dist/main.js",
-            "use": "@vercel/node"
-        }
-    ],
+    "builds": {
+        "command": "prisma generate && your-existing-build-command"
+    },
     "routes": [
         {
             "src": "/(.*)",
@@ -20,5 +17,5 @@
             ]
         }
     ]
-    
+
 }
