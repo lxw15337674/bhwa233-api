@@ -1,8 +1,5 @@
 {
     "version": 2,
-    "builds": {
-        "command": "prisma generate && your-existing-build-command"
-    },
     "routes": [
         {
             "src": "/(.*)",
