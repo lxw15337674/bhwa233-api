@@ -173,8 +173,8 @@ ${content}`;
             const parsed = JSON.parse(response);
             if (parsed.summary && Array.isArray(parsed.tags)) {
                 return {
-                    summary: String(parsed.summary).slice(0, 50),
-                    tags: parsed.tags.filter((tag) => tag && typeof tag === 'string').map((tag) => String(tag).slice(0, 20))
+                    summary: parsed.summary,
+                    tags: parsed.tags.filter((tag) => tag && typeof tag === 'string').map((tag) => String(tag))
                 };
             }
         }

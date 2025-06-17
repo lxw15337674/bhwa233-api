@@ -226,8 +226,8 @@ ${content}`;
 
             if (parsed.summary && Array.isArray(parsed.tags)) {
                 return {
-                    summary: String(parsed.summary).slice(0, 50), // 限制摘要长度
-                    tags: parsed.tags.filter((tag: any) => tag && typeof tag === 'string').map((tag: any) => String(tag).slice(0, 20)) // 限制标签长度
+                    summary: parsed.summary,
+                    tags: parsed.tags.filter((tag: any) => tag && typeof tag === 'string').map((tag: any) => String(tag)) // 限制标签长度
                 };
             }
         } catch (error) {
