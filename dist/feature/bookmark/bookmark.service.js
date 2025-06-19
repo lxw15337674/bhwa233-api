@@ -36,21 +36,16 @@ let BookmarkService = BookmarkService_1 = class BookmarkService {
             create: { ...bookmarkData, loading: true },
         });
         if (data.content && data.content.trim() !== '') {
-            try {
-                const updatedBookmark = await this.summarizeBookmarkByContent(newBookmark.id, data.content);
-                if (updatedBookmark) {
-                    return updatedBookmark;
-                }
-            }
-            catch (error) {
+            this.summarizeBookmarkByContent(newBookmark.id, data.content)
+                .catch(error => {
                 console.error('生成AI摘要失败:', error);
-                await prisma.bookmark.update({
+                prisma.bookmark.update({
                     where: { id: newBookmark.id },
                     data: { loading: false },
                 }).catch((updateError) => {
                     console.error('更新loading状态失败:', updateError);
                 });
-            }
+            });
         }
         const completeBookmark = await prisma.bookmark.findUnique({
             where: { id: newBookmark.id },
