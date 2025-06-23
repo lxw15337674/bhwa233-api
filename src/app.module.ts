@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 import { CommandModule } from './feature/command/command.module';
 import { BookmarkModule } from './feature/bookmark/bookmark.module';
+import { BilibiliAudioModule } from './feature/bilibili-audio/bilibili-audio.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 
 @Module({
@@ -17,6 +18,7 @@ import { LoggingMiddleware } from './middleware/logging.middleware';
     AiModule,
     CommandModule,
     BookmarkModule,
+    BilibiliAudioModule,
   ],
   controllers: [AppController],
   providers: [AppService],
