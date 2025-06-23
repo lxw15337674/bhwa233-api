@@ -5,6 +5,7 @@ import {
     Res,
     Req,
     Get,
+    Query,
     ValidationPipe,
     UsePipes,
     BadRequestException,
@@ -28,7 +29,6 @@ export class BilibiliAudioController {
     constructor(private readonly bilibiliAudioService: BilibiliAudioService) { }
 
     @ApiOperation({ summary: 'Stream Bilibili audio' })
-    @ApiBody({ type: DownloadAudioDto })
     @ApiResponse({
         status: 200,
         description: 'Returns audio stream',
@@ -49,9 +49,9 @@ export class BilibiliAudioController {
         status: 500,
         description: 'Internal server error'
     })
-    @Post('download')
+    @Get('download')
     async downloadAudio(
-        @Body() downloadAudioDto: DownloadAudioDto,
+        @Query() downloadAudioDto: DownloadAudioDto,
         @Req() req: Request,
         @Res() res: Response
     ): Promise<void> {
