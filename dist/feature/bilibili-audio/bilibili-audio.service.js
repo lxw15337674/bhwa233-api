@@ -26,15 +26,25 @@ let BilibiliAudioService = BilibiliAudioService_1 = class BilibiliAudioService {
         }
     }
     async getAudioStreamInfo(url, quality) {
+        let downloader = null;
         try {
             this.validateBilibiliUrl(url);
-            const downloader = new audio_downloader_1.AudioDownloader(url, quality || audio_downloader_1.AudioQualityEnums.Highest);
+            downloader = new audio_downloader_1.AudioDownloader(url, quality || audio_downloader_1.AudioQualityEnums.Highest);
             const streamInfo = await downloader.getAudioStreamUrl();
-            this.logger.log(`获取音频流信息成功: ${streamInfo.title}`);
+            this.logger.log(`✅ 获取视频信息成功: ${streamInfo.title}`);
             return streamInfo;
         }
         catch (error) {
-            this.logger.error(`获取音频流信息失败: ${error.message}`, error.stack);
+            let title = '未知视频';
+            try {
+                if (downloader && downloader.title) {
+                    title = downloader.title;
+                }
+            }
+            catch {
+            }
+            this.logger.error(`❌ 获取视频信息失败: ${title} - ${error.message}`);
+            error.title = title;
             if (error instanceof common_1.BadRequestException) {
                 throw error;
             }
@@ -54,7 +64,6 @@ let BilibiliAudioService = BilibiliAudioService_1 = class BilibiliAudioService {
             if (options?.headers) {
                 Object.assign(bilibiliHeaders, options.headers);
             }
-            this.logger.log(`开始代理音频流: ${filename}`);
             const bilibiliResponse = await this.httpService.axiosRef.get(audioUrl, {
                 headers: bilibiliHeaders,
                 responseType: 'stream',
@@ -86,22 +95,24 @@ let BilibiliAudioService = BilibiliAudioService_1 = class BilibiliAudioService {
             res.status(bilibiliResponse.status);
             bilibiliResponse.data.pipe(res);
             bilibiliResponse.data.on('error', (error) => {
-                this.logger.error(`音频流传输错误: ${error.message}`, error.stack);
+                const title = filename.replace('.mp3', '');
+                this.logger.error(`❌ 音频流传输失败: ${title} - ${error.message}`);
                 if (!res.headersSent) {
                     res.status(500).json({ error: '音频流传输失败' });
                 }
                 res.end();
             });
             bilibiliResponse.data.on('end', () => {
-                this.logger.log(`音频流传输完成: ${filename}`);
+                const title = filename.replace('.mp3', '');
+                this.logger.log(`✅ 音频流传输完成: ${title}`);
             });
             res.on('close', () => {
-                this.logger.log(`客户端断开连接: ${filename}`);
                 bilibiliResponse.data.destroy();
             });
         }
         catch (error) {
-            this.logger.error(`音频流代理失败: ${error.message}`, error.stack);
+            const title = filename.replace('.mp3', '');
+            this.logger.error(`❌ 音频流代理失败: ${title} - ${error.message}`);
             if (error instanceof axios_2.AxiosError) {
                 const status = error.response?.status || 500;
                 const message = `B站响应错误: ${status} ${error.response?.statusText || error.message}`;

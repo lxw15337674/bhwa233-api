@@ -15,12 +15,9 @@ export declare class AudioDownloader {
     private readonly axiosInstance;
     private readonly maxRetries;
     private readonly retryDelay;
-    private downloadStartTime;
     constructor(baseUrl: string, audioQuality?: AudioQualityEnums);
     private cleanUrl;
     private sleep;
-    private formatBytes;
-    private formatSpeed;
     private extractBvFromUrl;
     private retryOperation;
     run(): Promise<{

@@ -27,13 +27,13 @@ let BilibiliAudioController = BilibiliAudioController_1 = class BilibiliAudioCon
     async downloadAudio(downloadAudioDto, req, res) {
         try {
             const { url, quality } = downloadAudioDto;
-            this.logger.log(`收到音频下载请求: ${url}`);
             const { audioUrl, filename } = await this.bilibiliAudioService.getAudioStreamInfo(url, quality);
             const range = req.headers.range;
             await this.bilibiliAudioService.streamAudioProxy(audioUrl, filename, res, { range });
         }
         catch (error) {
-            this.logger.error(`音频下载失败: ${error.message}`, error.stack);
+            const title = error.title || '未知视频';
+            this.logger.error(`❌ 音频下载失败: ${title} - ${error.message}`);
             if (error instanceof common_1.BadRequestException) {
                 if (!res.headersSent) {
                     res.status(400).json({ error: error.message });

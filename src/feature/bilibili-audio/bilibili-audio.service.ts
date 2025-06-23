@@ -24,16 +24,31 @@ export class BilibiliAudioService {
      * 获取音频流信息
      */
     async getAudioStreamInfo(url: string, quality?: AudioQualityEnums): Promise<AudioStreamInfo> {
+        let downloader: AudioDownloader | null = null;
         try {
             this.validateBilibiliUrl(url);
 
-            const downloader = new AudioDownloader(url, quality || AudioQualityEnums.Highest);
+            downloader = new AudioDownloader(url, quality || AudioQualityEnums.Highest);
             const streamInfo = await downloader.getAudioStreamUrl();
 
-            this.logger.log(`获取音频流信息成功: ${streamInfo.title}`);
+            this.logger.log(`✅ 获取视频信息成功: ${streamInfo.title}`);
             return streamInfo;
         } catch (error) {
-            this.logger.error(`获取音频流信息失败: ${error.message}`, error.stack);
+            // 尝试从downloader获取标题，如果无法获取则使用默认值
+            let title = '未知视频';
+            try {
+                if (downloader && (downloader as any).title) {
+                    title = (downloader as any).title;
+                }
+            } catch {
+                // 忽略获取标题时的错误
+            }
+
+            this.logger.error(`❌ 获取视频信息失败: ${title} - ${error.message}`);
+
+            // 将title附加到error对象上，便于Controller层使用
+            error.title = title;
+
             if (error instanceof BadRequestException) {
                 throw error;
             }
@@ -67,8 +82,6 @@ export class BilibiliAudioService {
             if (options?.headers) {
                 Object.assign(bilibiliHeaders, options.headers);
             }
-
-            this.logger.log(`开始代理音频流: ${filename}`);
 
             // 从B站获取音频流
             const bilibiliResponse = await this.httpService.axiosRef.get(audioUrl, {
@@ -114,7 +127,8 @@ export class BilibiliAudioService {
 
             // 处理流错误
             bilibiliResponse.data.on('error', (error: Error) => {
-                this.logger.error(`音频流传输错误: ${error.message}`, error.stack);
+                const title = filename.replace('.mp3', '');
+                this.logger.error(`❌ 音频流传输失败: ${title} - ${error.message}`);
                 if (!res.headersSent) {
                     res.status(500).json({ error: '音频流传输失败' });
                 }
@@ -123,17 +137,18 @@ export class BilibiliAudioService {
 
             // 记录完成
             bilibiliResponse.data.on('end', () => {
-                this.logger.log(`音频流传输完成: ${filename}`);
+                const title = filename.replace('.mp3', '');
+                this.logger.log(`✅ 音频流传输完成: ${title}`);
             });
 
-            // 处理客户端断开连接
+            // 处理客户端断开连接（移除日志）
             res.on('close', () => {
-                this.logger.log(`客户端断开连接: ${filename}`);
                 bilibiliResponse.data.destroy();
             });
 
         } catch (error) {
-            this.logger.error(`音频流代理失败: ${error.message}`, error.stack);
+            const title = filename.replace('.mp3', '');
+            this.logger.error(`❌ 音频流代理失败: ${title} - ${error.message}`);
 
             if (error instanceof AxiosError) {
                 const status = error.response?.status || 500;

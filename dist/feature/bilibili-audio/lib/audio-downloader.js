@@ -19,7 +19,6 @@ class AudioDownloader {
         this.audioUrl = '';
         this.maxRetries = 3;
         this.retryDelay = 3000;
-        this.downloadStartTime = 0;
         this.baseUrl = this.cleanUrl(baseUrl);
         this.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
@@ -37,17 +36,6 @@ class AudioDownloader {
     }
     async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    formatBytes(bytes) {
-        if (bytes === 0)
-            return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-    }
-    formatSpeed(bytesPerSecond) {
-        return `${this.formatBytes(bytesPerSecond)}/s`;
     }
     extractBvFromUrl(url) {
         try {
@@ -81,16 +69,9 @@ class AudioDownloader {
             return await operation();
         }
         catch (error) {
-            const axiosError = error;
             if (retryCount >= this.maxRetries) {
-                console.error(`[音频下载器] 操作最终失败:`, {
-                    message: axiosError.message,
-                    code: axiosError.code,
-                    status: axiosError.response?.status
-                });
                 throw error;
             }
-            console.log(`[音频下载器] 重试 ${retryCount + 1}/${this.maxRetries} | ${axiosError.message}`);
             await this.sleep(this.retryDelay);
             return this.retryOperation(operation, retryCount + 1);
         }
@@ -98,7 +79,6 @@ class AudioDownloader {
     async run() {
         await this.retryOperation(() => this.getCid());
         await this.retryOperation(() => this.getAudioUrl());
-        console.log(`[音频下载器] 信息获取完成 | BV: ${this.bv} | CID: ${this.cid} | 标题: ${this.title} | 质量: ${this.audioQuality}kbps`);
         const buffer = await this.retryOperation(() => this.downloadAudio());
         return {
             buffer,
@@ -108,7 +88,6 @@ class AudioDownloader {
     async getAudioStreamUrl() {
         await this.retryOperation(() => this.getCid());
         await this.retryOperation(() => this.getAudioUrl());
-        console.log(`[音频下载器] 流信息获取完成 | BV: ${this.bv} | CID: ${this.cid} | 标题: ${this.title} | 质量: ${this.audioQuality}kbps`);
         return {
             audioUrl: this.audioUrl,
             title: this.title,
@@ -155,7 +134,6 @@ class AudioDownloader {
     }
     async downloadAudio() {
         try {
-            this.downloadStartTime = Date.now();
             const downloadHeaders = {
                 "User-Agent": this.headers["User-Agent"],
                 "Referer": "https://www.bilibili.com",
@@ -165,30 +143,11 @@ class AudioDownloader {
                 headers: downloadHeaders,
                 responseType: 'arraybuffer',
                 decompress: true,
-                maxRedirects: 10,
-                onDownloadProgress: (progressEvent) => {
-                    const elapsedTime = (Date.now() - this.downloadStartTime) / 1000;
-                    const speed = progressEvent.loaded / elapsedTime;
-                    const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || progressEvent.loaded));
-                    const downloadedSize = this.formatBytes(progressEvent.loaded);
-                    const totalSize = progressEvent.total ? this.formatBytes(progressEvent.total) : 'Unknown';
-                    const downloadSpeed = this.formatSpeed(speed);
-                    process.stdout.write(`\r[音频下载器] 下载进度: ${percent}% | ${downloadedSize}/${totalSize} | ${downloadSpeed}`);
-                    if (progressEvent.loaded === progressEvent.total) {
-                        process.stdout.write('\n');
-                    }
-                }
+                maxRedirects: 10
             });
-            console.log(`[音频下载器] 音频下载成功`);
             return Buffer.from(response.data);
         }
         catch (error) {
-            const axiosError = error;
-            console.error(`[音频下载器] 下载音频失败:`, {
-                message: axiosError.message,
-                code: axiosError.code,
-                status: axiosError.response?.status
-            });
             throw error;
         }
     }

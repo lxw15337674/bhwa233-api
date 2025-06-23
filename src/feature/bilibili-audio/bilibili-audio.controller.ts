@@ -58,8 +58,6 @@ export class BilibiliAudioController {
         try {
             const { url, quality } = downloadAudioDto;
 
-            this.logger.log(`收到音频下载请求: ${url}`);
-
             // 获取音频流信息
             const { audioUrl, filename } = await this.bilibiliAudioService.getAudioStreamInfo(url, quality);
 
@@ -75,7 +73,8 @@ export class BilibiliAudioController {
             );
 
         } catch (error) {
-            this.logger.error(`音频下载失败: ${error.message}`, error.stack);
+            const title = error.title || '未知视频';
+            this.logger.error(`❌ 音频下载失败: ${title} - ${error.message}`);
 
             if (error instanceof BadRequestException) {
                 if (!res.headersSent) {
