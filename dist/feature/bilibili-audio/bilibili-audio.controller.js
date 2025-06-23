@@ -55,7 +55,6 @@ let BilibiliAudioController = BilibiliAudioController_1 = class BilibiliAudioCon
 exports.BilibiliAudioController = BilibiliAudioController;
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Stream Bilibili audio' }),
-    (0, swagger_1.ApiBody)({ type: download_audio_dto_1.DownloadAudioDto }),
     (0, swagger_1.ApiResponse)({
         status: 200,
         description: 'Returns audio stream',
@@ -76,9 +75,9 @@ __decorate([
         status: 500,
         description: 'Internal server error'
     }),
-    (0, common_1.Post)('download'),
-    openapi.ApiResponse({ status: 201 }),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Get)('download'),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Req)()),
     __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
