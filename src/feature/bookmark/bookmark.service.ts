@@ -37,24 +37,27 @@ export class BookmarkService {
             create: { ...bookmarkData, loading: true },
         });
 
-        // 如果提供了内容，则异步生成AI摘要和标签（不等待结果）
+        // 如果提供了内容，则同步生成AI摘要和标签
         if (data.content && data.content.trim() !== '') {
-            this.summarizeBookmarkByContent(newBookmark.id, data.content)
-                .catch(error => {
-                    console.error('生成AI摘要失败:', error);
+            try {
+                const summarizedBookmark = await this.summarizeBookmarkByContent(newBookmark.id, data.content);
+                return summarizedBookmark;
+            } catch (error) {
+                console.error('生成AI摘要失败:', error);
             // 如果AI摘要失败，至少将loading状态设为false
-                    prisma.bookmark.update({
-                        where: { id: newBookmark.id },
-                        data: { loading: false },
-                    }).catch((updateError: any) => {
-                        console.error('更新loading状态失败:', updateError);
-                    });
+                const fallbackBookmark = await prisma.bookmark.update({
+                    where: { id: newBookmark.id },
+                    data: { loading: false },
+                    include: { tags: true },
                 });
+                return fallbackBookmark;
+            }
         }
 
-        // 立即返回包含标签的完整书签（此时 summary 可能为空，loading: true）
-        const completeBookmark = await prisma.bookmark.findUnique({
+        // 如果没有内容，直接设置loading为false并返回
+        const completeBookmark = await prisma.bookmark.update({
             where: { id: newBookmark.id },
+            data: { loading: false },
             include: { tags: true },
         });
 
