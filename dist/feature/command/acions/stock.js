@@ -7,7 +7,9 @@ exports.getStockBasicData = getStockBasicData;
 exports.getStockDetailData = getStockDetailData;
 exports.fetchStockDetailData = fetchStockDetailData;
 const axios_1 = require("axios");
+const common_1 = require("@nestjs/common");
 const SUGGESTION_API_URL = 'https://finance.pae.baidu.com/selfselect/sug';
+const logger = new common_1.Logger('Stock');
 const BD_GST_API_URL = 'https://gushitong.baidu.com/opendata';
 var FinancialProductType;
 (function (FinancialProductType) {
@@ -197,7 +199,7 @@ async function getBaiduAbSr() {
         return abSr;
     }
     catch (error) {
-        console.error('获取百度Ab-Sr失败:', error);
+        logger.error('获取百度Ab-Sr失败:', error);
         return undefined;
     }
 }

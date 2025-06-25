@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Logger } from '@nestjs/common';
 import { convertToNumber, formatAmount } from '../../../utils';
 import {
   getStockSuggest,
@@ -100,6 +101,7 @@ interface StockData {
 
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
+const logger = new Logger('StockInfo');
 
 // 读取环境变量
 let Cookie = '';
@@ -126,7 +128,7 @@ export async function getToken(): Promise<string> {
     cookieTimestamp = now; // 记录获取 Cookie 的时间
     return Cookie;
   } catch (error) {
-    console.error('Error getting cookie:', error);
+    logger.error('Error getting cookie:', error);
     throw error;
   }
 }
@@ -244,7 +246,7 @@ export async function getStockData(symbol: string): Promise<string> {
     try {
       return textContent;
     } catch (error) {
-      console.error('Error converting stock data to image:', error);
+      logger.error('Error converting stock data to image:', error);
       // Fallback to text if image creation fails
       return textContent;
     }

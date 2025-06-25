@@ -10,10 +10,12 @@ exports.getHKMarketIndexData = getHKMarketIndexData;
 exports.getStockDetailData = getStockDetailData;
 exports.getGzjc = getGzjc;
 const axios_1 = require("axios");
+const common_1 = require("@nestjs/common");
 const utils_1 = require("../../../utils");
 const stock_1 = require("./stock");
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json';
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json';
+const logger = new common_1.Logger('StockInfo');
 let Cookie = '';
 let cookieTimestamp = 0;
 const COOKIE_EXPIRATION_TIME = 1 * 24 * 60 * 60 * 1000;
@@ -36,7 +38,7 @@ async function getToken() {
         return Cookie;
     }
     catch (error) {
-        console.error('Error getting cookie:', error);
+        logger.error('Error getting cookie:', error);
         throw error;
     }
 }
@@ -138,7 +140,7 @@ async function getStockData(symbol) {
             return textContent;
         }
         catch (error) {
-            console.error('Error converting stock data to image:', error);
+            logger.error('Error converting stock data to image:', error);
             return textContent;
         }
     }

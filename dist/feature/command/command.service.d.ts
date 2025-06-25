@@ -10,6 +10,7 @@ export interface Command {
 }
 export declare class CommandService {
     private readonly aiService;
+    private readonly logger;
     constructor(aiService: AiService);
     private commandMap;
     executeCommand(msg: string): Promise<{

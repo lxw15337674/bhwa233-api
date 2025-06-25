@@ -2,7 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.textToImage = textToImage;
 const sharp_1 = require("sharp");
+const common_1 = require("@nestjs/common");
 const upload_1 = require("./upload");
+const logger = new common_1.Logger('TextToImageUtil');
 async function textToImage(content, options) {
     try {
         const defaultOptions = {
@@ -52,7 +54,7 @@ async function textToImage(content, options) {
         return await (0, upload_1.default)(base64Image);
     }
     catch (error) {
-        console.error('Error converting text to image:', error);
+        logger.error('Error converting text to image:', error);
         throw new Error(`Failed to convert text to image: ${error instanceof Error ? error.message : String(error)}`);
     }
 }

@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var CommandService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommandService = void 0;
 const common_1 = require("@nestjs/common");
@@ -19,9 +20,10 @@ const stockInfo_1 = require("./acions/stockInfo");
 const stockSummary_1 = require("./acions/stockSummary");
 const weibo_1 = require("./acions/weibo");
 const ai_service_1 = require("../ai/ai.service");
-let CommandService = class CommandService {
+let CommandService = CommandService_1 = class CommandService {
     constructor(aiService) {
         this.aiService = aiService;
+        this.logger = new common_1.Logger(CommandService_1.name);
         this.commandMap = [
             {
                 key: 'a ',
@@ -209,7 +211,7 @@ let CommandService = class CommandService {
                         };
                     }
                     catch (error) {
-                        console.error('Error creating help image:', error);
+                        this.logger.error('Error creating help image:', error);
                         return {
                             content,
                             type: 'text'
@@ -230,7 +232,7 @@ let CommandService = class CommandService {
                     args,
                     key: command.key,
                 });
-                console.log(`\x1B[32m====================[命令执行开始]====================\x1B[0m\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n\x1B[32m====================[命令执行结束]====================\x1B[0m`);
+                this.logger.log(`====================[命令执行开始]====================\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n====================[命令执行结束]====================`);
                 return result;
             }
         }
@@ -251,7 +253,7 @@ let CommandService = class CommandService {
     }
 };
 exports.CommandService = CommandService;
-exports.CommandService = CommandService = __decorate([
+exports.CommandService = CommandService = CommandService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [ai_service_1.AiService])
 ], CommandService);

@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { Logger } from '@nestjs/common';
 
 const Binance_API_URL = 'https://data-api.binance.vision/api/v3/ticker/24hr';
+const logger = new Logger('Crypto');
 const Bitget_API_URL = 'https://api.bitget.com/api/v2/spot/market/tickers';
 const Bybit_API_URL = 'https://api.bybit.com/v5/market/tickers';
 const Gateio_API_URL = 'https://www.gate.io/apiw/v2/market/tickers';
@@ -222,9 +224,9 @@ export async function getCryptoBasicData(symbol: string): Promise<string> {
         if (result.success) {
           return result.text;
         }
-        console.warn(`${source.name} 数据获取失败，尝试下一个数据源`);
+        logger.warn(`${source.name} 数据获取失败，尝试下一个数据源`);
       } catch (error) {
-        console.error(`${source.name} API 调用出错:`, error);
+        logger.error(`${source.name} API 调用出错:`, error);
         continue;
       }
     }

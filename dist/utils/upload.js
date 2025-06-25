@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = require("axios");
+const common_1 = require("@nestjs/common");
 const GALLERY_URL = 'https://gallery233.pages.dev';
+const logger = new common_1.Logger('UploadUtil');
 async function uploadBase64Image(base64Image) {
     try {
         const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
@@ -21,7 +23,7 @@ async function uploadBase64Image(base64Image) {
         }
     }
     catch (error) {
-        console.error(`上传失败: ${error}`);
+        logger.error(`上传失败: ${error}`);
         throw new Error(`Error uploading image: ${error instanceof Error ? error.message : String(error)}`);
     }
 }

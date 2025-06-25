@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { getCryptoData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
 import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
@@ -22,6 +22,8 @@ export interface Command {
 
 @Injectable()
 export class CommandService {
+    private readonly logger = new Logger(CommandService.name);
+
     constructor(
         private readonly aiService: AiService,
     ) { }
@@ -249,7 +251,7 @@ export class CommandService {
                         //     type: 'image'
                         // };
                     } catch (error) {
-                        console.error('Error creating help image:', error);
+                        this.logger.error('Error creating help image:', error);
                         return {
                             content,
                             type: 'text'
@@ -271,7 +273,7 @@ export class CommandService {
                     key: command.key,
                 });
 
-                console.log(`\x1B[32m====================[命令执行开始]====================\x1B[0m\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n\x1B[32m====================[命令执行结束]====================\x1B[0m`)
+                this.logger.log(`====================[命令执行开始]====================\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${args || '无'}\n[结果] ${result.content}\n====================[命令执行结束]====================`)
 
                 return result;
             }

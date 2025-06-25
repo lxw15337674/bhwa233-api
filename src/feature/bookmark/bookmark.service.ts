@@ -43,8 +43,8 @@ export class BookmarkService {
                 const summarizedBookmark = await this.summarizeBookmarkByContent(newBookmark.id, data.content);
                 return summarizedBookmark;
             } catch (error) {
-                console.error('生成AI摘要失败:', error);
-            // 如果AI摘要失败，至少将loading状态设为false
+                this.logger.error('生成AI摘要失败:', error);
+                // 如果AI摘要失败，至少将loading状态设为false
                 const fallbackBookmark = await prisma.bookmark.update({
                     where: { id: newBookmark.id },
                     data: { loading: false },

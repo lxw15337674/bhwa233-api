@@ -1,5 +1,8 @@
 import sharp from 'sharp';
+import { Logger } from '@nestjs/common';
 import uploadBase64Image from './upload';
+
+const logger = new Logger('TextToImageUtil');
 
 /**
  * Converts text content to an image and uploads it
@@ -88,7 +91,7 @@ export async function textToImage(content: string, options?: {
         // Upload the image and return the URL
         return await uploadBase64Image(base64Image);
     } catch (error) {
-        console.error('Error converting text to image:', error);
+        logger.error('Error converting text to image:', error);
         throw new Error(`Failed to convert text to image: ${error instanceof Error ? error.message : String(error)}`);
     }
 }

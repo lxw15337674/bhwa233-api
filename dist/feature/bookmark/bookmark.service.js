@@ -41,7 +41,7 @@ let BookmarkService = BookmarkService_1 = class BookmarkService {
                 return summarizedBookmark;
             }
             catch (error) {
-                console.error('生成AI摘要失败:', error);
+                this.logger.error('生成AI摘要失败:', error);
                 const fallbackBookmark = await prisma.bookmark.update({
                     where: { id: newBookmark.id },
                     data: { loading: false },

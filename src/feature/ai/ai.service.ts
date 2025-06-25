@@ -1,11 +1,12 @@
 import OpenAI from 'openai';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { AIRequest } from './type';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
 
 @Injectable()
 export class AiService {
+    private readonly logger = new Logger(AiService.name);
     private openai: OpenAI;
 
     constructor() {
@@ -22,7 +23,7 @@ export class AiService {
         
         // 验证 prompt 是否为空
         if (!prompt || prompt.trim() === '') {
-            console.error('[AI Service] Empty prompt provided:', { prompt, type: typeof prompt });
+            this.logger.error('[AI Service] Empty prompt provided:', { prompt, type: typeof prompt });
             throw new BadRequestException('Prompt cannot be empty');
         }
         
@@ -50,7 +51,7 @@ export class AiService {
 
             return completion.choices[0].message.content ?? '';
         } catch (error) {
-            console.error('[AI Service] Error generating OpenAI response:', error);
+            this.logger.error('[AI Service] Error generating OpenAI response:', error);
             return  '获取AI回答失败';
         }
     }

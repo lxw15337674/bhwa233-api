@@ -2,8 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getStockSummary = getStockSummary;
 const axios_1 = require("axios");
+const common_1 = require("@nestjs/common");
 const utils_1 = require("../../../utils");
 const URL = "https://wzq.tenpay.com/cgi/cgi-bin/dapan/index?app=wzq%27";
+const logger = new common_1.Logger('StockSummary');
 async function getStockSummary() {
     try {
         const response = await (0, axios_1.default)({
@@ -35,7 +37,7 @@ async function getStockSummary() {
     }
     catch (error) {
         const axiosError = error;
-        console.error(`获取热点数据失败: ${axiosError.message}`);
+        logger.error(`获取热点数据失败: ${axiosError.message}`);
         return `❌ 获取市场数据失败，请稍后重试`;
     }
 }

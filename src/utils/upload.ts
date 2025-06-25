@@ -1,10 +1,12 @@
 import axios from 'axios';
+import { Logger } from '@nestjs/common';
 
 interface GalleryUploadResponse {
     src: string;
 }
 
 const GALLERY_URL = 'https://gallery233.pages.dev';
+const logger = new Logger('UploadUtil');
 
 async function uploadBase64Image(base64Image: string): Promise<string> {
     try {
@@ -34,7 +36,7 @@ async function uploadBase64Image(base64Image: string): Promise<string> {
         }
     } catch (error) {
         // 捕获并处理上传过程中出现的错误
-        console.error(`上传失败: ${error}`);
+        logger.error(`上传失败: ${error}`);
         throw new Error(`Error uploading image: ${error instanceof Error ? error.message : String(error)}`);
     }
 }

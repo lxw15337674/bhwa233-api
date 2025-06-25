@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { Logger } from '@nestjs/common';
 
 const SUGGESTION_API_URL = 'https://finance.pae.baidu.com/selfselect/sug';
+const logger = new Logger('Stock');
 const BD_GST_API_URL = 'https://gushitong.baidu.com/opendata';
 
 interface SuggestData {
@@ -427,7 +429,7 @@ async function getBaiduAbSr(): Promise<string | undefined> {
     }
     return abSr;
   } catch (error) {
-    console.error('获取百度Ab-Sr失败:', error);
+    logger.error('获取百度Ab-Sr失败:', error);
     return undefined;
   }
 }

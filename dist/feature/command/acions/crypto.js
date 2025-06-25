@@ -7,7 +7,9 @@ exports.getBinanceData = getBinanceData;
 exports.getBybitData = getBybitData;
 exports.getGateioData = getGateioData;
 const axios_1 = require("axios");
+const common_1 = require("@nestjs/common");
 const Binance_API_URL = 'https://data-api.binance.vision/api/v3/ticker/24hr';
+const logger = new common_1.Logger('Crypto');
 const Bitget_API_URL = 'https://api.bitget.com/api/v2/spot/market/tickers';
 const Bybit_API_URL = 'https://api.bybit.com/v5/market/tickers';
 const Gateio_API_URL = 'https://www.gate.io/apiw/v2/market/tickers';
@@ -64,10 +66,10 @@ async function getCryptoBasicData(symbol) {
                 if (result.success) {
                     return result.text;
                 }
-                console.warn(`${source.name} 数据获取失败，尝试下一个数据源`);
+                logger.warn(`${source.name} 数据获取失败，尝试下一个数据源`);
             }
             catch (error) {
-                console.error(`${source.name} API 调用出错:`, error);
+                logger.error(`${source.name} API 调用出错:`, error);
                 continue;
             }
         }

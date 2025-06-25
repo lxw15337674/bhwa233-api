@@ -1,8 +1,10 @@
 import axios, { AxiosError } from "axios";
+import { Logger } from '@nestjs/common';
 import { formatAmount } from "../../../utils";
 
 // 腾讯微证券热点数据
 const URL = "https://wzq.tenpay.com/cgi/cgi-bin/dapan/index?app=wzq%27";
+const logger = new Logger('StockSummary');
 
 // 基础类型
 type StringNumber = string;
@@ -196,7 +198,7 @@ export async function getStockSummary(): Promise<string | undefined> {
         return text;
     } catch (error) {
         const axiosError = error as AxiosError;
-        console.error(`获取热点数据失败: ${axiosError.message}`);
+        logger.error(`获取热点数据失败: ${axiosError.message}`);
         return `❌ 获取市场数据失败，请稍后重试`;
     }
 }
