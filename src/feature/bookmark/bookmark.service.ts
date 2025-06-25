@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import type { Bookmark, BookmarkTag } from '@prisma/client';
 import { CreateBookmarkDto } from './bookmark.dto';
 import { AiService } from '../ai/ai.service';
@@ -129,35 +129,23 @@ export class BookmarkService {
             const limitedTags = parsedData.tags.slice(0, 3);
             this.logger.log(`AI生成标签: ${limitedTags.join(', ')}`);
 
-            // 7. 处理标签 - 查找现有标签并创建新标签
-            const allTags = await this.processBookmarkTags(limitedTags);
+            // 7. 在事务中处理标签和更新书签 - 单次原子操作
+            const finalBookmark = await prisma.$transaction(async (tx) => {
+                // 处理标签 - 查找现有标签并创建新标签
+                const allTags = await this.processBookmarkTagsInTransaction(tx, limitedTags);
 
-            // 8. 更新书签 - 一次性更新所有字段
-            await prisma.bookmark.update({
-                where: { id },
-                data: {
-                    summary: parsedData.summary || '',
-                    loading: false,
-                    tags: {
-                        set: [], // 先清空现有标签
+                // 一次性更新书签（包括摘要、loading状态和标签关联）
+                return await tx.bookmark.update({
+                    where: { id },
+                    data: {
+                        summary: parsedData.summary || '',
+                        loading: false,
+                        tags: {
+                            set: allTags.map((tag: BookmarkTag) => ({ id: tag.id }))
+                        }
                     },
-                },
-            });
-
-            // 9. 重新关联标签
-            await prisma.bookmark.update({
-                where: { id },
-                data: {
-                    tags: {
-                        connect: allTags.map(tag => ({ id: tag.id })),
-                    },
-                },
-            });
-
-            // 10. 获取最终结果
-            const finalBookmark = await prisma.bookmark.findUnique({
-                where: { id },
-                include: { tags: true },
+                    include: { tags: true }
+                });
             });
 
             this.logger.log(`书签 ${id} AI摘要生成成功，摘要: ${parsedData.summary}，标签: ${limitedTags.join(', ')}`);
@@ -288,6 +276,35 @@ ${content}`;
         this.logger.log(`创建了 ${newTags.length} 个新标签: ${missingTagNames.join(', ')}`);
 
         return [...existingTags, ...newTags];
+    }
+
+    // 在事务中处理书签标签
+    private async processBookmarkTagsInTransaction(tx: Prisma.TransactionClient, tagNames: string[]): Promise<BookmarkTag[]> {
+        if (!tagNames || tagNames.length === 0) {
+            return [];
+        }
+
+        // 查找现有标签
+        const existingTags = await tx.bookmarkTag.findMany({
+            where: {
+                name: { in: tagNames }
+            }
+        });
+
+        // 创建缺失的标签
+        const existingTagNames = existingTags.map((t: BookmarkTag) => t.name);
+        const missingTagNames = tagNames.filter(name => !existingTagNames.includes(name));
+
+        const newTags = await Promise.all(
+            missingTagNames.map(name =>
+                tx.bookmarkTag.create({ data: { name } })
+            )
+        );
+
+        const allTags = [...existingTags, ...newTags];
+        this.logger.log(`标签处理完成: ${allTags.map(t => t.name).join(', ')} (新增${newTags.length}个)`);
+
+        return allTags;
     }
 
     // 降级更新 - AI失败时只更新loading状态
