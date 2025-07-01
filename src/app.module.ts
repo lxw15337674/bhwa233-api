@@ -8,6 +8,7 @@ import { CommandModule } from './feature/command/command.module';
 import { BookmarkModule } from './feature/bookmark/bookmark.module';
 import { BilibiliAudioModule } from './feature/bilibili-audio/bilibili-audio.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
+import { DouyinModule } from './feature/douyin/douyin.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { LoggingMiddleware } from './middleware/logging.middleware';
     CommandModule,
     BookmarkModule,
     BilibiliAudioModule,
+    DouyinModule,
   ],
   controllers: [AppController],
   providers: [AppService],

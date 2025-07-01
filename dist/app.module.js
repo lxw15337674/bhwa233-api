@@ -17,6 +17,7 @@ const command_module_1 = require("./feature/command/command.module");
 const bookmark_module_1 = require("./feature/bookmark/bookmark.module");
 const bilibili_audio_module_1 = require("./feature/bilibili-audio/bilibili-audio.module");
 const logging_middleware_1 = require("./middleware/logging.middleware");
+const douyin_module_1 = require("./feature/douyin/douyin.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             command_module_1.CommandModule,
             bookmark_module_1.BookmarkModule,
             bilibili_audio_module_1.BilibiliAudioModule,
+            douyin_module_1.DouyinModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
