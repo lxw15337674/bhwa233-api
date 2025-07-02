@@ -7,6 +7,7 @@ import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 import { CommandModule } from './feature/command/command.module';
 import { BookmarkModule } from './feature/bookmark/bookmark.module';
 import { BilibiliAudioModule } from './feature/bilibili-audio/bilibili-audio.module';
+import { BilibiliVideoModule } from './feature/bilibili-video/bilibili-video.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 import { DouyinModule } from './feature/douyin/douyin.module';
 
@@ -20,6 +21,7 @@ import { DouyinModule } from './feature/douyin/douyin.module';
     CommandModule,
     BookmarkModule,
     BilibiliAudioModule,
+    BilibiliVideoModule,
     DouyinModule,
   ],
   controllers: [AppController],
