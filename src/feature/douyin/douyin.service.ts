@@ -26,12 +26,11 @@ export class DouyinService {
         return resp;
     }
 
-    async getVideoUrl(url: string): Promise<{ downloadUrl: string; title: string; coverUrl: string }> {
+    async getVideoUrl(url: string) {
         const resp = await this.doGet(url);
         const body = resp.data;
         const match = pattern.exec(body);
         const descMatch = body.match(descRegex);
-        const coverMatch = body.match(coverRegex);
 
         if (!match || !match[1]) {
             // The link might be for an image gallery or is invalid.
@@ -43,10 +42,9 @@ export class DouyinService {
 
         const videoId = match[1];
         const downloadUrl = cVUrl.replace('%s', videoId);
-        const title = descMatch ? descMatch[1] : '未找到标题';
-        const coverUrl = coverMatch ? coverMatch[1] : '';
+        const title = descMatch ? descMatch[1].replace(/\\n/g, '') : '未找到标题';
 
-        return { downloadUrl, title, coverUrl };
+        return { downloadUrl, title };
     }
 
     async streamVideoProxy(

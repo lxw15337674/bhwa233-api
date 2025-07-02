@@ -16,6 +16,12 @@ import { Response } from 'express';
 export class DouyinController {
     constructor(private readonly douyinService: DouyinService) { }
 
+    @Get('parse')
+    @HttpCode(HttpStatus.OK)
+    async parseVideo(@Query() downloadVideoDto: DownloadVideoDto) {
+        return this.douyinService.getVideoUrl(downloadVideoDto.url);
+    }
+
     @Get('download')
     @HttpCode(HttpStatus.OK)
     async downloadVideo(
