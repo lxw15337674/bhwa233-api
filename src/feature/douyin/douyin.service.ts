@@ -1,4 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { Response } from 'express';
+import { AxiosResponse } from 'axios';
 
 const pattern = /"video":{"play_addr":{"uri":"([a-z0-9]+)"/;
 const cVUrl =
@@ -8,20 +11,24 @@ const coverRegex = /"cover":\s*{"url_list":\s*\["([^"]+)"/;
 
 @Injectable()
 export class DouyinService {
-    private async doGet(url: string): Promise<Response> {
-        const headers = new Headers();
-        headers.set(
-            'User-Agent',
-            'Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/14.2 Chrome/87.0.4280.141 Mobile Safari/537.36',
-        );
-        // fetch will automatically follow redirects.
-        const resp = await fetch(url, { method: 'GET', headers });
+    constructor(private readonly httpService: HttpService) { }
+
+    private async doGet(url: string): Promise<AxiosResponse> {
+        const headers = {
+            'User-Agent':
+                'Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/14.2 Chrome/87.0.4280.141 Mobile Safari/537.36',
+        };
+        // axios will automatically follow redirects.
+        const resp = await this.httpService.axiosRef.get(url, {
+            headers,
+            maxRedirects: 5
+        });
         return resp;
     }
 
     async getVideoUrl(url: string): Promise<{ downloadUrl: string; title: string; coverUrl: string }> {
         const resp = await this.doGet(url);
-        const body = await resp.text();
+        const body = resp.data;
         const match = pattern.exec(body);
         const descMatch = body.match(descRegex);
         const coverMatch = body.match(coverRegex);
@@ -40,5 +47,69 @@ export class DouyinService {
         const coverUrl = coverMatch ? coverMatch[1] : '';
 
         return { downloadUrl, title, coverUrl };
+    }
+
+    async streamVideoProxy(
+        videoUrl: string,
+        filename: string,
+        res: Response,
+    ): Promise<void> {
+        try {
+            const headers = {
+                'User-Agent':
+                    'Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/14.2 Chrome/87.0.4280.141 Mobile Safari/537.36',
+            };
+
+            // 获取视频流
+            const videoResponse = await this.httpService.axiosRef.get(videoUrl, {
+                headers,
+                responseType: 'stream',
+                validateStatus: (status) => status >= 200 && status < 300,
+            });
+
+            // 编码文件名
+            const encodedFilename = encodeURIComponent(filename)
+                .replace(/['()]/g, escape)
+                .replace(/\*/g, '%2A')
+                .replace(/%(?:7C|60|5E)/g, unescape);
+
+            // 设置响应头
+            res.setHeader('Content-Type', 'video/mp4');
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFilename}.mp4`);
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+
+            // 转发内容长度等头信息
+            const contentLength = videoResponse.headers['content-length'];
+            if (contentLength) {
+                res.setHeader('Content-Length', contentLength);
+            }
+
+            // 设置状态码
+            res.status(videoResponse.status);
+
+            // 直接管道传输响应流
+            videoResponse.data.pipe(res);
+
+            // 处理流错误
+            videoResponse.data.on('error', (error: Error) => {
+                console.error(`视频流传输失败: ${filename} - ${error.message}`);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: '视频流传输失败' });
+                }
+                res.end();
+            });
+
+            // 处理客户端断开连接
+            res.on('close', () => {
+                videoResponse.data.destroy();
+            });
+
+        } catch (error) {
+            console.error(`视频流代理失败: ${filename} - ${error.message}`);
+            if (!res.headersSent) {
+                res.status(500).json({ error: '视频流代理失败' });
+            }
+        }
     }
 } 
