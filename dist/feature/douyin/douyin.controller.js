@@ -21,8 +21,13 @@ let DouyinController = class DouyinController {
     constructor(douyinService) {
         this.douyinService = douyinService;
     }
-    async parseVideo(downloadVideoDto) {
-        return this.douyinService.getVideoUrl(downloadVideoDto.url);
+    async parseVideo(downloadVideoDto, req) {
+        const result = await this.douyinService.getVideoUrl(downloadVideoDto.url);
+        const proxyDownloadUrl = `${req.protocol}://${req.get('host')}/api/douyin/download?url=${encodeURIComponent(downloadVideoDto.url)}`;
+        return {
+            ...result,
+            proxyDownloadUrl,
+        };
     }
     async downloadVideo(downloadVideoDto, res) {
         const { downloadUrl, title } = await this.douyinService.getVideoUrl(downloadVideoDto.url);
@@ -35,8 +40,9 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     openapi.ApiResponse({ status: common_1.HttpStatus.OK }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [download_video_dto_1.DownloadVideoDto]),
+    __metadata("design:paramtypes", [download_video_dto_1.DownloadVideoDto, Object]),
     __metadata("design:returntype", Promise)
 ], DouyinController.prototype, "parseVideo", null);
 __decorate([

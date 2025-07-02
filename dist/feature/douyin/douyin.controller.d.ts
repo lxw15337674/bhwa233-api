@@ -1,10 +1,11 @@
 import { DouyinService } from './douyin.service';
 import { DownloadVideoDto } from './dto/download-video.dto';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 export declare class DouyinController {
     private readonly douyinService;
     constructor(douyinService: DouyinService);
-    parseVideo(downloadVideoDto: DownloadVideoDto): Promise<{
+    parseVideo(downloadVideoDto: DownloadVideoDto, req: Request): Promise<{
+        proxyDownloadUrl: string;
         downloadUrl: string;
         title: any;
     }>;
