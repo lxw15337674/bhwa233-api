@@ -26,8 +26,8 @@ let BilibiliAudioController = BilibiliAudioController_1 = class BilibiliAudioCon
     }
     async downloadAudio(downloadAudioDto, req, res) {
         try {
-            const { url, quality } = downloadAudioDto;
-            const { audioUrl, filename } = await this.bilibiliAudioService.getAudioStreamInfo(url, quality);
+            const { url } = downloadAudioDto;
+            const { audioUrl, filename } = await this.bilibiliAudioService.getAudioStreamInfo(url);
             const range = req.headers.range;
             await this.bilibiliAudioService.streamAudioProxy(audioUrl, filename, res, { range });
         }
