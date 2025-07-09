@@ -8,6 +8,7 @@ import { CommandModule } from './feature/command/command.module';
 import { BookmarkModule } from './feature/bookmark/bookmark.module';
 import { BilibiliAudioModule } from './feature/bilibili-audio/bilibili-audio.module';
 import { BilibiliVideoModule } from './feature/bilibili-video/bilibili-video.module';
+import { BiliModule } from './feature/bili/bili.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 import { DouyinModule } from './feature/douyin/douyin.module';
 
@@ -22,6 +23,7 @@ import { DouyinModule } from './feature/douyin/douyin.module';
     BookmarkModule,
     BilibiliAudioModule,
     BilibiliVideoModule,
+    BiliModule,
     DouyinModule,
   ],
   controllers: [AppController],
