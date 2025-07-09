@@ -1,12 +1,5 @@
 import axios, { AxiosError } from 'axios';
 
-export enum AudioQualityEnums {
-    Low = 64,
-    Medium = 132,
-    High = 192,
-    Highest = 320,
-}
-
 interface AudioStream {
     id: number;
     baseUrl: string;
@@ -22,8 +15,7 @@ export class AudioDownloader {
     private readonly maxRetries = 3;
     private readonly retryDelay = 3000; // 3 seconds
 
-
-    constructor(private readonly baseUrl: string, private readonly audioQuality: AudioQualityEnums = AudioQualityEnums.High) {
+    constructor(private readonly baseUrl: string) {
         // 清理和验证 baseUrl
         this.baseUrl = this.cleanUrl(baseUrl);
 
@@ -48,8 +40,6 @@ export class AudioDownloader {
     private async sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-
-
 
     /**
      * 从各种格式的B站URL中提取BV号
@@ -123,7 +113,6 @@ export class AudioDownloader {
     public async getAudioStreamUrl(): Promise<{
         audioUrl: string;
         title: string;
-        quality: number;
         filename: string;
     }> {
         await this.retryOperation(() => this.getCid());
@@ -132,7 +121,6 @@ export class AudioDownloader {
         return {
             audioUrl: this.audioUrl,
             title: this.title,
-            quality: this.audioQuality,
             filename: `${this.title}.mp3`
         };
     }
@@ -161,7 +149,6 @@ export class AudioDownloader {
             params: {
                 bvid: this.bv,
                 cid: this.cid,
-                qn: this.audioQuality,
                 fnver: 0,
                 fnval: 4048,
                 fourk: 1
@@ -173,14 +160,13 @@ export class AudioDownloader {
             throw new Error("No audio stream found");
         }
 
-        // Find the audio stream with the requested quality or fallback to the best available
+        // 选择id最大的音频流（最高音质）
         const audioStreams = response.data.data.dash.audio as AudioStream[];
-        let selectedStream = audioStreams.find(stream => stream.id === this.audioQuality);
-        if (!selectedStream) {
-            selectedStream = audioStreams[0];
-        }
+        const bestAudioStream = audioStreams.reduce((best, current) => {
+            return current.id > best.id ? current : best;
+        });
 
-        this.audioUrl = selectedStream.baseUrl;
+        this.audioUrl = bestAudioStream.baseUrl;
     }
 
     private async downloadAudio(): Promise<Buffer> {

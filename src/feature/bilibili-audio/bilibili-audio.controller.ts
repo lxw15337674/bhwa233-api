@@ -56,10 +56,10 @@ export class BilibiliAudioController {
         @Res() res: Response
     ): Promise<void> {
         try {
-            const { url, quality } = downloadAudioDto;
+            const { url } = downloadAudioDto;
 
-            // 获取音频流信息
-            const { audioUrl, filename } = await this.bilibiliAudioService.getAudioStreamInfo(url, quality);
+            // 获取音频流信息（自动选择最高音质）
+            const { audioUrl, filename } = await this.bilibiliAudioService.getAudioStreamInfo(url);
 
             // 处理客户端的Range请求（用于断点续传）
             const range = req.headers.range as string;
