@@ -11,6 +11,7 @@ import { BilibiliVideoModule } from './feature/bilibili-video/bilibili-video.mod
 import { BiliModule } from './feature/bili/bili.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 import { DouyinModule } from './feature/douyin/douyin.module';
+import { ProxyModule } from './feature/proxy/proxy.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { DouyinModule } from './feature/douyin/douyin.module';
     BilibiliVideoModule,
     BiliModule,
     DouyinModule,
+    ProxyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

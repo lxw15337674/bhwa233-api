@@ -3,5 +3,5 @@ export declare class AiService {
     private readonly logger;
     private openai;
     constructor();
-    generateResponse(body: AIRequest): Promise<string>;
+    generateResponse(body: AIRequest): unknown;
 }

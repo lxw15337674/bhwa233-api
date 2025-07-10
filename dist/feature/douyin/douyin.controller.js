@@ -11,12 +11,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DouyinController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const douyin_service_1 = require("./douyin.service");
 const download_video_dto_1 = require("./dto/download-video.dto");
+const express_1 = require("express");
 let DouyinController = class DouyinController {
     constructor(douyinService) {
         this.douyinService = douyinService;
@@ -38,21 +40,21 @@ exports.DouyinController = DouyinController;
 __decorate([
     (0, common_1.Get)('parse'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    openapi.ApiResponse({ status: common_1.HttpStatus.OK }),
+    openapi.ApiResponse({ status: common_1.HttpStatus.OK, type: Object }),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [download_video_dto_1.DownloadVideoDto, Object]),
+    __metadata("design:paramtypes", [download_video_dto_1.DownloadVideoDto, typeof (_a = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _a : Object]),
     __metadata("design:returntype", Promise)
 ], DouyinController.prototype, "parseVideo", null);
 __decorate([
     (0, common_1.Get)('download'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    openapi.ApiResponse({ status: common_1.HttpStatus.OK }),
+    openapi.ApiResponse({ status: common_1.HttpStatus.OK, type: Object }),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [download_video_dto_1.DownloadVideoDto, Object]),
+    __metadata("design:paramtypes", [download_video_dto_1.DownloadVideoDto, typeof (_b = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _b : Object]),
     __metadata("design:returntype", Promise)
 ], DouyinController.prototype, "downloadVideo", null);
 exports.DouyinController = DouyinController = __decorate([

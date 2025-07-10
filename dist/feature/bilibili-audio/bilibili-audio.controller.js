@@ -12,11 +12,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 var BilibiliAudioController_1;
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BilibiliAudioController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const express_1 = require("express");
 const bilibili_audio_service_1 = require("./bilibili-audio.service");
 const download_audio_dto_1 = require("./dto/download-audio.dto");
 let BilibiliAudioController = BilibiliAudioController_1 = class BilibiliAudioController {
@@ -76,13 +78,12 @@ __decorate([
         description: 'Internal server error'
     }),
     (0, common_1.Get)('download'),
-    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Req)()),
     __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [download_audio_dto_1.DownloadAudioDto, Object, Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:paramtypes", [download_audio_dto_1.DownloadAudioDto, typeof (_a = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _a : Object, typeof (_b = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _b : Object]),
+    __metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
 ], BilibiliAudioController.prototype, "downloadAudio", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Health check for Bilibili audio service' }),
@@ -98,7 +99,7 @@ __decorate([
         }
     }),
     (0, common_1.Get)('health'),
-    openapi.ApiResponse({ status: 200 }),
+    openapi.ApiResponse({ status: 200, type: Object }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

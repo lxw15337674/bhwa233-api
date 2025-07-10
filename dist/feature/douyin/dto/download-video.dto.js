@@ -14,7 +14,7 @@ const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class DownloadVideoDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { url: { required: true, type: () => String, format: "uri" } };
+        return { url: { required: true, type: () => String, format: "uri" }, range: { required: false, type: () => String }, quality: { required: false, type: () => String } };
     }
 }
 exports.DownloadVideoDto = DownloadVideoDto;
@@ -23,4 +23,14 @@ __decorate([
     (0, class_validator_1.IsUrl)(undefined, { message: '请输入有效的抖音分享链接' }),
     __metadata("design:type", String)
 ], DownloadVideoDto.prototype, "url", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DownloadVideoDto.prototype, "range", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DownloadVideoDto.prototype, "quality", void 0);
 //# sourceMappingURL=download-video.dto.js.map

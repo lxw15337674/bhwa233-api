@@ -3,6 +3,6 @@ import { AIRequest } from './type';
 export declare class AiController {
     private readonly aiService;
     constructor(aiService: AiService);
-    get(): Promise<string>;
-    chat(body: AIRequest): Promise<string>;
+    get(): unknown;
+    chat(body: AIRequest): unknown;
 }

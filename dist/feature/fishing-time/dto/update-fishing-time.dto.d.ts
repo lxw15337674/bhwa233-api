@@ -1,5 +1,4 @@
-import { CreateFishingTimeDto } from './create-fishing-time.dto';
-declare const UpdateFishingTimeDto_base: import("@nestjs/common").Type<Partial<CreateFishingTimeDto>>;
+declare const UpdateFishingTimeDto_base: any;
 export declare class UpdateFishingTimeDto extends UpdateFishingTimeDto_base {
 }
 export {};
