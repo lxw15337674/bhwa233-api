@@ -30,6 +30,52 @@ let DouyinService = class DouyinService {
         });
         return resp;
     }
+    async getVideoContentLength(videoUrl) {
+        try {
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/14.2 Chrome/87.0.4280.141 Mobile Safari/537.36',
+            };
+            const response = await this.httpService.axiosRef.head(videoUrl, {
+                headers,
+                validateStatus: (status) => status >= 200 && status < 300,
+            });
+            const contentLength = response.headers['content-length'];
+            return contentLength ? parseInt(contentLength, 10) : 0;
+        }
+        catch (error) {
+            console.error('获取视频大小失败:', error.message);
+            return 0;
+        }
+    }
+    parseRangeHeader(rangeHeader, contentLength) {
+        if (!rangeHeader || !rangeHeader.startsWith('bytes=')) {
+            throw new common_1.BadRequestException('无效的Range请求头格式');
+        }
+        const range = rangeHeader.replace('bytes=', '');
+        const parts = range.split('-');
+        if (parts.length !== 2) {
+            throw new common_1.BadRequestException('无效的Range格式');
+        }
+        let start = 0;
+        let end = contentLength - 1;
+        if (parts[0] && parts[1]) {
+            start = parseInt(parts[0], 10);
+            end = parseInt(parts[1], 10);
+        }
+        else if (parts[0] && !parts[1]) {
+            start = parseInt(parts[0], 10);
+            end = contentLength - 1;
+        }
+        else if (!parts[0] && parts[1]) {
+            const suffix = parseInt(parts[1], 10);
+            start = Math.max(0, contentLength - suffix);
+            end = contentLength - 1;
+        }
+        if (start < 0 || end >= contentLength || start > end) {
+            throw new common_1.BadRequestException('请求的范围无效');
+        }
+        return { start, end, total: contentLength };
+    }
     async getVideoUrl(url) {
         const resp = await this.doGet(url);
         const body = resp.data;
