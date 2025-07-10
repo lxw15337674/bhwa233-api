@@ -30,7 +30,7 @@ let CommandController = class CommandController {
 exports.CommandController = CommandController;
 __decorate([
     (0, common_1.Get)(''),
-    openapi.ApiResponse({ status: 200, type: Object }),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)('command')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -38,7 +38,7 @@ __decorate([
 ], CommandController.prototype, "executeCommand", null);
 __decorate([
     (0, common_1.Get)('hp'),
-    openapi.ApiResponse({ status: 200, type: Object }),
+    openapi.ApiResponse({ status: 200, type: [Object] }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

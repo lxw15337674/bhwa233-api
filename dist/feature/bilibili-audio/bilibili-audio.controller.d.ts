@@ -6,5 +6,8 @@ export declare class BilibiliAudioController {
     private readonly logger;
     constructor(bilibiliAudioService: BilibiliAudioService);
     downloadAudio(downloadAudioDto: DownloadAudioDto, req: Request, res: Response): Promise<void>;
-    healthCheck(): unknown;
+    healthCheck(): Promise<{
+        status: string;
+        timestamp: string;
+    }>;
 }

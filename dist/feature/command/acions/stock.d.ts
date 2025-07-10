@@ -161,10 +161,37 @@ export declare enum FinancialProductType {
 export declare function getStockSuggest(searchText?: string, type?: FinancialProductType[]): Promise<Stock | undefined>;
 export declare function getStockData(symbol: string): Promise<string>;
 export declare function getStockBasicData(symbol: string): Promise<string>;
-export declare function getStockDetailData(symbol: string): unknown;
+export declare function getStockDetailData(symbol: string): Promise<string>;
 export declare function fetchStockDetailData(suggest: {
     code: string;
     type: string;
     market: string;
-}): unknown;
+}): Promise<{
+    strategy: {
+        tempName: string;
+        precharge: string;
+        ctplOrPhp: string;
+        hilightWord: string;
+    };
+    resultData: {
+        tplData: {
+            cardName: string;
+            templateName: string;
+            title: string;
+            result: {
+                name: string;
+                code: string;
+                minuteUrl?: string;
+                klineUrl?: string;
+                fivedayUrl?: string;
+                stockType?: string;
+                foreign_key?: string;
+                releaseNotes?: string;
+                minute_data?: MinuteData;
+                market?: string;
+                selectTab?: string;
+            };
+        };
+    };
+}>;
 export {};

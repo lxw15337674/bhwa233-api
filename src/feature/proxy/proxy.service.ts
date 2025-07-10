@@ -79,7 +79,10 @@ export class ProxyService {
       // 提取响应头
       const responseHeaders: Record<string, string> = {};
       Object.keys(response.headers).forEach(key => {
-        responseHeaders[key.toLowerCase()] = response.headers[key];
+        const value = response.headers[key];
+        if (value !== undefined) {
+          responseHeaders[key.toLowerCase()] = String(value);
+        }
       });
 
       // 获取Content-Type
@@ -99,12 +102,24 @@ export class ProxyService {
 
       if (axios.isAxiosError(error)) {
         if (error.response) {
+          // 提取并转换错误响应头
+          const errorResponseHeaders: Record<string, string> = {};
+          if (error.response.headers) {
+            const headers = error.response.headers;
+            Object.keys(headers).forEach(key => {
+              const value = headers[key];
+              if (value !== undefined) {
+                errorResponseHeaders[key.toLowerCase()] = String(value);
+              }
+            });
+          }
+
           // 服务器响应了错误状态码
           return {
             data: error.response.data,
             status: error.response.status,
-            headers: error.response.headers || {},
-            contentType: error.response.headers?.['content-type'] || 'application/json',
+            headers: errorResponseHeaders,
+            contentType: error.response.headers?.['content-type'] as string || 'application/json',
           };
         } else if (error.request) {
           // 请求已发送但没有收到响应

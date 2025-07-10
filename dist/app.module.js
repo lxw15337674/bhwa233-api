@@ -20,6 +20,7 @@ const bilibili_video_module_1 = require("./feature/bilibili-video/bilibili-video
 const bili_module_1 = require("./feature/bili/bili.module");
 const logging_middleware_1 = require("./middleware/logging.middleware");
 const douyin_module_1 = require("./feature/douyin/douyin.module");
+const proxy_module_1 = require("./feature/proxy/proxy.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -42,6 +43,7 @@ exports.AppModule = AppModule = __decorate([
             bilibili_video_module_1.BilibiliVideoModule,
             bili_module_1.BiliModule,
             douyin_module_1.DouyinModule,
+            proxy_module_1.ProxyModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

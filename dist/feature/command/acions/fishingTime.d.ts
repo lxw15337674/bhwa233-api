@@ -1,2 +1,2 @@
-export declare const calculateRestDays: (dateString: string) => any;
+export declare const calculateRestDays: (dateString: string) => number;
 export declare function holiday(): Promise<string>;

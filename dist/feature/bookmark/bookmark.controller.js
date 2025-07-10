@@ -76,7 +76,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid URL parameter' }),
     (0, common_1.Delete)('search'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
-    openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT, type: Object }),
+    openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT }),
     __param(0, (0, common_1.Query)('url')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -86,7 +86,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Health check for bookmark service' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Service is healthy' }),
     (0, common_1.Get)('health'),
-    openapi.ApiResponse({ status: 200, type: Object }),
+    openapi.ApiResponse({ status: 200 }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

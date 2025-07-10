@@ -6,6 +6,9 @@ export declare class DouyinService {
     private doGet;
     private getVideoContentLength;
     private parseRangeHeader;
-    getVideoUrl(url: string): unknown;
+    getVideoUrl(url: string): Promise<{
+        downloadUrl: string;
+        title: any;
+    }>;
     streamVideoProxy(videoUrl: string, filename: string, res: Response): Promise<void>;
 }

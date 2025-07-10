@@ -12,13 +12,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 var BiliController_1;
-var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BiliController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const express_1 = require("express");
 const bili_service_1 = require("./bili.service");
 const bili_request_dto_1 = require("./dto/bili-request.dto");
 let BiliController = BiliController_1 = class BiliController {
@@ -147,10 +145,11 @@ __decorate([
             },
         },
     }),
+    openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Query)(new common_1.ValidationPipe({ transform: true }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [bili_request_dto_1.BiliUrlDto]),
-    __metadata("design:returntype", typeof (_a = typeof Promise !== "undefined" && Promise) === "function" ? _a : Object)
+    __metadata("design:returntype", Promise)
 ], BiliController.prototype, "getVideoInfo", null);
 __decorate([
     (0, common_1.Get)('audio'),
@@ -184,12 +183,13 @@ __decorate([
         status: 500,
         description: '服务器内部错误'
     }),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Req)()),
     __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [bili_request_dto_1.BiliDownloadDto, typeof (_b = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _b : Object, typeof (_c = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _c : Object]),
-    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+    __metadata("design:paramtypes", [bili_request_dto_1.BiliDownloadDto, Object, Object]),
+    __metadata("design:returntype", Promise)
 ], BiliController.prototype, "downloadAudio", null);
 __decorate([
     (0, common_1.Get)('video'),
@@ -229,12 +229,13 @@ __decorate([
         status: 500,
         description: '服务器内部错误'
     }),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Req)()),
     __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [bili_request_dto_1.BiliDownloadDto, typeof (_e = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _e : Object, typeof (_f = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _f : Object]),
-    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+    __metadata("design:paramtypes", [bili_request_dto_1.BiliDownloadDto, Object, Object]),
+    __metadata("design:returntype", Promise)
 ], BiliController.prototype, "downloadVideo", null);
 exports.BiliController = BiliController = BiliController_1 = __decorate([
     (0, swagger_1.ApiTags)('Bili - B站统一接口'),

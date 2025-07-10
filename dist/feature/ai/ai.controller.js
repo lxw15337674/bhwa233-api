@@ -35,7 +35,7 @@ let AiController = class AiController {
 exports.AiController = AiController;
 __decorate([
     (0, common_1.Get)(''),
-    openapi.ApiResponse({ status: 200, type: Object }),
+    openapi.ApiResponse({ status: 200, type: String }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -58,7 +58,7 @@ __decorate([
         transform: true,
         validateCustomDecorators: true
     })),
-    openapi.ApiResponse({ status: 201, type: Object }),
+    openapi.ApiResponse({ status: 201, type: String }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [type_1.AIRequest]),
