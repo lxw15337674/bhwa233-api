@@ -12,7 +12,6 @@ export class AIRequest {
 
     @ApiProperty({
         description: 'Optional AI model to use',
-        example: 'deepseek-chat',
         required: false
     })
     @IsOptional()
