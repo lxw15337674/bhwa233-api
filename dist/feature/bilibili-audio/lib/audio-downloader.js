@@ -1,18 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AudioDownloader = exports.AudioQualityEnums = void 0;
+exports.AudioDownloader = void 0;
 const axios_1 = require("axios");
-var AudioQualityEnums;
-(function (AudioQualityEnums) {
-    AudioQualityEnums[AudioQualityEnums["Low"] = 64] = "Low";
-    AudioQualityEnums[AudioQualityEnums["Medium"] = 132] = "Medium";
-    AudioQualityEnums[AudioQualityEnums["High"] = 192] = "High";
-    AudioQualityEnums[AudioQualityEnums["Highest"] = 320] = "Highest";
-})(AudioQualityEnums || (exports.AudioQualityEnums = AudioQualityEnums = {}));
 class AudioDownloader {
-    constructor(baseUrl, audioQuality = AudioQualityEnums.High) {
+    constructor(baseUrl) {
         this.baseUrl = baseUrl;
-        this.audioQuality = audioQuality;
         this.bv = '';
         this.cid = '';
         this.title = '';
@@ -91,7 +83,6 @@ class AudioDownloader {
         return {
             audioUrl: this.audioUrl,
             title: this.title,
-            quality: this.audioQuality,
             filename: `${this.title}.mp3`
         };
     }
@@ -115,7 +106,6 @@ class AudioDownloader {
             params: {
                 bvid: this.bv,
                 cid: this.cid,
-                qn: this.audioQuality,
                 fnver: 0,
                 fnval: 4048,
                 fourk: 1
@@ -126,11 +116,10 @@ class AudioDownloader {
             throw new Error("No audio stream found");
         }
         const audioStreams = response.data.data.dash.audio;
-        let selectedStream = audioStreams.find(stream => stream.id === this.audioQuality);
-        if (!selectedStream) {
-            selectedStream = audioStreams[0];
-        }
-        this.audioUrl = selectedStream.baseUrl;
+        const bestAudioStream = audioStreams.reduce((best, current) => {
+            return current.id > best.id ? current : best;
+        });
+        this.audioUrl = bestAudioStream.baseUrl;
     }
     async downloadAudio() {
         try {

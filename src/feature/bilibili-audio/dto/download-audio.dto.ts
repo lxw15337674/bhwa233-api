@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUrl, IsOptional, IsEnum } from 'class-validator';
-import { AudioQualityEnums } from '../lib/audio-downloader';
+import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
 
 export class DownloadAudioDto {
     @ApiProperty({
@@ -12,15 +11,4 @@ export class DownloadAudioDto {
     @IsString({ message: 'URL must be a string' })
     @IsUrl({}, { message: 'Invalid URL format' })
     url: string;
-
-    @ApiProperty({
-        description: 'Audio quality',
-        enum: AudioQualityEnums,
-        example: AudioQualityEnums.High,
-        required: false,
-        default: AudioQualityEnums.High
-    })
-    @IsOptional()
-    @IsEnum(AudioQualityEnums, { message: 'Invalid audio quality' })
-    quality?: AudioQualityEnums;
 } 

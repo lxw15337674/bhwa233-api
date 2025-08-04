@@ -13,10 +13,9 @@ exports.DownloadAudioDto = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
-const audio_downloader_1 = require("../lib/audio-downloader");
 class DownloadAudioDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { url: { required: true, type: () => String, format: "uri" }, quality: { required: false, enum: require("../lib/audio-downloader").AudioQualityEnums } };
+        return { url: { required: true, type: () => String, format: "uri" } };
     }
 }
 exports.DownloadAudioDto = DownloadAudioDto;
@@ -31,16 +30,4 @@ __decorate([
     (0, class_validator_1.IsUrl)({}, { message: 'Invalid URL format' }),
     __metadata("design:type", String)
 ], DownloadAudioDto.prototype, "url", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({
-        description: 'Audio quality',
-        enum: audio_downloader_1.AudioQualityEnums,
-        example: audio_downloader_1.AudioQualityEnums.High,
-        required: false,
-        default: audio_downloader_1.AudioQualityEnums.High
-    }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(audio_downloader_1.AudioQualityEnums, { message: 'Invalid audio quality' }),
-    __metadata("design:type", Number)
-], DownloadAudioDto.prototype, "quality", void 0);
 //# sourceMappingURL=download-audio.dto.js.map

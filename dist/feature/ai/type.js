@@ -27,7 +27,6 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Optional AI model to use',
-        example: 'deepseek-chat',
         required: false
     }),
     (0, class_validator_1.IsOptional)(),

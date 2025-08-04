@@ -1,12 +1,5 @@
-export declare enum AudioQualityEnums {
-    Low = 64,
-    Medium = 132,
-    High = 192,
-    Highest = 320
-}
 export declare class AudioDownloader {
     private readonly baseUrl;
-    private readonly audioQuality;
     private readonly headers;
     private bv;
     private cid;
@@ -15,7 +8,7 @@ export declare class AudioDownloader {
     private readonly axiosInstance;
     private readonly maxRetries;
     private readonly retryDelay;
-    constructor(baseUrl: string, audioQuality?: AudioQualityEnums);
+    constructor(baseUrl: string);
     private cleanUrl;
     private sleep;
     private extractBvFromUrl;
@@ -27,7 +20,6 @@ export declare class AudioDownloader {
     getAudioStreamUrl(): Promise<{
         audioUrl: string;
         title: string;
-        quality: number;
         filename: string;
     }>;
     private getCid;
