@@ -366,7 +366,7 @@ export async function getStockDetailData(symbol: string): Promise<string> {
 
 export async function getGzjc() {
   try {
-    const futureCodes = ['IF2507', 'IF2508', 'IF2509', 'IF2512'];
+    const futureCodes = ['IF2508', 'IF2509', 'IF2512', 'IF2603'];
 
     const results = await Promise.all(
       futureCodes.map(async (code) => {
