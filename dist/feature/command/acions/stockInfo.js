@@ -248,7 +248,7 @@ async function getStockDetailData(symbol) {
 }
 async function getGzjc() {
     try {
-        const futureCodes = ['IF2507', 'IF2508', 'IF2509', 'IF2512'];
+        const futureCodes = ['IF2508', 'IF2509', 'IF2512', 'IF2603'];
         const results = await Promise.all(futureCodes.map(async (code) => {
             const suggest = await (0, stock_1.getStockSuggest)(code, [
                 stock_1.FinancialProductType.FUTURES,
