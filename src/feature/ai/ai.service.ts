@@ -18,8 +18,14 @@ export class AiService {
 
     async generateResponse(
         body: AIRequest
-    ) {
-        const { prompt, model = process.env.AI_MODEL ?? 'deepseek-chat', rolePrompt = aiPrompt } = body;
+    ): Promise<string> {
+        const { 
+            prompt, 
+            model = process.env.AI_MODEL ?? 'step-2-mini', 
+            rolePrompt = aiPrompt,
+            enableWebSearch = true,
+            searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索'
+        } = body;
         
         // 验证 prompt 是否为空
         if (!prompt || prompt.trim() === '') {
@@ -43,16 +49,30 @@ export class AiService {
             }
         ];
 
-        try {
-            const completion = await this.openai.chat.completions.create({
-                messages,
-                model,
-            });
+        // 构建请求参数
+        const requestParams: any = {
+            messages,
+            model,
+        };
 
+        // 如果启用网络搜索，添加 tools 配置
+        if (enableWebSearch) {
+            requestParams.tools = [
+                {
+                    type: "web_search",
+                    function: {
+                        description: searchDescription
+                    }
+                }
+            ];
+        }
+
+        try {
+            const completion = await this.openai.chat.completions.create(requestParams);
             return completion.choices[0].message.content ?? '';
         } catch (error) {
-            this.logger.error('[AI Service] Error generating OpenAI response:', error);
-            return  '获取AI回答失败';
+            this.logger.error('[AI Service] Error generating AI response:', error);
+            return '获取AI回答失败';
         }
     }
 }

@@ -329,4 +329,4 @@ ${content}`;
     private async getBookmarkTags(): Promise<BookmarkTag[]> {
         return await prisma.bookmarkTag.findMany();
     }
-} 
+}

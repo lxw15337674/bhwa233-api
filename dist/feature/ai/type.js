@@ -43,4 +43,24 @@ __decorate([
     (0, class_validator_1.IsString)({ message: 'Role prompt must be a string' }),
     __metadata("design:type", String)
 ], AIRequest.prototype, "rolePrompt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Enable web search for real-time information (enabled by default)',
+        example: false,
+        required: false,
+        default: true
+    }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], AIRequest.prototype, "enableWebSearch", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Description of when to use web search',
+        example: 'Search for current events, latest news, or real-time information',
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'Search description must be a string' }),
+    __metadata("design:type", String)
+], AIRequest.prototype, "searchDescription", void 0);
 //# sourceMappingURL=type.js.map

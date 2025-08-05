@@ -41,11 +41,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "get", null);
 __decorate([
-    (0, swagger_1.ApiOperation)({ summary: 'Generate AI response from prompt' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Generate AI response with integrated web search',
+        description: 'Generate AI response with built-in internet search capability for real-time information. Web search is enabled by default and can be optionally disabled.'
+    }),
     (0, swagger_1.ApiBody)({ type: type_1.AIRequest }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Returns the AI generated response'
+        description: 'AI response content',
+        type: String
     }),
     (0, swagger_1.ApiResponse)({
         status: 400,

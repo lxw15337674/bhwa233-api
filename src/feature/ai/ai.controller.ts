@@ -12,23 +12,28 @@ export class AiController {
     @Get('')
     async get() {
         return 'Hello ai';
-    }    @ApiOperation({ summary: 'Generate AI response from prompt' })
+    }    @ApiOperation({ 
+        summary: 'Generate AI response with integrated web search',
+        description: 'Generate AI response with built-in internet search capability for real-time information. Web search is enabled by default and can be optionally disabled.'
+    })
     @ApiBody({ type: AIRequest })
     @ApiResponse({ 
         status: 200, 
-        description: 'Returns the AI generated response'
+        description: 'AI response content',
+        type: String
     })
     @ApiResponse({
         status: 400,
         description: 'Bad request - invalid input data'
-    })    @Post('chat')
+    })
+    @Post('chat')
     @UsePipes(new ValidationPipe({ 
         whitelist: true, 
         forbidNonWhitelisted: true,
         transform: true,
         validateCustomDecorators: true
     }))
-    async chat(@Body() body: AIRequest) {
+    async chat(@Body() body: AIRequest): Promise<string> {
         // 额外的运行时验证
         if (!body.prompt || typeof body.prompt !== 'string' || body.prompt.trim() === '') {
             throw new BadRequestException('Prompt is required and cannot be empty');
