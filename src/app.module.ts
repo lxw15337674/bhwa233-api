@@ -6,11 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { FishingTimeModule } from './feature/fishing-time/fishing-time.module';
 import { CommandModule } from './feature/command/command.module';
 import { BookmarkModule } from './feature/bookmark/bookmark.module';
-import { BilibiliAudioModule } from './feature/bilibili-audio/bilibili-audio.module';
-import { BilibiliVideoModule } from './feature/bilibili-video/bilibili-video.module';
-import { BiliModule } from './feature/bili/bili.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
-import { DouyinModule } from './feature/douyin/douyin.module';
 import { ProxyModule } from './feature/proxy/proxy.module';
 
 @Module({
@@ -22,10 +18,6 @@ import { ProxyModule } from './feature/proxy/proxy.module';
     AiModule,
     CommandModule,
     BookmarkModule,
-    BilibiliAudioModule,
-    BilibiliVideoModule,
-    BiliModule,
-    DouyinModule,
     ProxyModule,
   ],
   controllers: [AppController],
