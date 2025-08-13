@@ -86,7 +86,10 @@ let BookmarkService = BookmarkService_1 = class BookmarkService {
             const existingTags = await this.getBookmarkTags();
             const existingTagNames = existingTags.map((t) => t.name);
             const aiPrompt = this.buildAiPrompt(truncatedContent, existingTagNames);
-            const aiResponse = await this.callAiWithTimeout(aiPrompt, 30000);
+            const aiResponse = await this.aiService.generateResponse({
+                prompt: aiPrompt,
+                rolePrompt: '你是一个专业的内容分析师，请严格按照要求返回JSON格式的分析结果。'
+            });
             const parsedData = this.parseAiResponse(aiResponse);
             if (!parsedData) {
                 this.logger.warn(`AI响应解析失败，降级处理`);
@@ -141,14 +144,6 @@ let BookmarkService = BookmarkService_1 = class BookmarkService {
 
 网页内容：
 ${content}`;
-    }
-    async callAiWithTimeout(prompt, timeoutMs) {
-        const aiPromise = this.aiService.generateResponse({
-            prompt,
-            rolePrompt: '你是一个专业的内容分析师，请严格按照要求返回JSON格式的分析结果。'
-        });
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI调用超时')), timeoutMs));
-        return Promise.race([aiPromise, timeoutPromise]);
     }
     parseAiResponse(response) {
         try {

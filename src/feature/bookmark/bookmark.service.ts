@@ -109,8 +109,11 @@ export class BookmarkService {
             // 3. 构建AI请求
             const aiPrompt = this.buildAiPrompt(truncatedContent, existingTagNames);
 
-            // 4. 调用AI服务 - 30秒超时
-            const aiResponse = await this.callAiWithTimeout(aiPrompt, 30000);
+            // 4. 调用AI服务
+            const aiResponse = await this.aiService.generateResponse({
+                prompt: aiPrompt,
+                rolePrompt: '你是一个专业的内容分析师，请严格按照要求返回JSON格式的分析结果。'
+            });
 
             // 5. 解析AI响应
             const parsedData = this.parseAiResponse(aiResponse);
@@ -180,20 +183,6 @@ export class BookmarkService {
 
 网页内容：
 ${content}`;
-    }
-
-    // 带超时的AI调用
-    private async callAiWithTimeout(prompt: string, timeoutMs: number): Promise<string> {
-        const aiPromise = this.aiService.generateResponse({
-            prompt,
-            rolePrompt: '你是一个专业的内容分析师，请严格按照要求返回JSON格式的分析结果。'
-        });
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('AI调用超时')), timeoutMs)
-        );
-
-        return Promise.race([aiPromise, timeoutPromise]);
     }
 
     // 解析AI响应

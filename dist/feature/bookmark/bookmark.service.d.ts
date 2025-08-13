@@ -21,7 +21,6 @@ export declare class BookmarkService {
     private summarizeBookmarkByContent;
     private truncateContent;
     private buildAiPrompt;
-    private callAiWithTimeout;
     private parseAiResponse;
     private extractFromText;
     private processBookmarkTags;
