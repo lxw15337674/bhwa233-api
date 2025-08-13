@@ -112,6 +112,7 @@ export class BookmarkService {
             // 4. 调用AI服务
             const aiResponse = await this.aiService.generateResponse({
                 prompt: aiPrompt,
+                model: 'step-2-mini',
                 rolePrompt: '你是一个专业的内容分析师，请严格按照要求返回JSON格式的分析结果。'
             });
 
