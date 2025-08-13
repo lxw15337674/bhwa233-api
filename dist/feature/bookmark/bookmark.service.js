@@ -32,30 +32,22 @@ let BookmarkService = BookmarkService_1 = class BookmarkService {
         };
         const newBookmark = await prisma.bookmark.upsert({
             where: { url: bookmarkData.url },
-            update: { ...bookmarkData, loading: true },
-            create: { ...bookmarkData, loading: true },
-        });
-        if (data.content && data.content.trim() !== '') {
-            try {
-                const summarizedBookmark = await this.summarizeBookmarkByContent(newBookmark.id, data.content);
-                return summarizedBookmark;
-            }
-            catch (error) {
-                this.logger.error('生成AI摘要失败:', error);
-                const fallbackBookmark = await prisma.bookmark.update({
-                    where: { id: newBookmark.id },
-                    data: { loading: false },
-                    include: { tags: true },
-                });
-                return fallbackBookmark;
-            }
-        }
-        const completeBookmark = await prisma.bookmark.update({
-            where: { id: newBookmark.id },
-            data: { loading: false },
+            update: { ...bookmarkData, loading: data.content ? true : false },
+            create: { ...bookmarkData, loading: data.content ? true : false },
             include: { tags: true },
         });
-        return completeBookmark;
+        return newBookmark;
+    }
+    async processBookmarkSummaryInBackground(id, content) {
+        try {
+            this.logger.log(`开始后台处理书签 ${id} 的AI摘要`);
+            await this.summarizeBookmarkByContent(id, content);
+            this.logger.log(`书签 ${id} 后台AI摘要处理完成`);
+        }
+        catch (error) {
+            this.logger.error(`书签 ${id} 后台AI摘要处理失败:`, error);
+            await this.fallbackUpdate(id);
+        }
     }
     async getBookmarkByUrl(url) {
         if (!url || typeof url !== 'string' || url.trim() === '') {

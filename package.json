@@ -34,6 +34,7 @@
     "@nestjs/websockets": "^10.4.20",
     "@prisma/client": "6.9.0",
     "@types/fluent-ffmpeg": "^2.1.27",
+    "@vercel/functions": "^2.2.8",
     "axios": "^1.11.0",
     "class-transformer": "^0.5.1",
     "dayjs": "^1.11.13",

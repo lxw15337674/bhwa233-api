@@ -19,12 +19,17 @@ const swagger_1 = require("@nestjs/swagger");
 const bookmark_service_1 = require("./bookmark.service");
 const api_key_guard_1 = require("../../guards/api-key.guard");
 const bookmark_dto_1 = require("./bookmark.dto");
+const functions_1 = require("@vercel/functions");
 let BookmarkController = class BookmarkController {
     constructor(bookmarkService) {
         this.bookmarkService = bookmarkService;
     }
     async createBookmark(createBookmarkDto) {
-        return this.bookmarkService.createBookmark(createBookmarkDto);
+        const bookmark = await this.bookmarkService.createBookmark(createBookmarkDto);
+        if (bookmark && createBookmarkDto.content && createBookmarkDto.content.trim() !== '') {
+            (0, functions_1.waitUntil)(this.bookmarkService.processBookmarkSummaryInBackground(bookmark.id, createBookmarkDto.content));
+        }
+        return bookmark;
     }
     async getBookmarkByUrl(url) {
         if (!url) {

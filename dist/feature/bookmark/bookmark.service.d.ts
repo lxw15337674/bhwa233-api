@@ -9,6 +9,7 @@ export declare class BookmarkService {
     private readonly logger;
     constructor(aiService: AiService);
     createBookmark(data: CreateBookmarkDto): Promise<CompleteBookmark | null>;
+    processBookmarkSummaryInBackground(id: string, content: string): Promise<void>;
     getBookmarkByUrl(url: string): Promise<CompleteBookmark | null>;
     deleteBookmarkByUrl(url: string): Promise<{
         message: string;

@@ -7,8 +7,6 @@ import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 @Controller('ai')
 export class AiController {
     constructor(private readonly aiService: AiService) { }
-
-
     @Get('')
     async get() {
         return 'Hello ai';
@@ -34,11 +32,6 @@ export class AiController {
         validateCustomDecorators: true
     }))
     async chat(@Body() body: AIRequest): Promise<string> {
-        // 额外的运行时验证
-        if (!body.prompt || typeof body.prompt !== 'string' || body.prompt.trim() === '') {
-            throw new BadRequestException('Prompt is required and cannot be empty');
-        }
-        
         return this.aiService.generateResponse(body);
     }
 }

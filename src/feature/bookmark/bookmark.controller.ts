@@ -16,6 +16,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiQuery } from '@nest
 import { BookmarkService } from './bookmark.service';
 import { ApiKeyGuard } from '../../guards/api-key.guard';
 import { CreateBookmarkDto } from './bookmark.dto';
+import { waitUntil } from '@vercel/functions';
 
 @ApiTags('Bookmarks')
 @ApiSecurity('api-key')
@@ -35,7 +36,20 @@ export class BookmarkController {
     @ApiResponse({ status: 401, description: 'Invalid API key' })
     @Post()
     async createBookmark(@Body() createBookmarkDto: CreateBookmarkDto) {
-        return this.bookmarkService.createBookmark(createBookmarkDto);
+        // 立即创建书签并返回
+        const bookmark = await this.bookmarkService.createBookmark(createBookmarkDto);
+        
+        // 如果提供了内容且书签创建成功，使用 waitUntil 在后台处理 AI 摘要
+        if (bookmark && createBookmarkDto.content && createBookmarkDto.content.trim() !== '') {
+            waitUntil(
+                this.bookmarkService.processBookmarkSummaryInBackground(
+                    bookmark.id, 
+                    createBookmarkDto.content
+                )
+            );
+        }
+        
+        return bookmark;
     }
 
     @ApiOperation({ summary: 'Get bookmark by URL' })

@@ -33,35 +33,26 @@ export class BookmarkService {
         // 创建或更新书签
         const newBookmark = await prisma.bookmark.upsert({
             where: { url: bookmarkData.url },
-            update: { ...bookmarkData, loading: true },
-            create: { ...bookmarkData, loading: true },
-        });
-
-        // 如果提供了内容，则同步生成AI摘要和标签
-        if (data.content && data.content.trim() !== '') {
-            try {
-                const summarizedBookmark = await this.summarizeBookmarkByContent(newBookmark.id, data.content);
-                return summarizedBookmark;
-            } catch (error) {
-                this.logger.error('生成AI摘要失败:', error);
-                // 如果AI摘要失败，至少将loading状态设为false
-                const fallbackBookmark = await prisma.bookmark.update({
-                    where: { id: newBookmark.id },
-                    data: { loading: false },
-                    include: { tags: true },
-                });
-                return fallbackBookmark;
-            }
-        }
-
-        // 如果没有内容，直接设置loading为false并返回
-        const completeBookmark = await prisma.bookmark.update({
-            where: { id: newBookmark.id },
-            data: { loading: false },
+            update: { ...bookmarkData, loading: data.content ? true : false },
+            create: { ...bookmarkData, loading: data.content ? true : false },
             include: { tags: true },
         });
 
-        return completeBookmark;
+        // 返回书签信息（如果有内容，loading: true；否则 loading: false）
+        return newBookmark;
+    }
+
+    // 新增：专门用于后台AI摘要处理的方法
+    async processBookmarkSummaryInBackground(id: string, content: string): Promise<void> {
+        try {
+            this.logger.log(`开始后台处理书签 ${id} 的AI摘要`);
+            await this.summarizeBookmarkByContent(id, content);
+            this.logger.log(`书签 ${id} 后台AI摘要处理完成`);
+        } catch (error) {
+            this.logger.error(`书签 ${id} 后台AI摘要处理失败:`, error);
+            // 确保即使失败也要更新loading状态
+            await this.fallbackUpdate(id);
+        }
     }
 
     async getBookmarkByUrl(url: string): Promise<CompleteBookmark | null> {

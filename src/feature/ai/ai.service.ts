@@ -21,9 +21,8 @@ export class AiService {
     ): Promise<string> {
         const { 
             prompt, 
-            model = process.env.AI_MODEL ?? 'step-2-mini', 
+            model = 'step-3', 
             rolePrompt = aiPrompt,
-            enableWebSearch = true,
             searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索'
         } = body;
         
@@ -53,22 +52,19 @@ export class AiService {
         const requestParams: any = {
             messages,
             model,
-        };
-
-        // 如果启用网络搜索，添加 tools 配置
-        if (enableWebSearch) {
-            requestParams.tools = [
+            tool_choice:"auto",
+            tools: [
                 {
                     type: "web_search",
                     function: {
                         description: searchDescription
                     }
                 }
-            ];
-        }
-
+            ]
+        };
         try {
             const completion = await this.openai.chat.completions.create(requestParams);
+            console.log(completion.choices[0].message);
             return completion.choices[0].message.content ?? '';
         } catch (error) {
             this.logger.error('[AI Service] Error generating AI response:', error);

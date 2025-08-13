@@ -26,9 +26,6 @@ let AiController = class AiController {
         return 'Hello ai';
     }
     async chat(body) {
-        if (!body.prompt || typeof body.prompt !== 'string' || body.prompt.trim() === '') {
-            throw new common_1.BadRequestException('Prompt is required and cannot be empty');
-        }
         return this.aiService.generateResponse(body);
     }
 };
