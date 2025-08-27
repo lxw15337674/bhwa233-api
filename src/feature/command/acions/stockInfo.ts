@@ -364,30 +364,123 @@ export async function getStockDetailData(symbol: string): Promise<string> {
   }
 }
 
+// 缓存机制
+interface FuturesCache {
+  data: string[];
+  timestamp: number;
+}
+
+// 缓存过期时间：60分钟
+const FUTURES_CACHE_EXPIRATION = 60 * 60 * 1000;
+let futuresCache: FuturesCache | null = null;
+
+/**
+ * 从中金所获取期货代码，带缓存机制
+ * @param forceUpdate 是否强制更新，跳过缓存
+ * @returns 期货代码数组
+ */
+export async function fetchCFFEXFuturesCodes(forceUpdate = false): Promise<string[]> {
+  const now = Date.now();
+
+  // 如果不是强制更新且缓存有效，直接返回缓存数据
+  if (!forceUpdate && futuresCache && now - futuresCache.timestamp < FUTURES_CACHE_EXPIRATION) {
+    logger.log('使用缓存的期货代码');
+    return futuresCache.data;
+  }
+
+  // 强制更新或缓存失效，获取最新数据
+  if (forceUpdate) {
+    logger.log('强制更新期货代码');
+  } else {
+    logger.log('缓存过期，获取最新期货代码');
+  }
+
+  try {
+    // 从中金所获取数据
+    const response = await axios.get('http://www.cffex.com.cn/quote_IF.txt');
+    const data = response.data;
+
+    // 解析数据，只提取代码
+    const lines = data.trim().split('\n');
+    const futureCodes: string[] = [];
+
+    for (const line of lines) {
+      const fields = line.split(',');
+      if (fields.length > 0 && fields[0].startsWith('IF')) {
+        futureCodes.push(fields[0]);
+      }
+    }
+
+    if (futureCodes.length === 0) {
+      throw new Error('❌ 无法从中金所获取期货代码');
+    }
+
+    // 打印获取到的期货代码
+    logger.log(`成功获取期货代码: ${futureCodes.join(', ')}`);
+
+    // 更新缓存
+    futuresCache = {
+      data: futureCodes,
+      timestamp: now
+    };
+
+    return futureCodes;
+  } catch (error) {
+    logger.error('获取期货代码失败:', error);
+    // 如果有缓存但已过期，在请求失败时仍然返回过期的缓存
+    if (futuresCache) {
+      logger.warn('使用过期的缓存数据');
+      return futuresCache.data;
+    }
+    throw error;
+  }
+}
+
 export async function getGzjc() {
   try {
-    const futureCodes = ['IF2508', 'IF2509', 'IF2512', 'IF2603'];
+    // 定义一个函数来处理所有期货代码，带有重试标志
+    async function processFutureCodes(isRetry = false): Promise<any[]> {
+      // 获取期货代码，如果是重试则强制更新
+      const futureCodes = await fetchCFFEXFuturesCodes(isRetry);
 
-    const results = await Promise.all(
-      futureCodes.map(async (code) => {
-        const suggest = await getStockSuggest(code, [
-          FinancialProductType.FUTURES,
-        ]);
-        if (!suggest) {
-          throw new Error(`❌ 获取 ${code} 期货失败`);
+      try {
+        // 并行处理所有期货代码
+        return await Promise.all(
+          futureCodes.map(async (code) => {
+            const suggest = await getStockSuggest(code, [
+              FinancialProductType.FUTURES,
+            ]);
+
+            if (!suggest) {
+              throw new Error(`❌ 获取 ${code} 期货失败`);
+            }
+
+            const detail = await fetchStockDetailData(suggest);
+
+            return {
+              code,
+              price: detail.resultData.tplData.result.minute_data?.cur.price,
+              holdingAmount:
+                detail.resultData.tplData.result.minute_data?.pankouinfos
+                  .origin_pankou.holdingAmount,
+            };
+          })
+        );
+      } catch (error) {
+        // 如果不是重试且获取失败，则整体重试一次
+        if (!isRetry) {
+          logger.warn(`期货数据获取失败，强制更新期货代码并整体重试: ${error.message}`);
+          // 递归调用自身，标记为重试状态
+          return await processFutureCodes(true);
         }
 
-        const detail = await fetchStockDetailData(suggest);
+        // 如果已经是重试状态，则继续抛出错误
+        throw error;
+      }
+    }
 
-        return {
-          code,
-          price: detail.resultData.tplData.result.minute_data?.cur.price,
-          holdingAmount:
-            detail.resultData.tplData.result.minute_data?.pankouinfos
-              .origin_pankou.holdingAmount,
-        };
-      }),
-    );
+    // 执行期货代码处理
+    const results = await processFutureCodes();
 
     const hs300 = await getStockSuggest('000300', [FinancialProductType.INDEX]);
 
@@ -403,7 +496,7 @@ export async function getGzjc() {
       (sum, item) =>
         sum +
         ((Number(item.holdingAmount) || 0) / holdingAmountTotal) *
-          (Number(item.price) || 0),
+        (Number(item.price) || 0),
       0,
     );
 
