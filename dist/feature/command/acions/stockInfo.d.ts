@@ -93,5 +93,6 @@ export declare function getCNMarketIndexData(): Promise<string>;
 export declare function getUSMarketIndexData(): Promise<string>;
 export declare function getHKMarketIndexData(): Promise<string>;
 export declare function getStockDetailData(symbol: string): Promise<string>;
+export declare function fetchCFFEXFuturesCodes(forceUpdate?: boolean): Promise<string[]>;
 export declare function getGzjc(): Promise<any>;
 export {};

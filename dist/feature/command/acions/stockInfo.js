@@ -8,6 +8,7 @@ exports.getCNMarketIndexData = getCNMarketIndexData;
 exports.getUSMarketIndexData = getUSMarketIndexData;
 exports.getHKMarketIndexData = getHKMarketIndexData;
 exports.getStockDetailData = getStockDetailData;
+exports.fetchCFFEXFuturesCodes = fetchCFFEXFuturesCodes;
 exports.getGzjc = getGzjc;
 const axios_1 = require("axios");
 const common_1 = require("@nestjs/common");
@@ -246,24 +247,80 @@ async function getStockDetailData(symbol) {
         return `❌ 获取 ${symbol} 详情失败：未知错误`;
     }
 }
+const FUTURES_CACHE_EXPIRATION = 60 * 60 * 1000;
+let futuresCache = null;
+async function fetchCFFEXFuturesCodes(forceUpdate = false) {
+    const now = Date.now();
+    if (!forceUpdate && futuresCache && now - futuresCache.timestamp < FUTURES_CACHE_EXPIRATION) {
+        logger.log('使用缓存的期货代码');
+        return futuresCache.data;
+    }
+    if (forceUpdate) {
+        logger.log('强制更新期货代码');
+    }
+    else {
+        logger.log('缓存过期，获取最新期货代码');
+    }
+    try {
+        const response = await axios_1.default.get('http://www.cffex.com.cn/quote_IF.txt');
+        const data = response.data;
+        const lines = data.trim().split('\n');
+        const futureCodes = [];
+        for (const line of lines) {
+            const fields = line.split(',');
+            if (fields.length > 0 && fields[0].startsWith('IF')) {
+                futureCodes.push(fields[0]);
+            }
+        }
+        if (futureCodes.length === 0) {
+            throw new Error('❌ 无法从中金所获取期货代码');
+        }
+        logger.log(`成功获取期货代码: ${futureCodes.join(', ')}`);
+        futuresCache = {
+            data: futureCodes,
+            timestamp: now
+        };
+        return futureCodes;
+    }
+    catch (error) {
+        logger.error('获取期货代码失败:', error);
+        if (futuresCache) {
+            logger.warn('使用过期的缓存数据');
+            return futuresCache.data;
+        }
+        throw error;
+    }
+}
 async function getGzjc() {
     try {
-        const futureCodes = ['IF2508', 'IF2509', 'IF2512', 'IF2603'];
-        const results = await Promise.all(futureCodes.map(async (code) => {
-            const suggest = await (0, stock_1.getStockSuggest)(code, [
-                stock_1.FinancialProductType.FUTURES,
-            ]);
-            if (!suggest) {
-                throw new Error(`❌ 获取 ${code} 期货失败`);
+        async function processFutureCodes(isRetry = false) {
+            const futureCodes = await fetchCFFEXFuturesCodes(isRetry);
+            try {
+                return await Promise.all(futureCodes.map(async (code) => {
+                    const suggest = await (0, stock_1.getStockSuggest)(code, [
+                        stock_1.FinancialProductType.FUTURES,
+                    ]);
+                    if (!suggest) {
+                        throw new Error(`❌ 获取 ${code} 期货失败`);
+                    }
+                    const detail = await (0, stock_1.fetchStockDetailData)(suggest);
+                    return {
+                        code,
+                        price: detail.resultData.tplData.result.minute_data?.cur.price,
+                        holdingAmount: detail.resultData.tplData.result.minute_data?.pankouinfos
+                            .origin_pankou.holdingAmount,
+                    };
+                }));
             }
-            const detail = await (0, stock_1.fetchStockDetailData)(suggest);
-            return {
-                code,
-                price: detail.resultData.tplData.result.minute_data?.cur.price,
-                holdingAmount: detail.resultData.tplData.result.minute_data?.pankouinfos
-                    .origin_pankou.holdingAmount,
-            };
-        }));
+            catch (error) {
+                if (!isRetry) {
+                    logger.warn(`期货数据获取失败，强制更新期货代码并整体重试: ${error.message}`);
+                    return await processFutureCodes(true);
+                }
+                throw error;
+            }
+        }
+        const results = await processFutureCodes();
         const hs300 = await (0, stock_1.getStockSuggest)('000300', [stock_1.FinancialProductType.INDEX]);
         if (!hs300) {
             throw new Error(`❌ 获取 沪深300 数据失败`);
