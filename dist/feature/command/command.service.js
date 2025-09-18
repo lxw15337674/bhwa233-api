@@ -28,7 +28,7 @@ let CommandService = CommandService_1 = class CommandService {
             {
                 key: 'a ',
                 callback: async (params) => {
-                    const response = await this.aiService.generateResponse({ prompt: params?.args ?? '', rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔' });
+                    const response = await this.aiService.generateResponse({ prompt: params?.args ?? '', rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在300字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔' });
                     return {
                         content: response,
                         type: 'text'

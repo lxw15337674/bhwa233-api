@@ -178,7 +178,7 @@ async function getCNMarketIndexData() {
             getStockBasicData('SZ399006'),
         ])).map(formatIndexData);
         data.push(await getGzjc());
-        return `${data.join('\n\n')}`;
+        return `${data.join('\n')}`;
     }
     catch (error) {
         if (error instanceof Error) {
@@ -194,7 +194,7 @@ async function getUSMarketIndexData() {
             getStockBasicData('.IXIC'),
             getStockBasicData('.INX'),
         ]);
-        return `${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n')}`;
     }
     catch (error) {
         if (error instanceof Error) {
@@ -210,7 +210,7 @@ async function getHKMarketIndexData() {
             getStockBasicData('HSCEI'),
             getStockBasicData('HSTECH'),
         ]);
-        return `${data.map(formatIndexData).join('\n\n')}`;
+        return `${data.map(formatIndexData).join('\n')}`;
     }
     catch (error) {
         if (error instanceof Error) {
