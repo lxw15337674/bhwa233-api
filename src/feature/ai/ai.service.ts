@@ -23,7 +23,8 @@ export class AiService {
             prompt, 
             model = 'step-3', 
             rolePrompt = aiPrompt,
-            searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索'
+            searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索',
+            enableWebSearch = false // 新增开关，默认为 false
         } = body;
         
         // 验证 prompt 是否为空
@@ -33,7 +34,7 @@ export class AiService {
         }
         
         // 确保 rolePrompt 不为空
-        const systemPrompt = (rolePrompt && rolePrompt.trim()) ? rolePrompt.trim() : '你是一个AI助手，擅长回答用户的问题。';
+        const systemPrompt = rolePrompt.trim() ??'你是一个AI助手，擅长回答用户的问题。';
         const userPrompt = prompt.trim();
 
         // 构建消息数组
@@ -52,15 +53,17 @@ export class AiService {
         const requestParams: any = {
             messages,
             model,
-            tool_choice:"auto",
-            tools: [
-                {
-                    type: "web_search",
-                    function: {
-                        description: searchDescription
+            ...(enableWebSearch && {
+                tool_choice: "auto",
+                tools: [
+                    {
+                        type: "web_search",
+                        function: {
+                            description: searchDescription
+                        }
                     }
-                }
-            ]
+                ]
+            })
         };
         try {
             const completion = await this.openai.chat.completions.create(requestParams);
