@@ -23,7 +23,7 @@ let AiService = AiService_1 = class AiService {
         });
     }
     async generateResponse(body) {
-        const { prompt, model = 'step-3', rolePrompt = aiPrompt, searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索', enableWebSearch = false } = body;
+        const { prompt, model = process.env.AI_MODEL ?? 'step-3', rolePrompt = aiPrompt, searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索', enableWebSearch = false } = body;
         if (!prompt || prompt.trim() === '') {
             this.logger.error('[AI Service] Empty prompt provided:', { prompt, type: typeof prompt });
             throw new common_1.BadRequestException('Prompt cannot be empty');
