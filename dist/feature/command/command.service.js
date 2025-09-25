@@ -230,7 +230,7 @@ let CommandService = CommandService_1 = class CommandService {
                         .filter(command => command.enable !== false)
                         .map(command => command.msg)
                         .join('\n');
-                    const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
+                    const content = `===== 命令帮助 =====\n${commandMsg}\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
                     try {
                         return {
                             content,

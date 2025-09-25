@@ -17,7 +17,7 @@ async function getHotSpot() {
         });
         const hotSpot = response.data.data?.concept_data.list;
         const formattedList = hotSpot.map(item => `${item.title}: ${item.desc}`).join('\n');
-        return `📈 今日市场热点概念\n\n${formattedList}`;
+        return `📈 今日市场热点概念\n${formattedList}`;
     }
     catch (error) {
         const axiosError = error;

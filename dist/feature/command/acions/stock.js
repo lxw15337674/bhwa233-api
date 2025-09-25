@@ -55,7 +55,7 @@ async function getStockData(symbol) {
     try {
         const symbols = symbol.split(/\s+/);
         const results = await getMultipleStocksData(symbols);
-        return results.join('\n\n');
+        return results.join('\n');
     }
     catch (error) {
         if (error instanceof Error) {

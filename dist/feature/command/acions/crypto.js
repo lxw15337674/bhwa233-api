@@ -17,7 +17,7 @@ async function getCryptoData(symbol) {
     try {
         const symbols = symbol.split(/\s+/);
         const results = await getMultipleCryptosData(symbols);
-        return results.join('\n\n');
+        return results.join('\n');
     }
     catch (error) {
         if (error instanceof Error) {

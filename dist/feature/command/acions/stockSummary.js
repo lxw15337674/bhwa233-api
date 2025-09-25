@@ -21,14 +21,14 @@ async function getStockSummary() {
         text += `----------------------------\n`;
         text += `💰 成交情况\n`;
         text += `总成交额: ${(0, utils_1.formatAmount)(data.turnover_dsb.all.amount)}\n`;
-        text += `较前日: ${(0, utils_1.formatAmount)(data.turnover_dsb.all.amount_change)}\n\n`;
+        text += `较前日: ${(0, utils_1.formatAmount)(data.turnover_dsb.all.amount_change)}\n`;
         text += `📈 市场表现\n`;
         text += `上涨家数: ${data.ups_downs_dsb.up_count}\n`;
         text += `下跌家数: ${data.ups_downs_dsb.down_count}\n`;
         text += `平盘家数: ${data.ups_downs_dsb.flat_count}\n`;
-        text += `市场情绪: ${data.ups_downs_dsb.up_ratio_comment}\n\n`;
+        text += `市场情绪: ${data.ups_downs_dsb.up_ratio_comment}\n`;
         text += `🌏 国际联动\n`;
-        text += `${data.global_reaction.comment}\n\n`;
+        text += `${data.global_reaction.comment}\n`;
         text += `📊 估值水平 (历史百分位)\n`;
         text += `上证指数: ${data.index_valuation.sh000001.pe_hist_percentile}%\n`;
         text += `深圳成指: ${data.index_valuation.sz399001.pe_hist_percentile}%\n`;
