@@ -107,7 +107,7 @@ let CommandService = CommandService_1 = class CommandService {
                 key: 'sb ',
                 callback: async (params) => {
                     if (!params.args) {
-                        throw new Error('请输入股票标签，例如: sb 中概');
+                        throw new Error('请输入股票标签，例如: sb 互联网');
                     }
                     const result = await (0, stockInfo_1.getStocksByTag)(params.args);
                     return {
@@ -115,8 +115,20 @@ let CommandService = CommandService_1 = class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 中概',
+                msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 互联网',
                 hasArgs: true,
+            },
+            {
+                key: 'sbl',
+                callback: async () => {
+                    const result = await (0, stockInfo_1.getAllStockGroups)();
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'sbl - 显示所有股票分组内容，格式为[标签名]: [股票代码数组]',
+                hasArgs: false,
             },
             {
                 key: 'dp',

@@ -4,6 +4,7 @@ exports.getToken = getToken;
 exports.getSuggestStock = getSuggestStock;
 exports.getStockBasicData = getStockBasicData;
 exports.getStocksByTag = getStocksByTag;
+exports.getAllStockGroups = getAllStockGroups;
 exports.getStockData = getStockData;
 exports.getCNMarketIndexData = getCNMarketIndexData;
 exports.getUSMarketIndexData = getUSMarketIndexData;
@@ -146,6 +147,25 @@ async function getStocksByTag(tag) {
             return `❌ 获取 ${tag} 失败：${error.message}`;
         }
         return `❌ 获取 ${tag} 失败：未知错误`;
+    }
+}
+async function getAllStockGroups() {
+    try {
+        const response = await axios_1.default.get(STOCK_TAG_API_URL);
+        const stockGroups = response.data;
+        let result = '📊 股票分组列表：\n';
+        for (const [tagName, stockCodes] of Object.entries(stockGroups)) {
+            if (Array.isArray(stockCodes)) {
+                result += `🏷️ ${tagName}: [${stockCodes.join(', ')}]\n`;
+            }
+        }
+        return result.trim();
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            return `❌ 获取股票分组列表失败：${error.message}`;
+        }
+        return `❌ 获取股票分组列表失败：未知错误`;
     }
 }
 async function getStockData(symbol) {

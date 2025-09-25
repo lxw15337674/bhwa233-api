@@ -254,6 +254,28 @@ export async function getStocksByTag(tag: string): Promise<string> {
   }
 }
 
+export async function getAllStockGroups(): Promise<string> {
+  try {
+    const response = await axios.get(STOCK_TAG_API_URL);
+    const stockGroups = response.data;
+
+    let result = '📊 股票分组列表：\n';
+
+    for (const [tagName, stockCodes] of Object.entries(stockGroups)) {
+      if (Array.isArray(stockCodes)) {
+        result += `🏷️ ${tagName}: [${stockCodes.join(', ')}]\n`;
+      }
+    }
+
+    return result.trim();
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return `❌ 获取股票分组列表失败：${error.message}`;
+    }
+    return `❌ 获取股票分组列表失败：未知错误`;
+  }
+}
+
 export async function getStockData(symbol: string): Promise<string> {
   try {
     const symbols = symbol.split(/\s+/); // 按空格分割多个股票代码

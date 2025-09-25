@@ -3,7 +3,7 @@ import { getCryptoData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
 import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
 import { getHotSpot } from './acions/stockHotSpot';
-import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getStocksByTag, getUSMarketIndexData } from './acions/stockInfo';
+import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getStocksByTag, getAllStockGroups, getUSMarketIndexData } from './acions/stockInfo';
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
@@ -130,6 +130,18 @@ export class CommandService {
                 },
                 msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 互联网',
                 hasArgs: true,
+            },
+            {
+                key: 'sbl',
+                callback: async () => {
+                    const result = await getAllStockGroups();
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'sbl - 显示所有股票分组内容，格式为[标签名]: [股票代码数组]',
+                hasArgs: false,
             },
             {
                 key: 'dp',
