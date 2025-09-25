@@ -255,7 +255,7 @@ export class CommandService {
                         .map(command => command.msg)
                         .join('\n');
 
-                    const content = `===== 命令帮助 =====\n\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/weixin-robot`;
+                    const content = `===== 命令帮助 =====\n${commandMsg}\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
                     try {
                         return {
                             content,

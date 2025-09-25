@@ -238,7 +238,7 @@ export async function getStockData(symbol: string): Promise<string> {
   try {
     const symbols = symbol.split(/\s+/); // 按空格分割多个股票代码
     const results = await getMultipleStocksData(symbols);
-    return results.join('\n\n'); // 用两个换行符分隔每个股票的数据，增加可读性
+    return results.join('\n'); // 用两个换行符分隔每个股票的数据，增加可读性
   } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取 ${symbol} 失败：${error.message}`;

@@ -170,7 +170,7 @@ export async function getCryptoData(symbol: string): Promise<string> {
   try {
     const symbols = symbol.split(/\s+/); // 按空格分割多个交易对代码
     const results = await getMultipleCryptosData(symbols);
-    return results.join('\n\n'); // 用两个换行符分隔每个交易对的数据，增加可读性
+    return results.join('\n'); // 用两个换行符分隔每个交易对的数据，增加可读性
   } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取 ${symbol} 失败：${error.message}`;
