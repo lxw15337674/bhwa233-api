@@ -3,7 +3,7 @@ import { getCryptoData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
 import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
 import { getHotSpot } from './acions/stockHotSpot';
-import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getUSMarketIndexData } from './acions/stockInfo';
+import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getStocksByTag, getUSMarketIndexData } from './acions/stockInfo';
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
@@ -114,6 +114,21 @@ export class CommandService {
                     };
                 },
                 msg: 'sd [股票代码] - 获取股票详细信息 例如: sd gzmt',
+                hasArgs: true,
+            },
+            {
+                key: 'sb ',
+                callback: async (params: CommandParams) => {
+                    if (!params.args) {
+                        throw new Error('请输入股票标签，例如: sb 中概');
+                    }
+                    const result = await getStocksByTag(params.args);
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 中概',
                 hasArgs: true,
             },
             {

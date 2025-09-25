@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getToken = getToken;
 exports.getSuggestStock = getSuggestStock;
 exports.getStockBasicData = getStockBasicData;
+exports.getStocksByTag = getStocksByTag;
 exports.getStockData = getStockData;
 exports.getCNMarketIndexData = getCNMarketIndexData;
 exports.getUSMarketIndexData = getUSMarketIndexData;
@@ -17,6 +18,7 @@ const stock_1 = require("./stock");
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json';
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json';
 const logger = new common_1.Logger('StockInfo');
+const STOCK_TAG_API_URL = 'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
 let Cookie = '';
 let cookieTimestamp = 0;
 const COOKIE_EXPIRATION_TIME = 1 * 24 * 60 * 60 * 1000;
@@ -131,6 +133,20 @@ async function getMultipleStocksData(symbols) {
         }
     });
     return await Promise.all(promises);
+}
+async function getStocksByTag(tag) {
+    const response = await axios_1.default.get(STOCK_TAG_API_URL);
+    const results = await getMultipleStocksData(response.data[tag]);
+    const textContent = results.join('\n');
+    try {
+        return textContent;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            return `❌ 获取 ${tag} 失败：${error.message}`;
+        }
+        return `❌ 获取 ${tag} 失败：未知错误`;
+    }
 }
 async function getStockData(symbol) {
     try {

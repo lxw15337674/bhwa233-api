@@ -102,6 +102,9 @@ interface StockData {
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
 const logger = new Logger('StockInfo');
+// 
+const STOCK_TAG_API_URL = 'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
+
 
 // 读取环境变量
 let Cookie = '';
@@ -234,6 +237,21 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
     }
   });
   return await Promise.all(promises);
+}
+
+export async function getStocksByTag(tag: string): Promise<string> {
+  const response = await axios.get(STOCK_TAG_API_URL)
+  const results = await getMultipleStocksData(response.data[tag])
+  const textContent = results.join('\n'); // 用换行符分隔每个股票的数据
+  try {
+    return textContent;
+  }
+  catch (error: unknown) {
+    if (error instanceof Error) {
+      return `❌ 获取 ${tag} 失败：${error.message}`;
+    }
+    return `❌ 获取 ${tag} 失败：未知错误`;
+  }
 }
 
 export async function getStockData(symbol: string): Promise<string> {

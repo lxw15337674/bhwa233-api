@@ -104,6 +104,21 @@ let CommandService = CommandService_1 = class CommandService {
                 hasArgs: true,
             },
             {
+                key: 'sb ',
+                callback: async (params) => {
+                    if (!params.args) {
+                        throw new Error('请输入股票标签，例如: sb 中概');
+                    }
+                    const result = await (0, stockInfo_1.getStocksByTag)(params.args);
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 中概',
+                hasArgs: true,
+            },
+            {
                 key: 'dp',
                 callback: async (params) => {
                     const result = await (0, stockSummary_1.getStockSummary)();
