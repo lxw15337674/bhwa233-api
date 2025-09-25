@@ -120,7 +120,7 @@ export class CommandService {
                 key: 'sb ',
                 callback: async (params: CommandParams) => {
                     if (!params.args) {
-                        throw new Error('请输入股票标签，例如: sb 中概');
+                        throw new Error('请输入股票标签，例如: sb 互联网');
                     }
                     const result = await getStocksByTag(params.args);
                     return {
@@ -128,7 +128,7 @@ export class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 中概',
+                msg: 'sb [标签] - 根据标签获取股票分组信息，例如: sb 互联网',
                 hasArgs: true,
             },
             {
