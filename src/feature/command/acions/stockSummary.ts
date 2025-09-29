@@ -179,18 +179,18 @@ export async function getStockSummary(): Promise<string | undefined> {
         let text = `📊 今日市场概览\n`;
         text += `----------------------------\n`;
         text += `💰 成交情况\n`;
-        text += `总成交额: ${formatAmount(data.turnover_dsb.all.amount)}\n`;
-        text += `较前日: ${formatAmount(data.turnover_dsb.all.amount_change)}\n`;
-        
-        text += `📈 市场表现\n`;
-        text += `上涨家数: ${data.ups_downs_dsb.up_count}\n`;
-        text += `下跌家数: ${data.ups_downs_dsb.down_count}\n`;
-        text += `平盘家数: ${data.ups_downs_dsb.flat_count}\n`;
+        // 合并为：总成交额: 20754.59亿 | +214.8亿
+        const totalAmount = formatAmount(data.turnover_dsb.all.amount);
+        const amountChange = formatAmount(data.turnover_dsb.all.amount_change);
+        // 保留符号在变动前面，如果 amount_change 为正则加 +
+        const signedChange = (data.turnover_dsb.all.amount_change ?? 0) > 0 ? `+${amountChange}` : amountChange;
+        text += `总成交额: ${totalAmount} | ${signedChange}\n`;
+
+        // 市场表现合并为：市场表现:📈 3481 📉 1752 平 202
+        text += `市场表现:📈 ${data.ups_downs_dsb.up_count} 📉 ${data.ups_downs_dsb.down_count} 平 ${data.ups_downs_dsb.flat_count}\n`;
         text += `市场情绪: ${data.ups_downs_dsb.up_ratio_comment}\n`;
-        
         text += `🌏 国际联动\n`;
         text += `${data.global_reaction.comment}\n`;
-        
         text += `📊 估值水平 (历史百分位)\n`;
         text += `上证指数: ${data.index_valuation.sh000001.pe_hist_percentile}%\n`;
         text += `深圳成指: ${data.index_valuation.sz399001.pe_hist_percentile}%\n`;
