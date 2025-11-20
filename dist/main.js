@@ -25,7 +25,7 @@ async function bootstrap() {
     }, 'api-key')
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
-    swagger_1.SwaggerModule.setup('doc', app, document);
+    swagger_1.SwaggerModule.setup('', app, document);
     await app.listen(8080).then(async () => {
         const url = await app.getUrl();
         new common_1.Logger('NestApplication').log(`Server is running on ${url}`);
