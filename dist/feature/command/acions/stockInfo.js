@@ -154,10 +154,8 @@ async function getAllStockGroups() {
     try {
         const response = await axios_1.default.get(STOCK_TAG_API_URL);
         const stockGroups = response.data;
-        let result = '📊 股票分组标签列表：\n';
         const tagNames = Object.keys(stockGroups);
-        result += tagNames.map((tag, index) => `${index + 1}. ${tag}`).join('\n');
-        return result.trim();
+        return `📊 股票分组标签列表：[${tagNames.join(', ')}]`;
     }
     catch (error) {
         if (error instanceof Error) {
