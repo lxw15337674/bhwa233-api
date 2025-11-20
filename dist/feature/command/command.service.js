@@ -119,7 +119,7 @@ let CommandService = CommandService_1 = class CommandService {
                 hasArgs: true,
             },
             {
-                key: 'st',
+                key: 'sbl',
                 callback: async () => {
                     const result = await (0, stockInfo_1.getAllStockGroups)();
                     return {
@@ -127,7 +127,7 @@ let CommandService = CommandService_1 = class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 'st - 显示所有股票分组标签名 (stock tags)',
+                msg: 'sbl - 显示所有股票分组标签名',
                 hasArgs: false,
             },
             {
