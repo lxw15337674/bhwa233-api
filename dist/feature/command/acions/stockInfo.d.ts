@@ -90,6 +90,7 @@ export declare function getSuggestStock(q: string): Promise<string | undefined>;
 export declare function getStockBasicData(symbol: string): Promise<StockData['data']>;
 export declare function getStocksByTag(tag: string): Promise<string>;
 export declare function getAllStockGroups(): Promise<string>;
+export declare function getStockCodesByTag(tag: string): Promise<string>;
 export declare function getStockData(symbol: string): Promise<string>;
 export declare function getCNMarketIndexData(): Promise<string>;
 export declare function getUSMarketIndexData(): Promise<string>;

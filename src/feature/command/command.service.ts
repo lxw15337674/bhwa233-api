@@ -132,7 +132,7 @@ export class CommandService {
                 hasArgs: true,
             },
             {
-                key: 'sbl',
+                key: 'st',
                 callback: async () => {
                     const result = await getAllStockGroups();
                     return {
@@ -140,7 +140,7 @@ export class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 'sbl - 显示所有股票分组内容，格式为[标签名]: [股票代码数组]',
+                msg: 'st - 显示所有股票分组标签名 (stock tags)',
                 hasArgs: false,
             },
             {

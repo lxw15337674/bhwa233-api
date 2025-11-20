@@ -259,13 +259,9 @@ export async function getAllStockGroups(): Promise<string> {
     const response = await axios.get(STOCK_TAG_API_URL);
     const stockGroups = response.data;
 
-    let result = '📊 股票分组列表：\n';
-
-    for (const [tagName, stockCodes] of Object.entries(stockGroups)) {
-      if (Array.isArray(stockCodes)) {
-        result += `🏷️ ${tagName}: [${stockCodes.join(', ')}]\n`;
-      }
-    }
+    let result = '📊 股票分组标签列表：\n';
+    const tagNames = Object.keys(stockGroups);
+    result += tagNames.map((tag, index) => `${index + 1}. ${tag}`).join('\n');
 
     return result.trim();
   } catch (error: unknown) {
@@ -273,6 +269,29 @@ export async function getAllStockGroups(): Promise<string> {
       return `❌ 获取股票分组列表失败：${error.message}`;
     }
     return `❌ 获取股票分组列表失败：未知错误`;
+  }
+}
+
+export async function getStockCodesByTag(tag: string): Promise<string> {
+  try {
+    const response = await axios.get(STOCK_TAG_API_URL);
+    const stockGroups = response.data;
+
+    if (!stockGroups[tag]) {
+      return `❌ 未找到标签 "${tag}" 的股票分组`;
+    }
+
+    const stockCodes = stockGroups[tag];
+    if (!Array.isArray(stockCodes) || stockCodes.length === 0) {
+      return `❌ 标签 "${tag}" 下没有股票代码`;
+    }
+
+    return `🏷️ ${tag} 股票代码：\n[${stockCodes.join(', ')}]`;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return `❌ 获取标签 "${tag}" 的股票代码失败：${error.message}`;
+    }
+    return `❌ 获取标签 "${tag}" 的股票代码失败：未知错误`;
   }
 }
 

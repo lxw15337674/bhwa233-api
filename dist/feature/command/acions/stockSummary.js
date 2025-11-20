@@ -20,12 +20,11 @@ async function getStockSummary() {
         let text = `📊 今日市场概览\n`;
         text += `----------------------------\n`;
         text += `💰 成交情况\n`;
-        text += `总成交额: ${(0, utils_1.formatAmount)(data.turnover_dsb.all.amount)}\n`;
-        text += `较前日: ${(0, utils_1.formatAmount)(data.turnover_dsb.all.amount_change)}\n`;
-        text += `📈 市场表现\n`;
-        text += `上涨家数: ${data.ups_downs_dsb.up_count}\n`;
-        text += `下跌家数: ${data.ups_downs_dsb.down_count}\n`;
-        text += `平盘家数: ${data.ups_downs_dsb.flat_count}\n`;
+        const totalAmount = (0, utils_1.formatAmount)(data.turnover_dsb.all.amount);
+        const amountChange = (0, utils_1.formatAmount)(data.turnover_dsb.all.amount_change);
+        const signedChange = (data.turnover_dsb.all.amount_change ?? 0) > 0 ? `+${amountChange}` : amountChange;
+        text += `总成交额: ${totalAmount} | ${signedChange}\n`;
+        text += `市场表现:📈 ${data.ups_downs_dsb.up_count} 📉 ${data.ups_downs_dsb.down_count} 平 ${data.ups_downs_dsb.flat_count}\n`;
         text += `市场情绪: ${data.ups_downs_dsb.up_ratio_comment}\n`;
         text += `🌏 国际联动\n`;
         text += `${data.global_reaction.comment}\n`;
