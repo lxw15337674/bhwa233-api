@@ -51,6 +51,4 @@ async function bootstrap() {
   });
 }
 
-if (require.main === module) {
-  bootstrap();
-}
+bootstrap();
