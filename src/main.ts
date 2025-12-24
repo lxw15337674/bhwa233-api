@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger, ValidationPipe } from '@nestjs/common';
 
-export async function createApp() {
+async function createApp() {
   const app = await NestFactory.create(AppModule, {
     cors: true,
   });
