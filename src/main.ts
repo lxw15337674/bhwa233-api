@@ -45,7 +45,7 @@ export async function createApp() {
 
 async function bootstrap() {
   const app = await createApp();
-  await app.listen(8080).then(async () => {
+  await app.listen(process.env.PORT ?? 8080).then(async () => {
     const url = await app.getUrl();
     new Logger('NestApplication').log(`Server is running on ${url}`);
   });
