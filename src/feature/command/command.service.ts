@@ -293,7 +293,11 @@ export class CommandService {
 
     async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
         for (const command of this.commandMap) {
-            if (msg.startsWith(command.key)) {
+            const isMatch = command.hasArgs 
+                ? msg.startsWith(command.key)
+                : msg.trim() === command.key;
+                
+            if (isMatch) {
                 const args = command.hasArgs ? msg.slice(command.key.length).trim() : undefined;
                 const result = await command.callback({
                     args,
