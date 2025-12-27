@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 import { Logger } from '@nestjs/common';
 import uploadBase64Image from './upload';
 
@@ -6,10 +6,10 @@ const logger = new Logger('TextToImageUtil');
 
 /**
  * Converts text content to an image and uploads it
- * 
+ *
  * @param content - The text content to convert to an image
  * @param options - Optional configuration for the image generation
- * @returns A URL to the uploaded image
+ * @returns A URL to the uploaded image or Buffer if returnBuffer is true
  */
 export async function textToImage(content: string, options?: {
     bgColor?: string;
@@ -21,7 +21,8 @@ export async function textToImage(content: string, options?: {
     maxWidth?: number;
     customHeight?: number;
     title?: string;
-}): Promise<string> {
+    returnBuffer?: boolean;
+}): Promise<string | Buffer> {
     try {
         // Default options
         const defaultOptions = {
@@ -84,6 +85,11 @@ export async function textToImage(content: string, options?: {
             .composite(textOverlays)
             .jpeg({ quality: 90 })
             .toBuffer();
+
+        // Return buffer directly if requested
+        if (mergedOptions.returnBuffer) {
+            return buffer;
+        }
 
         // Convert buffer to base64 data URI
         const base64Image = `data:image/jpeg;base64,${buffer.toString('base64')}`;

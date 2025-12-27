@@ -7,6 +7,7 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
+import { textToImage } from '../../utils/textToImage';
 
 export interface CommandParams {
     args?: string,
@@ -315,14 +316,21 @@ export class CommandService {
         };
     }
 
-    async getCommandList(): Promise<Command[]> {
+    async getCommandList(): Promise<Buffer> {
         const commandMsg = this.commandMap
             .filter(command => command.enable !== false)
-            .map(command => ({
-                key: command.key,
-                description: command.msg,
-                type: command.type,
-            }));
-        return commandMsg;
+            .map(command => command.msg)
+            .join('\n');
+
+        const content = `===== 命令帮助 =====\n${commandMsg}\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
+
+        const buffer = await textToImage(content, {
+            title: '命令帮助',
+            fontSize: 16,
+            lineHeight: 22,
+            returnBuffer: true
+        });
+
+        return buffer as Buffer;
     }
 }
