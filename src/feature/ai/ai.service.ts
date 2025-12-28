@@ -4,7 +4,6 @@ import { AIRequest } from './type';
 import { MessageDto } from './dto/summarize.dto';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
-import { marked } from 'marked';
 import { summaryTemplate } from './templates/summary.template';
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -101,51 +100,12 @@ export class AiService {
         }
     }
 
-    // 数据预处理
-    private preprocessMessages(messages: MessageDto[], selfName?: string): { formatted: string[], stats: Map<string, number> } {
-        const stats = new Map<string, number>();
-        const formatted = messages
-            .filter(m => !selfName || m.sender !== selfName)
-            .map(m => {
-                stats.set(m.sender, (stats.get(m.sender) || 0) + 1);
-                return `[${m.timestamp}] ${m.sender}: ${m.content}`;
-            });
-
-        return { formatted, stats };
-    }
-
-    // 生成排行榜（HTML 格式）
-    private generateRankingHTML(stats: Map<string, number>): string {
-        const entries = Array.from(stats.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
-
-        const rankingItems = entries
-            .map((entry, i) => {
-                const rankClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
-                return `
-                    <div class="ranking-item">
-                        <div class="rank-number ${rankClass}">${i + 1}</div>
-                        <div class="rank-info">
-                            <span class="rank-name">${entry[0]}</span>
-                            <span class="rank-count">${entry[1]} 条消息</span>
-                        </div>
-                    </div>
-                `;
-            })
-            .join('');
-
-        return `
-            <div class="section">
-                <h2>🏆 发言排行榜</h2>
-                ${rankingItems}
-            </div>
-        `;
-    }
-
     // AI 总结聊天记录
     async summarizeChatMessages(messages: MessageDto[], selfName?: string, groupName?: string): Promise<string> {
-        const { formatted } = this.preprocessMessages(messages, selfName);
+        // 过滤消息并格式化
+        const formatted = messages
+            .filter(m => !selfName || m.sender !== selfName)
+            .map(m => `[${m.timestamp}] ${m.sender}: ${m.content}`);
 
         const systemPrompt = `你是一个专业的聊天记录总结助手。请分析聊天记录并输出：
 
@@ -178,20 +138,6 @@ export class AiService {
         });
     }
 
-    // 将 Markdown 内容转为 HTML section
-    private markdownToHTMLSections(markdown: string): string {
-        // 分割 Markdown 按 h2 标题
-        const sections = markdown.split(/(?=##\s)/);
-
-        return sections
-            .filter(section => section.trim())
-            .map(section => {
-                const html = marked.parse(section);
-                return `<div class="section">${html}</div>`;
-            })
-            .join('');
-    }
-
     // 生成总结图片
     async generateSummaryImage(
         messages: MessageDto[],
@@ -199,45 +145,73 @@ export class AiService {
         groupName?: string,
         includeRanking: boolean = true
     ): Promise<Buffer> {
-        // 数据预处理
-        const { stats } = this.preprocessMessages(messages, selfName);
+        // 1. 过滤消息 + 统计发言数（内联）
+        const stats = new Map<string, number>();
+        messages
+            .filter(m => !selfName || m.sender !== selfName)
+            .forEach(m => stats.set(m.sender, (stats.get(m.sender) || 0) + 1));
 
-        // AI 总结
+        // 2. AI 总结
         const summary = await this.summarizeChatMessages(messages, selfName, groupName);
 
-        // 生成排行榜 HTML
-        const rankingHTML = includeRanking ? this.generateRankingHTML(stats) : '';
+        // 3. Markdown 转 HTML（简化内联 + 动态导入 marked）
+        const { marked } = await import('marked');
+        const contentHTML = summary
+            .split(/(?=##\s)/)
+            .filter(s => s.trim())
+            .map(s => `<div class="section">${marked.parse(s)}</div>`)
+            .join('');
 
-        // 将 Markdown 总结转为 HTML
-        const contentHTML = this.markdownToHTMLSections(summary);
+        // 4. 生成排行榜 HTML（内联）
+        let rankingHTML = '';
+        if (includeRanking) {
+            const rankingItems = Array.from(stats.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map((entry, i) => {
+                    const rankClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
+                    return `
+                        <div class="ranking-item">
+                            <div class="rank-number ${rankClass}">${i + 1}</div>
+                            <div class="rank-info">
+                                <span class="rank-name">${entry[0]}</span>
+                                <span class="rank-count">${entry[1]} 条消息</span>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
 
-        // 标题
-        const title = groupName ? `${groupName} 聊天总结` : '聊天总结';
-
-        // 生成完整 HTML
-        const html = summaryTemplate(title, contentHTML, rankingHTML);
-
-        // 检测是否为本地开发环境
-        const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
-
-        // 获取 Chrome 可执行路径
-        let executablePath: string;
-        if (isProduction) {
-            executablePath = await chromium.executablePath();
-        } else {
-            const localChrome = this.findLocalChrome();
-            if (!localChrome) {
-                throw new Error('无法找到本地 Chrome 安装。请设置环境变量 CHROME_PATH 或安装 Google Chrome');
-            }
-            executablePath = localChrome;
+            rankingHTML = `
+                <div class="section">
+                    <h2>🏆 发言排行榜</h2>
+                    ${rankingItems}
+                </div>
+            `;
         }
 
-        // 使用 Puppeteer 渲染
+        // 5. 生成完整 HTML
+        const title = groupName ? `${groupName} 聊天总结` : '聊天总结';
+        const html = summaryTemplate(title, contentHTML, rankingHTML);
+
+        // 6. 获取 Chrome 路径
+        const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+        const executablePath = isProduction
+            ? await chromium.executablePath()
+            : (() => {
+                const localChrome = this.findLocalChrome();
+                if (!localChrome) {
+                    throw new Error('无法找到本地 Chrome 安装。请设置环境变量 CHROME_PATH 或安装 Google Chrome');
+                }
+                return localChrome;
+            })();
+
+        // 7. Puppeteer 渲染（优化等待策略）
         const browser = await puppeteer.launch({
             args: isProduction ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
             defaultViewport: {
                 width: 600,
-                height: 100, // 最小高度，实际会根据内容自动扩展（fullPage: true）
+                height: 100,
             },
             executablePath,
             headless: true,
@@ -245,9 +219,8 @@ export class AiService {
 
         try {
             const page = await browser.newPage();
-            await page.setContent(html, { waitUntil: 'networkidle0' });
+            await page.setContent(html, { waitUntil: 'domcontentloaded' }); // 优化：改为 domcontentloaded
 
-            // 截图
             const screenshot = await page.screenshot({
                 type: 'png',
                 fullPage: true,
