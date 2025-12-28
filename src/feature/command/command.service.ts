@@ -8,7 +8,10 @@ import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
 import { join } from 'path';
-import { createCanvas, registerFont } from 'canvas';
+import { readFileSync } from 'fs';
+import satori from 'satori';
+import sharp from 'sharp';
+import React from 'react';
 
 export interface CommandParams {
     args?: string,
@@ -325,40 +328,67 @@ export class CommandService {
 
         const content = `===== 命令帮助 =====\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
 
-        // 注册中文字体
+        // 读取中文字体
         const fontPath = join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Regular.otf');
-        registerFont(fontPath, { family: 'Noto Sans SC' });
+        const fontData = readFileSync(fontPath);
 
         // 将文本按行分割
         const lines = content.split('\n');
 
         // 配置参数
-        const padding = 40;
-        const fontSize = 20;
-        const lineHeight = 32;
         const width = 1000;
+        const lineHeight = 32;
+        const padding = 40;
         const height = Math.max(600, lines.length * lineHeight + padding * 2);
 
-        // 创建 canvas
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
+        // 使用 Satori 生成 SVG
+        const svg = await satori(
+            React.createElement(
+                'div',
+                {
+                    style: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        height: '100%',
+                        padding: `${padding}px`,
+                        backgroundColor: '#2d2d2d',
+                        color: '#ffffff',
+                        fontFamily: 'Noto Sans SC',
+                        fontSize: '20px',
+                        lineHeight: '1.6',
+                    }
+                },
+                lines.map((line, index) =>
+                    React.createElement(
+                        'div',
+                        {
+                            key: index,
+                            style: { marginBottom: '4px' }
+                        },
+                        line
+                    )
+                )
+            ),
+            {
+                width,
+                height,
+                fonts: [
+                    {
+                        name: 'Noto Sans SC',
+                        data: fontData,
+                        weight: 400,
+                        style: 'normal',
+                    },
+                ],
+            }
+        );
 
-        // 绘制背景
-        ctx.fillStyle = '#2d2d2d';
-        ctx.fillRect(0, 0, width, height);
+        // 使用 Sharp 将 SVG 转为 PNG
+        const pngBuffer = await sharp(Buffer.from(svg))
+            .png()
+            .toBuffer();
 
-        // 设置文字样式
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `${fontSize}px "Noto Sans SC"`;
-        ctx.textBaseline = 'top';
-
-        // 绘制每行文字
-        lines.forEach((line, index) => {
-            const y = padding + index * lineHeight;
-            ctx.fillText(line, padding, y);
-        });
-
-        // 转换为 Buffer
-        return canvas.toBuffer('image/png');
+        return pngBuffer;
     }
 }
