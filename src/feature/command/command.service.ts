@@ -7,7 +7,10 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
-import { textToImage } from '../../utils/textToImage';
+import { ImageResponse } from '@vercel/og';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import React from 'react';
 
 export interface CommandParams {
     args?: string,
@@ -316,21 +319,60 @@ export class CommandService {
         };
     }
 
-    async getCommandList(): Promise<Buffer> {
+    async getCommandList(): Promise<Response> {
         const commandMsg = this.commandMap
             .filter(command => command.enable !== false)
             .map(command => command.msg)
             .join('\n');
 
-        const content = `===== 命令帮助 =====\n${commandMsg}\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
+        const content = `===== 命令帮助 =====\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
 
-        const buffer = await textToImage(content, {
-            title: '命令帮助',
-            fontSize: 16,
-            lineHeight: 22,
-            returnBuffer: true
-        });
+        // 读取中文字体
+        const fontPath = join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Regular.otf');
+        const fontData = readFileSync(fontPath);
 
-        return buffer as Buffer;
+        // 将文本按行分割
+        const lines = content.split('\n');
+
+        return new ImageResponse(
+            React.createElement(
+                'div',
+                {
+                    style: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        height: '100%',
+                        padding: '40px',
+                        backgroundColor: '#2d2d2d',
+                        color: '#ffffff',
+                        fontFamily: 'Noto Sans SC',
+                        fontSize: '20px',
+                        lineHeight: '1.6',
+                    }
+                },
+                lines.map((line, index) =>
+                    React.createElement(
+                        'div',
+                        {
+                            key: index,
+                            style: { marginBottom: '4px' }
+                        },
+                        line
+                    )
+                )
+            ),
+            {
+                width: 1000,
+                height: Math.max(600, lines.length * 32 + 80),
+                fonts: [
+                    {
+                        name: 'Noto Sans SC',
+                        data: fontData,
+                        style: 'normal',
+                    },
+                ],
+            },
+        );
     }
 }

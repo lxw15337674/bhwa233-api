@@ -10,10 +10,14 @@ export class CommandController {
   async executeCommand(@Query('command') command: string) {
     return this.commandService.executeCommand(command);
   }
+
   @Get('hp')
   async getCommandList(@Res() res: Response) {
-    const imageBuffer = await this.commandService.getCommandList();
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.send(imageBuffer);
+    const imageResponse = await this.commandService.getCommandList();
+    const imageBuffer = await imageResponse.arrayBuffer();
+
+    res.setHeader('Content-Type', imageResponse.headers.get('content-type') || 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(Buffer.from(imageBuffer));
   }
 }
