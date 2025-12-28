@@ -13,7 +13,9 @@
       "Bash(npm run install:*)",
       "Bash(npm install:*)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npx nest build:*)",
+      "Bash(pnpm run start:dev:*)"
     ]
   }
 }
