@@ -5,6 +5,7 @@
   "compilerOptions": {
     "typeCheck": false,
     "deleteOutDir": true,
+    "assets": ["assets/**/*"],
     "plugins": [
       "@nestjs/swagger"
     ]

@@ -329,7 +329,7 @@ export class CommandService {
         const content = `===== 命令帮助 =====\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
 
         // 读取中文字体
-        const fontPath = join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Regular.otf');
+        const fontPath = join(__dirname, '../../assets/fonts/NotoSansSC-Regular.otf');
         const fontData = readFileSync(fontPath);
 
         // 将文本按行分割
