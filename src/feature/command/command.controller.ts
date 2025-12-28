@@ -12,8 +12,13 @@ export class CommandController {
   }
 
   @Get('hp')
-  async getCommandList(@Res() res: Response) {
-    const imageBuffer = await this.commandService.getCommandList();
+  async getCommandList() {
+    return this.commandService.getCommandList();
+  }
+
+  @Get('hpimg')
+  async getCommandListImage(@Res() res: Response) {
+    const imageBuffer = await this.commandService.getCommandListImage();
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=3600');

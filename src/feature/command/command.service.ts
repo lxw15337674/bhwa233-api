@@ -320,7 +320,18 @@ export class CommandService {
         };
     }
 
-    async getCommandList(): Promise<Buffer> {
+    async getCommandList(): Promise<Command[]> {
+        const commandMsg = this.commandMap
+            .filter(command => command.enable !== false)
+            .map(command => ({
+                key: command.key,
+                description: command.msg,
+                type: command.type,
+            }));
+        return commandMsg;
+    }
+
+    async getCommandListImage(): Promise<Buffer> {
         const commandMsg = this.commandMap
             .filter(command => command.enable !== false)
             .map(command => command.msg)
