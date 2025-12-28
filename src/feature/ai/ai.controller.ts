@@ -44,9 +44,9 @@ export class AiController {
     @ApiBody({ type: SummarizeRequestDto })
     @ApiResponse({
         status: 200,
-        description: 'Summary image (PNG)',
+        description: 'Summary image (JPEG)',
         content: {
-            'image/png': {
+            'image/jpeg': {
                 schema: {
                     type: 'string',
                     format: 'binary'
@@ -63,7 +63,7 @@ export class AiController {
             body.includeRanking
         );
 
-        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Type', 'image/jpeg');
         res.setHeader('Cache-Control', 'public, max-age=3600');
         res.send(imageBuffer);
     }

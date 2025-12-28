@@ -223,7 +223,8 @@ export class AiService {
             await page.setContent(html, { waitUntil: 'networkidle0' }); // 等待字体加载完成
 
             const screenshot = await page.screenshot({
-                type: 'png',
+                type: 'jpeg',
+                quality: 85,
                 fullPage: true,
             });
 
