@@ -7,7 +7,6 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
-import { ImageResponse } from '@vercel/og';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import React from 'react';
@@ -320,6 +319,8 @@ export class CommandService {
     }
 
     async getCommandList(): Promise<Response> {
+        const { ImageResponse } = await import('@vercel/og');
+
         const commandMsg = this.commandMap
             .filter(command => command.enable !== false)
             .map(command => command.msg)
