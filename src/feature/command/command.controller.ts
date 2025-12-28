@@ -13,11 +13,10 @@ export class CommandController {
 
   @Get('hp')
   async getCommandList(@Res() res: Response) {
-    const imageResponse = await this.commandService.getCommandList();
-    const imageBuffer = await imageResponse.arrayBuffer();
+    const imageBuffer = await this.commandService.getCommandList();
 
-    res.setHeader('Content-Type', imageResponse.headers.get('content-type') || 'image/png');
+    res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(Buffer.from(imageBuffer));
+    res.send(imageBuffer);
   }
 }

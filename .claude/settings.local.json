@@ -5,7 +5,13 @@
       "Bash(curl:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm dev)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npm run install:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

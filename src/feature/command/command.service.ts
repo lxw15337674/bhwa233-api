@@ -7,9 +7,8 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { AiService } from '../ai/ai.service';
-import { readFileSync } from 'fs';
 import { join } from 'path';
-import React from 'react';
+import { createCanvas, registerFont } from 'canvas';
 
 export interface CommandParams {
     args?: string,
@@ -318,9 +317,7 @@ export class CommandService {
         };
     }
 
-    async getCommandList(): Promise<Response> {
-        const { ImageResponse } = await import('@vercel/og');
-
+    async getCommandList(): Promise<Buffer> {
         const commandMsg = this.commandMap
             .filter(command => command.enable !== false)
             .map(command => command.msg)
@@ -328,52 +325,40 @@ export class CommandService {
 
         const content = `===== 命令帮助 =====\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
 
-        // 读取中文字体
+        // 注册中文字体
         const fontPath = join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Regular.otf');
-        const fontData = readFileSync(fontPath);
+        registerFont(fontPath, { family: 'Noto Sans SC' });
 
         // 将文本按行分割
         const lines = content.split('\n');
 
-        return new ImageResponse(
-            React.createElement(
-                'div',
-                {
-                    style: {
-                        display: 'flex',
-                        flexDirection: 'column',
-                        width: '100%',
-                        height: '100%',
-                        padding: '40px',
-                        backgroundColor: '#2d2d2d',
-                        color: '#ffffff',
-                        fontFamily: 'Noto Sans SC',
-                        fontSize: '20px',
-                        lineHeight: '1.6',
-                    }
-                },
-                lines.map((line, index) =>
-                    React.createElement(
-                        'div',
-                        {
-                            key: index,
-                            style: { marginBottom: '4px' }
-                        },
-                        line
-                    )
-                )
-            ),
-            {
-                width: 1000,
-                height: Math.max(600, lines.length * 32 + 80),
-                fonts: [
-                    {
-                        name: 'Noto Sans SC',
-                        data: fontData,
-                        style: 'normal',
-                    },
-                ],
-            },
-        );
+        // 配置参数
+        const padding = 40;
+        const fontSize = 20;
+        const lineHeight = 32;
+        const width = 1000;
+        const height = Math.max(600, lines.length * lineHeight + padding * 2);
+
+        // 创建 canvas
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // 绘制背景
+        ctx.fillStyle = '#2d2d2d';
+        ctx.fillRect(0, 0, width, height);
+
+        // 设置文字样式
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `${fontSize}px "Noto Sans SC"`;
+        ctx.textBaseline = 'top';
+
+        // 绘制每行文字
+        lines.forEach((line, index) => {
+            const y = padding + index * lineHeight;
+            ctx.fillText(line, padding, y);
+        });
+
+        // 转换为 Buffer
+        return canvas.toBuffer('image/png');
     }
 }
