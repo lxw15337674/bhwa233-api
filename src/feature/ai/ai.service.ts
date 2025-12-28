@@ -220,7 +220,7 @@ export class AiService {
 
         try {
             const page = await browser.newPage();
-            await page.setContent(html, { waitUntil: 'domcontentloaded' }); // 优化：改为 domcontentloaded
+            await page.setContent(html, { waitUntil: 'networkidle0' }); // 等待字体加载完成
 
             const screenshot = await page.screenshot({
                 type: 'png',
