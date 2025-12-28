@@ -4,6 +4,7 @@ import { AIRequest } from './type';
 import { MessageDto } from './dto/summarize.dto';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import MarkdownIt from 'markdown-it';
 import { summaryTemplate } from './templates/summary.template';
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -154,12 +155,12 @@ export class AiService {
         // 2. AI 总结
         const summary = await this.summarizeChatMessages(messages, selfName, groupName);
 
-        // 3. Markdown 转 HTML（简化内联 + 动态导入 marked）
-        const { marked } = await import('marked');
+        // 3. Markdown 转 HTML（简化内联）
+        const md = new MarkdownIt();
         const contentHTML = summary
             .split(/(?=##\s)/)
             .filter(s => s.trim())
-            .map(s => `<div class="section">${marked.parse(s)}</div>`)
+            .map(s => `<div class="section">${md.render(s)}</div>`)
             .join('');
 
         // 4. 生成排行榜 HTML（内联）
