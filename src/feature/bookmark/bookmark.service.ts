@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaClient, Prisma } from '../../../prisma/generated/client/client';
-import type { Bookmark, BookmarkTag } from '../../../prisma/generated/client/client';
+import { PrismaClient, Prisma, Bookmark, BookmarkTag } from '../../../prisma/generated/client/client';
 import { CreateBookmarkDto } from './bookmark.dto';
 import { AiService } from '../ai/ai.service';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -135,7 +134,7 @@ export class BookmarkService {
             this.logger.log(`AI生成标签: ${limitedTags.join(', ')}`);
 
             // 7. 在事务中处理标签和更新书签 - 单次原子操作
-            const finalBookmark = await prisma.$transaction(async (tx) => {
+            const finalBookmark = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
                 // 处理标签 - 查找现有标签并创建新标签
                 const allTags = await this.processBookmarkTagsInTransaction(tx, limitedTags);
 
