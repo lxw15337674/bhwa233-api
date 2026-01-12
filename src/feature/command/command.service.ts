@@ -6,7 +6,9 @@ import { getHotSpot } from './acions/stockHotSpot';
 import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetailData, getStocksByTag, getAllStockGroups, getUSMarketIndexData } from './acions/stockInfo';
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
+import { takeRelayPulseScreenshot } from './acions/screenshot';
 import { AiService } from '../ai/ai.service';
+import { ScreenshotService } from '../../utils/screenshot.service';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import satori from 'satori';
@@ -31,6 +33,7 @@ export class CommandService {
 
     constructor(
         private readonly aiService: AiService,
+        private readonly screenshotService: ScreenshotService,
     ) { }
 
     private commandMap: {
@@ -245,6 +248,38 @@ export class CommandService {
                 msg: 'hy - 获取节假日信息',
                 hasArgs: false,
             },
+            // 网页截图
+            {
+                key: 'relay',
+                callback: async (params: CommandParams) => {
+                    try {
+                        const args = params.args?.trim().split(/\s+/) || [];
+                        const provider = args[0] || '88code';
+                        const period = args[1] || '24h';
+                        
+                        const imageBuffer = await takeRelayPulseScreenshot(
+                            this.screenshotService,
+                            provider,
+                            period
+                        );
+                        
+                        // 将 Buffer 转换为 base64
+                        const base64Image = imageBuffer.toString('base64');
+                        return {
+                            content: `data:image/jpeg;base64,${base64Image}`,
+                            type: 'image'
+                        };
+                    } catch (error) {
+                        this.logger.error('截图失败:', error);
+                        return {
+                            content: '截图失败，请稍后重试',
+                            type: 'text'
+                        };
+                    }
+                },
+                msg: 'relay [provider] [period] - 获取 RelayPulse 截图，例如: relay 88code 24h',
+                hasArgs: true,
+            },
             // 随机图片命令
             // {
             //   key: 'img',
@@ -340,7 +375,8 @@ export class CommandService {
         const content = `===== 命令帮助 =====\n${commandMsg}\n\n项目地址：https://github.com/lxw15337674/bhwa233-api`;
 
         // 读取中文字体
-        const fontPath = join(__dirname, '../../assets/fonts/NotoSansSC-Regular.otf');
+        // 在开发环境下是 src/assets，编译后是 dist/assets
+        const fontPath = join(process.cwd(), 'dist', 'assets', 'fonts', 'NotoSansSC-Regular.otf');
         const fontData = readFileSync(fontPath);
 
         // 将文本按行分割
@@ -401,5 +437,9 @@ export class CommandService {
             .toBuffer();
 
         return pngBuffer;
+    }
+
+    async getRelayPulseScreenshot(provider: string = '88code', period: string = '24h'): Promise<Buffer> {
+        return await takeRelayPulseScreenshot(this.screenshotService, provider, period);
     }
 }
