@@ -7,8 +7,10 @@ import { getCNMarketIndexData, getHKMarketIndexData, getStockData, getStockDetai
 import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { takeRelayPulseScreenshot } from './acions/screenshot';
+import { getRandomImage } from './acions/randomImage';
 import { AiService } from '../ai/ai.service';
 import { ScreenshotService } from '../../utils/screenshot.service';
+import { HttpService } from '@nestjs/axios';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import satori from 'satori';
@@ -34,6 +36,7 @@ export class CommandService {
     constructor(
         private readonly aiService: AiService,
         private readonly screenshotService: ScreenshotService,
+        private readonly httpService: HttpService,
     ) { }
 
     private commandMap: {
@@ -281,12 +284,22 @@ export class CommandService {
                 hasArgs: true,
             },
             // 随机图片命令
-            // {
-            //   key: 'img',
-            //   callback: getRandomImage,
-            //   msg: 'img - 获取一张随机图片',
-            //   hasArgs: false,
-            // },
+            {
+                key: 'img',
+                callback: async (params: CommandParams) => {
+                    try {
+                        return await getRandomImage(this.httpService);
+                    } catch (error) {
+                        this.logger.error('获取随机图片失败:', error);
+                        return {
+                            content: '获取随机图片失败，请稍后重试',
+                            type: 'text'
+                        };
+                    }
+                },
+                msg: 'img - 获取一张随机图片',
+                hasArgs: false,
+            },
             {
                 key: 'hp',
                 callback: async (params: CommandParams) => {
