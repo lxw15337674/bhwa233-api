@@ -1,5 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import sharp from 'sharp';
+
+const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export async function getRandomImage(httpService: HttpService): Promise<{ content: string; type: 'image' | 'text' }> {
     try {
@@ -14,28 +17,36 @@ export async function getRandomImage(httpService: HttpService): Promise<{ conten
             })
         );
 
-        // 获取图片数据
-        const imageBuffer = Buffer.from(response.data);
+        // 获取原始图片数据
+        const originalBuffer = Buffer.from(response.data);
         
-        // 从最终的 URL 中提取文件扩展名来判断图片类型
-        const finalUrl = response.request?.res?.responseUrl || response.config.url || '';
-        let imageType = 'jpeg'; // 默认类型
-        
-        if (finalUrl.includes('.webp')) {
-            imageType = 'webp';
-        } else if (finalUrl.includes('.png')) {
-            imageType = 'png';
-        } else if (finalUrl.includes('.gif')) {
-            imageType = 'gif';
-        } else if (finalUrl.includes('.jpg') || finalUrl.includes('.jpeg')) {
-            imageType = 'jpeg';
+        // 转换为 JPEG
+        let jpegBuffer = await sharp(originalBuffer)
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+        // 如果超过 5MB，缩小尺寸
+        if (jpegBuffer.length > MAX_SIZE_BYTES) {
+            // 先尝试缩小到 1200px 宽
+            jpegBuffer = await sharp(originalBuffer)
+                .resize(1200, null, { withoutEnlargement: true })
+                .jpeg({ quality: 85 })
+                .toBuffer();
+            
+            // 如果还是太大，降低质量
+            if (jpegBuffer.length > MAX_SIZE_BYTES) {
+                jpegBuffer = await sharp(originalBuffer)
+                    .resize(1200, null, { withoutEnlargement: true })
+                    .jpeg({ quality: 70 })
+                    .toBuffer();
+            }
         }
 
         // 转换为 base64
-        const base64Image = imageBuffer.toString('base64');
+        const base64Image = jpegBuffer.toString('base64');
         
         return {
-            content: `data:image/${imageType};base64,${base64Image}`,
+            content: `data:image/jpeg;base64,${base64Image}`,
             type: 'image',
         };
     } catch (error) {
