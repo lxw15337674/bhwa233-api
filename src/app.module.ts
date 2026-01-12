@@ -27,6 +27,6 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(LoggingMiddleware)
-      .forRoutes('*'); // 对所有路由应用日志中间件
+      .forRoutes('{*splat}'); // 对所有路由应用日志中间件 (Express v5 兼容)
   }
 }
