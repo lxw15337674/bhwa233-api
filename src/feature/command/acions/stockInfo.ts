@@ -337,15 +337,19 @@ function formatIndexData(quoteData: any) {
 
 export async function getCNMarketIndexData() {
   try {
-    const data = (
-      await Promise.all([
-        getStockBasicData('SH000001'),
-        getStockBasicData('SZ399001'),
-        getStockBasicData('SZ399006'),
-      ])
-    ).map(formatIndexData);
+    const [data1, data2, data3, gzjcData] = await Promise.all([
+      getStockBasicData('SH000001'),
+      getStockBasicData('SZ399001'),
+      getStockBasicData('SZ399006'),
+      getGzjc()
+    ]);
 
-    data.push(await getGzjc());
+    const data = [
+      formatIndexData(data1),
+      formatIndexData(data2),
+      formatIndexData(data3),
+      gzjcData
+    ];
 
     return `${data.join('\n')}`;
   } catch (error: unknown) {
@@ -466,11 +470,11 @@ export async function fetchCFFEXFuturesCodes(): Promise<FuturesData[]> {
 
 export async function getGzjc() {
   try {
-    // 获取期货数据
-    const futuresData = await fetchCFFEXFuturesCodes();
-
-    // 获取沪深300指数数据
-    const hs300 = await getStockSuggest('000300', [FinancialProductType.INDEX]);
+    // 并发获取期货数据和沪深300指数数据
+    const [futuresData, hs300] = await Promise.all([
+      fetchCFFEXFuturesCodes(),
+      getStockSuggest('000300', [FinancialProductType.INDEX])
+    ]);
 
     if (!hs300) {
       throw new Error(`❌ 获取 沪深300 数据失败`);
@@ -494,7 +498,10 @@ export async function getGzjc() {
     const diff = Number(hs300.price) - Number(weightedPriceSum);
 
     return `沪深300股指基差：${diff.toFixed(2)}`;
-  } catch (error) {
-    return error.message;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return `❌ ${error.message}`;
+    }
+    return '❌ 获取股指基差失败：未知错误';
   }
 }
