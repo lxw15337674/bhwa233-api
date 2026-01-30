@@ -86,7 +86,7 @@ export async function generateGeminiImage(
                     Authorization: `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                 },
-                timeout: 60000,
+                timeout: 120000,
             })
         );
     } catch (error) {
