@@ -1,4 +1,5 @@
 import { HttpService } from '@nestjs/axios';
+import { Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 
 interface GeminiInlineData {
@@ -23,6 +24,7 @@ interface GeminiResponse {
 }
 
 const DEFAULT_ASPECT_RATIO = '16:9';
+const logger = new Logger('GeminiImage');
 
 function buildBaseUrl(rawBaseUrl?: string): string {
     if (!rawBaseUrl) {
@@ -76,15 +78,29 @@ export async function generateGeminiImage(
         },
     };
 
-    const response = await firstValueFrom(
-        httpService.post<GeminiResponse>(url, body, {
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            timeout: 20000,
-        })
-    );
+    let response;
+    try {
+        response = await firstValueFrom(
+            httpService.post<GeminiResponse>(url, body, {
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                timeout: 20000,
+            })
+        );
+    } catch (error) {
+        const axiosError = error as {
+            message?: string;
+            response?: { status?: number; data?: unknown };
+        };
+        const status = axiosError.response?.status;
+        const data = axiosError.response?.data;
+        const suffix = status ? ` (status ${status})` : '';
+        const detail = data ? JSON.stringify(data) : axiosError.message || 'unknown error';
+        logger.error(`Gemini image request failed${suffix}`, detail);
+        throw new Error('文生图接口请求失败');
+    }
 
     const candidates = response.data?.candidates ?? [];
     const parts = candidates[0]?.content?.parts ?? [];

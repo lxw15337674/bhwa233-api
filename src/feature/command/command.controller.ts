@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { CommandService } from './command.service';
 
@@ -8,6 +8,14 @@ export class CommandController {
 
   @Get('')
   async executeCommand(@Query('command') command: string) {
+    return this.commandService.executeCommand(command);
+  }
+
+  @Post('')
+  async executeCommandPost(@Body('command') command: string) {
+    if (!command || !command.trim()) {
+      throw new BadRequestException('command 不能为空');
+    }
     return this.commandService.executeCommand(command);
   }
 
