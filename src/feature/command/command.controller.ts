@@ -1,7 +1,10 @@
 import { BadRequestException, Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { CommandService } from './command.service';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { CommandRequestDto } from './dto/command.dto';
 
+@ApiTags('Command')
 @Controller('command')
 export class CommandController {
   constructor(private readonly commandService: CommandService) {}
@@ -11,8 +14,26 @@ export class CommandController {
     return this.commandService.executeCommand(command);
   }
 
+  @ApiOperation({
+    summary: 'Execute command via POST',
+    description: 'Submit a command in the request body. Example: "hp"'
+  })
+  @ApiBody({ type: CommandRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Command result (text or image data URI)',
+    schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string' },
+        type: { type: 'string', enum: ['text', 'image'] }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - command is empty' })
   @Post('')
-  async executeCommandPost(@Body('command') command: string) {
+  async executeCommandPost(@Body() body: CommandRequestDto) {
+    const command = body?.command;
     if (!command || !command.trim()) {
       throw new BadRequestException('command 不能为空');
     }
