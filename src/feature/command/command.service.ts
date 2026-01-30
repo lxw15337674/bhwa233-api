@@ -8,6 +8,7 @@ import { getStockSummary } from './acions/stockSummary';
 import { getWeiboData } from './acions/weibo';
 import { takeRelayPulseScreenshot } from './acions/screenshot';
 import { getRandomImage } from './acions/randomImage';
+import { generateGeminiImage } from './acions/generateImage';
 import { AiService } from '../ai/ai.service';
 import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
@@ -299,6 +300,26 @@ export class CommandService {
                 },
                 msg: 'img - 获取一张随机图片',
                 hasArgs: false,
+            },
+            // 文生图（Gemini）
+            {
+                key: 'gi ',
+                callback: async (params: CommandParams) => {
+                    if (!params.args) {
+                        throw new Error('请输入文生图描述，例如: gi 夜晚城市霓虹街道');
+                    }
+                    try {
+                        return await generateGeminiImage(this.httpService, params.args);
+                    } catch (error) {
+                        this.logger.error('文生图失败:', error);
+                        return {
+                            content: '文生图失败，请稍后重试',
+                            type: 'text',
+                        };
+                    }
+                },
+                msg: 'gi [描述] - Gemini 文生图，例如: gi 夜晚城市霓虹街道',
+                hasArgs: true,
             },
             {
                 key: 'hp',
