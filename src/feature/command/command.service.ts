@@ -70,14 +70,26 @@ export class CommandService {
                 key: 'a ',
                 callback: async (params) => {
                     const { tools, toolMap } = this.getAiCommandTools();
+                    const webSearchTool = {
+                        type: 'builtin_function',
+                        function: {
+                            name: '$web_search',
+                        },
+                    } as unknown as OpenAI.ChatCompletionTool;
                     const response = await this.aiService.generateResponseWithTools(
                         {
                             prompt: params?.args ?? '',
-                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在300字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔',
+                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在300字以内。只输出总结，不要包含引用、链接或来源列表。涉及股票/指数/行情/指标（如EPS、PE、PB、涨跌幅、成交额等）时优先调用命令工具（如 s/sd），必要时才用联网搜索；若接口未返回指标，直接说明未返回，不要编造。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔',
                         },
                         {
-                            tools,
-                            executeTool: async (toolName, args) => this.executeAiTool(toolMap, toolName, args),
+                            tools: [...tools, webSearchTool] as OpenAI.ChatCompletionTool[],
+                            maxToolRounds: 3,
+                            executeTool: async (toolName, args) => {
+                                if (toolName === '$web_search') {
+                                    return JSON.stringify(args ?? {});
+                                }
+                                return this.executeAiTool(toolMap, toolName, args);
+                            },
                         }
                     );
                     return {
@@ -137,7 +149,7 @@ export class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 's [股票代码] - 获取股票信息,支持一次查询多只股票 例如: s 600519 000858',
+                msg: 's [股票代码] - 获取股票信息（如现价、涨跌幅、成交额、EPS、PE、PB等）,支持一次查询多只股票 例如: s 600519 000858',
                 hasArgs: true,
             },
             {
@@ -152,7 +164,7 @@ export class CommandService {
                         type: 'text'
                     };
                 },
-                msg: 'sd [股票代码] - 获取股票详细信息 例如: sd gzmt',
+                msg: 'sd [股票代码] - 获取股票详细信息（可能包含更细指标）例如: sd gzmt',
                 hasArgs: true,
             },
             {

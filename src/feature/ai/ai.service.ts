@@ -79,47 +79,15 @@ export class AiService {
         }
 
         if (enableWebSearch) {
-            const tools: OpenAI.ChatCompletionTool[] = [
+            const tools = [
                 {
-                    type: 'function',
+                    type: 'builtin_function',
                     function: {
-                        name: 'tavily_search',
+                        name: '$web_search',
                         description: searchDescription,
-                        parameters: {
-                            type: 'object',
-                            properties: {
-                                query: {
-                                    type: 'string',
-                                    description: '搜索关键词或问题描述',
-                                },
-                                max_results: {
-                                    type: 'integer',
-                                    description: '返回的最大结果数量',
-                                },
-                                search_depth: {
-                                    type: 'string',
-                                    enum: ['basic', 'advanced'],
-                                    description: '搜索深度，advanced 通常更全面',
-                                },
-                                include_answer: {
-                                    type: 'boolean',
-                                    description: '是否返回聚合回答',
-                                },
-                                include_images: {
-                                    type: 'boolean',
-                                    description: '是否返回图片结果',
-                                },
-                                include_raw_content: {
-                                    type: 'boolean',
-                                    description: '是否返回原始网页内容',
-                                },
-                            },
-                            required: ['query'],
-                            additionalProperties: false,
-                        },
                     },
                 },
-            ];
+            ] as unknown as OpenAI.ChatCompletionTool[];
 
             return this.generateResponseWithTools(
                 {
@@ -130,9 +98,10 @@ export class AiService {
                 {
                     tools,
                     toolChoice: 'auto',
+                    maxToolRounds: 3,
                     executeTool: async (toolName, args) => {
-                        if (toolName === 'tavily_search') {
-                            return this.tavilySearch(args as TavilySearchArgs);
+                        if (toolName === '$web_search') {
+                            return JSON.stringify(args ?? {});
                         }
                         return `未知工具: ${toolName}`;
                     },
@@ -215,64 +184,135 @@ export class AiService {
 
         const maxRounds = tooling.maxToolRounds ?? 3;
         let lastToolResult = '';
+        const startedAt = Date.now();
+        let toolRounds = 0;
+        let toolCallsCount = 0;
+        const toolNames = new Set<string>();
+        let usedTools = false;
 
-        for (let round = 0; round < maxRounds; round += 1) {
-            const completion = await this.openai.chat.completions.create({
-                messages,
+        const logToolingSummary = (extra?: { errorMessage?: string; endedByMaxRounds?: boolean }) => {
+            const durationMs = Date.now() - startedAt;
+            const webSearchUsed = toolNames.has('$web_search');
+            const payload = {
                 model,
-                tools: tooling.tools,
-                tool_choice: tooling.toolChoice ?? 'auto',
-            });
+                usedTools,
+                toolCallsCount,
+                toolRounds,
+                toolNames: Array.from(toolNames),
+                webSearchUsed,
+                durationMs,
+                ...(extra ?? {}),
+            };
+            this.logger.log(`[AI Tools] ${JSON.stringify(payload)}`);
+        };
 
-            const message = completion.choices[0]?.message;
-            if (!message) {
-                return lastToolResult || '';
-            }
+        try {
+            for (let round = 0; round < maxRounds; round += 1) {
+                const requestPayload = {
+                    messages,
+                    model,
+                    tools: tooling.tools,
+                    tool_choice: tooling.toolChoice ?? 'auto',
+                    stream: false,
+                    thinking: {
+                        type: 'disabled',
+                    },
+                    extra_body: {
+                        thinking: {
+                            type: 'disabled',
+                        },
+                    },
+                } as OpenAI.ChatCompletionCreateParamsNonStreaming & {
+                    thinking?: {
+                        type?: string;
+                    };
+                    extra_body?: {
+                        thinking?: {
+                            type?: string;
+                        };
+                    };
+                };
 
-            if (!message.tool_calls || message.tool_calls.length === 0) {
-                return message.content ?? '';
-            }
+                const completion = await this.openai.chat.completions.create(requestPayload);
 
-            messages.push(message as OpenAI.ChatCompletionMessageParam);
-
-            for (const toolCall of message.tool_calls) {
-                const toolName = toolCall.function?.name;
-                if (!toolName) {
-                    continue;
+                const message = completion.choices[0]?.message;
+                if (!message) {
+                    logToolingSummary();
+                    return lastToolResult || '';
                 }
-                const args = this.safeParseToolArgs(toolCall.function.arguments);
-                try {
-                    const startedAt = Date.now();
-                    this.logger.log('[AI Service] Tool call start', {
-                        toolName,
-                        args,
-                    });
-                    const toolResult = await tooling.executeTool(toolName, args);
-                    const durationMs = Date.now() - startedAt;
-                    this.logger.log('[AI Service] Tool call success', {
-                        toolName,
-                        durationMs,
-                        resultPreview: typeof toolResult === 'string'
-                            ? toolResult.slice(0, 200)
-                            : '',
-                    });
-                    lastToolResult = toolResult;
-                    messages.push({
-                        role: 'tool',
-                        tool_call_id: toolCall.id,
-                        content: toolResult,
-                    });
-                } catch (error) {
-                    this.logger.error('[AI Service] Tool execution failed:', error);
-                    messages.push({
-                        role: 'tool',
-                        tool_call_id: toolCall.id,
-                        content: '工具执行失败，请稍后重试。',
-                    });
+
+                if (!message.tool_calls || message.tool_calls.length === 0) {
+                    logToolingSummary();
+                    return message.content ?? '';
+                }
+
+                toolRounds += 1;
+                usedTools = true;
+                toolCallsCount += message.tool_calls.length;
+
+                const assistantMessage: OpenAI.ChatCompletionMessageParam = {
+                    role: 'assistant',
+                    content: message.content ?? null,
+                    tool_calls: message.tool_calls,
+                };
+                const reasoningContent = (message as { reasoning_content?: unknown }).reasoning_content;
+                (assistantMessage as { reasoning_content?: string }).reasoning_content =
+                    typeof reasoningContent === 'string' && reasoningContent.length > 0 ? reasoningContent : ' ';
+                messages.push(assistantMessage);
+
+                for (const toolCall of message.tool_calls) {
+                    const toolName = toolCall.function?.name;
+                    if (!toolName) {
+                        continue;
+                    }
+                    toolNames.add(toolName);
+                    const args = this.safeParseToolArgs(toolCall.function.arguments);
+                    try {
+                        const startedAt = Date.now();
+                        this.logger.log('[AI Service] Tool call start', {
+                            toolName,
+                            args,
+                        });
+                        const toolResult = await tooling.executeTool(toolName, args);
+                        const durationMs = Date.now() - startedAt;
+                        this.logger.log('[AI Service] Tool call success', {
+                            toolName,
+                            durationMs,
+                            resultPreview: typeof toolResult === 'string'
+                                ? toolResult.slice(0, 200)
+                                : '',
+                        });
+                        lastToolResult = toolResult;
+                        const toolMessage: OpenAI.ChatCompletionMessageParam = {
+                            role: 'tool',
+                            tool_call_id: toolCall.id,
+                            content: toolResult,
+                        };
+                        if (toolName.startsWith('$')) {
+                            (toolMessage as { name?: string }).name = toolName;
+                        }
+                        messages.push(toolMessage);
+                    } catch (error) {
+                        this.logger.error('[AI Service] Tool execution failed:', error);
+                        const errorToolMessage: OpenAI.ChatCompletionMessageParam = {
+                            role: 'tool',
+                            tool_call_id: toolCall.id,
+                            content: '工具执行失败，请稍后重试。',
+                        };
+                        if (toolName.startsWith('$')) {
+                            (errorToolMessage as { name?: string }).name = toolName;
+                        }
+                        messages.push(errorToolMessage);
+                    }
                 }
             }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logToolingSummary({ errorMessage });
+            throw error;
         }
 
+        logToolingSummary({ endedByMaxRounds: true });
         return lastToolResult || '未能生成最终回答，请稍后重试。';
     }
 
