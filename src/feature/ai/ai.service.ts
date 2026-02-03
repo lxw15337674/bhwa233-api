@@ -11,6 +11,15 @@ import { join } from 'path';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
 
+type ToolExecutor = (toolName: string, args: unknown) => Promise<string>;
+
+interface ToolingOptions {
+    tools: OpenAI.ChatCompletionTool[];
+    executeTool: ToolExecutor;
+    toolChoice?: OpenAI.ChatCompletionToolChoiceOption;
+    maxToolRounds?: number;
+}
+
 @Injectable()
 export class AiService {
     private readonly logger = new Logger(AiService.name);
@@ -99,6 +108,100 @@ export class AiService {
             this.logger.error('[AI Service] Error generating AI response:', error);
             return '获取AI回答失败';
         }
+    }
+
+    private safeParseToolArgs(rawArgs: string | undefined): Record<string, unknown> {
+        if (!rawArgs) {
+            return {};
+        }
+        try {
+            const parsed = JSON.parse(rawArgs);
+            if (parsed && typeof parsed === 'object') {
+                return parsed as Record<string, unknown>;
+            }
+        } catch (error) {
+            this.logger.warn('[AI Service] Failed to parse tool args', error);
+        }
+        return {};
+    }
+
+    async generateResponseWithTools(
+        body: AIRequest,
+        tooling: ToolingOptions
+    ): Promise<string> {
+        const {
+            prompt,
+            model = process.env.AI_MODEL ?? 'step-3',
+            rolePrompt = aiPrompt,
+        } = body;
+
+        if (!prompt || prompt.trim() === '') {
+            this.logger.error('[AI Service] Empty prompt provided:', { prompt, type: typeof prompt });
+            throw new BadRequestException('Prompt cannot be empty');
+        }
+
+        const systemPrompt = rolePrompt.trim() ?? '你是一个AI助手，擅长回答用户的问题。';
+        const userPrompt = prompt.trim();
+
+        const messages: OpenAI.ChatCompletionMessageParam[] = [
+            {
+                role: 'system',
+                content: systemPrompt,
+            },
+            {
+                role: 'user',
+                content: userPrompt,
+            },
+        ];
+
+        const maxRounds = tooling.maxToolRounds ?? 3;
+        let lastToolResult = '';
+
+        for (let round = 0; round < maxRounds; round += 1) {
+            const completion = await this.openai.chat.completions.create({
+                messages,
+                model,
+                tools: tooling.tools,
+                tool_choice: tooling.toolChoice ?? 'auto',
+            });
+
+            const message = completion.choices[0]?.message;
+            if (!message) {
+                return lastToolResult || '';
+            }
+
+            if (!message.tool_calls || message.tool_calls.length === 0) {
+                return message.content ?? '';
+            }
+
+            messages.push(message as OpenAI.ChatCompletionMessageParam);
+
+            for (const toolCall of message.tool_calls) {
+                const toolName = toolCall.function?.name;
+                if (!toolName) {
+                    continue;
+                }
+                const args = this.safeParseToolArgs(toolCall.function.arguments);
+                try {
+                    const toolResult = await tooling.executeTool(toolName, args);
+                    lastToolResult = toolResult;
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: toolResult,
+                    });
+                } catch (error) {
+                    this.logger.error('[AI Service] Tool execution failed:', error);
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: '工具执行失败，请稍后重试。',
+                    });
+                }
+            }
+        }
+
+        return lastToolResult || '未能生成最终回答，请稍后重试。';
     }
 
     // AI 总结聊天记录

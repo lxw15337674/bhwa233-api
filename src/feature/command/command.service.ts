@@ -17,6 +17,7 @@ import { readFileSync } from 'fs';
 import satori from 'satori';
 import sharp from 'sharp';
 import React from 'react';
+import type OpenAI from 'openai';
 
 export interface CommandParams {
     args?: string,
@@ -33,6 +34,22 @@ export interface Command {
 @Injectable()
 export class CommandService {
     private readonly logger = new Logger(CommandService.name);
+    private readonly aiToolCommandKeys = new Set([
+        'ss',
+        'sus',
+        'shk',
+        'dp',
+        's',
+        'sd',
+        'sb',
+        'sbl',
+        'c',
+        'cd',
+        'b',
+        'hot',
+        'wb',
+        'hy',
+    ]);
 
     constructor(
         private readonly aiService: AiService,
@@ -52,7 +69,17 @@ export class CommandService {
             {
                 key: 'a ',
                 callback: async (params) => {
-                    const response = await this.aiService.generateResponse({ prompt: params?.args ?? '', rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在300字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔' });
+                    const { tools, toolMap } = this.getAiCommandTools();
+                    const response = await this.aiService.generateResponseWithTools(
+                        {
+                            prompt: params?.args ?? '',
+                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在300字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔',
+                        },
+                        {
+                            tools,
+                            executeTool: async (toolName, args) => this.executeAiTool(toolMap, toolName, args),
+                        }
+                    );
                     return {
                         content: response,
                         type: 'text'
@@ -387,6 +414,97 @@ export class CommandService {
             content: '',
             type: 'text'
         };
+    }
+
+    private getAiCommandTools(): {
+        tools: OpenAI.ChatCompletionTool[];
+        toolMap: Map<string, (typeof this.commandMap)[number]>;
+    } {
+        const tools: OpenAI.ChatCompletionTool[] = [];
+        const toolMap = new Map<string, (typeof this.commandMap)[number]>();
+
+        for (const command of this.commandMap) {
+            if (command.enable === false) {
+                continue;
+            }
+
+            const key = command.key.trim();
+            if (!this.aiToolCommandKeys.has(key)) {
+                continue;
+            }
+
+            const toolName = `cmd_${key}`;
+            toolMap.set(toolName, command);
+
+            const parameters = command.hasArgs
+                ? {
+                    type: 'object',
+                    properties: {
+                        query: {
+                            type: 'string',
+                            description: '命令参数，对应原命令空格后的文本',
+                        },
+                    },
+                    required: ['query'],
+                    additionalProperties: false,
+                }
+                : {
+                    type: 'object',
+                    properties: {},
+                    additionalProperties: false,
+                };
+
+            tools.push({
+                type: 'function',
+                function: {
+                    name: toolName,
+                    description: command.msg,
+                    parameters,
+                },
+            });
+        }
+
+        return { tools, toolMap };
+    }
+
+    private async executeAiTool(
+        toolMap: Map<string, (typeof this.commandMap)[number]>,
+        toolName: string,
+        args: unknown
+    ): Promise<string> {
+        const command = toolMap.get(toolName);
+        if (!command) {
+            return `未知工具: ${toolName}`;
+        }
+
+        const query = typeof (args as { query?: unknown })?.query === 'string'
+            ? (args as { query: string }).query.trim()
+            : '';
+
+        if (command.hasArgs && !query) {
+            return '缺少 query 参数';
+        }
+
+        try {
+            const result = await command.callback({
+                args: command.hasArgs ? query : undefined,
+                key: command.key,
+            });
+
+            if (result.type === 'image') {
+                return '该命令返回图片，已被禁用';
+            }
+
+            this.logger.log(`====================[命令执行开始]====================\n[时间] ${new Date().toLocaleString()}\n[命令] ${command.key}\n[参数] ${query || '无'}\n[结果] ${result.content}\n====================[命令执行结束]====================`);
+
+            return result.content ?? '';
+        } catch (error) {
+            this.logger.error('AI工具执行失败:', error);
+            if (error instanceof Error && error.message) {
+                return error.message;
+            }
+            return '命令执行失败';
+        }
     }
 
     async getCommandList(): Promise<Command[]> {
