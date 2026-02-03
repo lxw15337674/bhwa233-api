@@ -8,6 +8,7 @@ import MarkdownIt from 'markdown-it';
 import { summaryTemplate } from './templates/summary.template';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import axios from 'axios';
 
 const aiPrompt = process.env.AI_PROMPT ?? '';
 
@@ -19,6 +20,15 @@ interface ToolingOptions {
     toolChoice?: OpenAI.ChatCompletionToolChoiceOption;
     maxToolRounds?: number;
 }
+
+type TavilySearchArgs = {
+    query: string;
+    max_results?: number;
+    search_depth?: 'basic' | 'advanced';
+    include_answer?: boolean;
+    include_images?: boolean;
+    include_raw_content?: boolean;
+};
 
 @Injectable()
 export class AiService {
@@ -68,6 +78,68 @@ export class AiService {
             throw new BadRequestException('Prompt cannot be empty');
         }
 
+        if (enableWebSearch) {
+            const tools: OpenAI.ChatCompletionTool[] = [
+                {
+                    type: 'function',
+                    function: {
+                        name: 'tavily_search',
+                        description: searchDescription,
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                query: {
+                                    type: 'string',
+                                    description: '搜索关键词或问题描述',
+                                },
+                                max_results: {
+                                    type: 'integer',
+                                    description: '返回的最大结果数量',
+                                },
+                                search_depth: {
+                                    type: 'string',
+                                    enum: ['basic', 'advanced'],
+                                    description: '搜索深度，advanced 通常更全面',
+                                },
+                                include_answer: {
+                                    type: 'boolean',
+                                    description: '是否返回聚合回答',
+                                },
+                                include_images: {
+                                    type: 'boolean',
+                                    description: '是否返回图片结果',
+                                },
+                                include_raw_content: {
+                                    type: 'boolean',
+                                    description: '是否返回原始网页内容',
+                                },
+                            },
+                            required: ['query'],
+                            additionalProperties: false,
+                        },
+                    },
+                },
+            ];
+
+            return this.generateResponseWithTools(
+                {
+                    prompt,
+                    model,
+                    rolePrompt,
+                },
+                {
+                    tools,
+                    toolChoice: 'auto',
+                    executeTool: async (toolName, args) => {
+                        if (toolName === 'tavily_search') {
+                            return this.tavilySearch(args as TavilySearchArgs);
+                        }
+                        return `未知工具: ${toolName}`;
+                    },
+                }
+            );
+        }
+
         // 确保 rolePrompt 不为空
         const systemPrompt = rolePrompt.trim() ??'你是一个AI助手，擅长回答用户的问题。';
         const userPrompt = prompt.trim();
@@ -84,24 +156,11 @@ export class AiService {
             }
         ];
 
-        // 构建请求参数
-        const requestParams: any = {
-            messages,
-            model,
-            ...(enableWebSearch && {
-                tool_choice: "auto",
-                tools: [
-                    {
-                        type: "web_search",
-                        function: {
-                            description: searchDescription
-                        }
-                    }
-                ]
-            })
-        };
         try {
-            const completion = await this.openai.chat.completions.create(requestParams);
+            const completion = await this.openai.chat.completions.create({
+                messages,
+                model,
+            });
             console.log(completion.choices[0].message);
             return completion.choices[0].message.content ?? '';
         } catch (error) {
@@ -183,7 +242,20 @@ export class AiService {
                 }
                 const args = this.safeParseToolArgs(toolCall.function.arguments);
                 try {
+                    const startedAt = Date.now();
+                    this.logger.log('[AI Service] Tool call start', {
+                        toolName,
+                        args,
+                    });
                     const toolResult = await tooling.executeTool(toolName, args);
+                    const durationMs = Date.now() - startedAt;
+                    this.logger.log('[AI Service] Tool call success', {
+                        toolName,
+                        durationMs,
+                        resultPreview: typeof toolResult === 'string'
+                            ? toolResult.slice(0, 200)
+                            : '',
+                    });
                     lastToolResult = toolResult;
                     messages.push({
                         role: 'tool',
@@ -202,6 +274,56 @@ export class AiService {
         }
 
         return lastToolResult || '未能生成最终回答，请稍后重试。';
+    }
+
+    private async tavilySearch(args: TavilySearchArgs): Promise<string> {
+        if (!args?.query || !args.query.trim()) {
+            return '缺少 query 参数';
+        }
+
+        const apiKey = process.env.TAVILY_API_KEY;
+        if (!apiKey) {
+            return '缺少 TAVILY_API_KEY 配置';
+        }
+
+        const baseUrl = process.env.TAVILY_BASE_URL ?? 'https://api.tavily.com';
+        const payload = {
+            api_key: apiKey,
+            query: args.query.trim(),
+            search_depth: args.search_depth ?? 'basic',
+            max_results: args.max_results ?? 5,
+            include_answer: args.include_answer ?? true,
+            include_images: args.include_images ?? false,
+            include_raw_content: args.include_raw_content ?? false,
+        };
+
+        try {
+            const response = await axios.post(`${baseUrl}/search`, payload, {
+                timeout: 15000,
+            });
+            const data = response.data ?? {};
+            const results = Array.isArray(data.results) ? data.results : [];
+            const normalized = results
+                .slice(0, payload.max_results)
+                .map((item: any) => ({
+                    title: item?.title ?? '',
+                    url: item?.url ?? '',
+                    content: item?.content ?? item?.snippet ?? '',
+                }));
+
+            return JSON.stringify(
+                {
+                    query: args.query,
+                    answer: data.answer ?? '',
+                    results: normalized,
+                },
+                null,
+                2
+            );
+        } catch (error) {
+            this.logger.error('[AI Service] Tavily search failed:', error);
+            return '联网搜索失败';
+        }
     }
 
     // AI 总结聊天记录
