@@ -16,7 +16,7 @@
 - **框架**: [NestJS](https://nestjs.com/) - 企业级 Node.js 框架
 - **ORM**: TypeORM - 数据库对象关系映射
 - **数据库**: MySQL (通过 [PlanetScale](https://app.planetscale.com/))
-- **编译器**: SWC - 高性能的 TypeScript/JavaScript 编译器
+- **编译器**: TypeScript (tsc)
 - **AI 集成**: 
   - OpenAI API
   - Google Generative AI
