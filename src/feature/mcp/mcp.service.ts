@@ -170,15 +170,28 @@ export class McpService {
       name: this.serverInfo.name,
       version: this.serverInfo.version,
     });
+    const registerTool = server.registerTool as unknown as (
+      name: string,
+      config: {
+        title?: string;
+        description?: string;
+        inputSchema?: unknown;
+        outputSchema?: unknown;
+        annotations?: Record<string, unknown>;
+        _meta?: Record<string, unknown>;
+      },
+      cb: (args?: unknown) => ToolResult | Promise<ToolResult>
+    ) => void;
 
-    server.registerTool(
+    registerTool(
       'ai.chat',
       {
         title: 'ai.chat',
         description: 'Generate an AI response.',
-        inputSchema: aiChatInputSchema as z.ZodTypeAny,
+        inputSchema: aiChatInputSchema,
       },
-      async ({ prompt, model, rolePrompt }: AiChatInput) => {
+      async (args) => {
+        const { prompt, model, rolePrompt } = args as AiChatInput;
         const body = this.pickArgs({ prompt, model, rolePrompt }, ['prompt', 'model', 'rolePrompt']);
         const text = await this.fetchText(
           `${ctx.apiBaseUrl}/ai/chat`,
@@ -189,14 +202,15 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'ai.summarize',
       {
         title: 'ai.summarize',
         description: 'Summarize chat messages and return a JPEG image.',
-        inputSchema: aiSummarizeInputSchema as z.ZodTypeAny,
+        inputSchema: aiSummarizeInputSchema,
       },
-      async ({ messages, selfName, groupName, includeRanking }: AiSummarizeInput) => {
+      async (args) => {
+        const { messages, selfName, groupName, includeRanking } = args as AiSummarizeInput;
         const body = this.pickArgs(
           { messages, selfName, groupName, includeRanking },
           ['messages', 'selfName', 'groupName', 'includeRanking']
@@ -210,7 +224,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'command.run',
       {
         title: 'command.run',
@@ -219,7 +233,8 @@ export class McpService {
           command: z.string(),
         },
       },
-      async ({ command }) => {
+      async (args) => {
+        const { command } = args as { command: string };
         const body = { command };
         const result = await this.fetchJson<{ content?: string; type?: string }>(
           `${ctx.apiBaseUrl}/command`,
@@ -230,7 +245,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'command.help',
       {
         title: 'command.help',
@@ -243,7 +258,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'command.helpImage',
       {
         title: 'command.helpImage',
@@ -256,7 +271,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'command.relay',
       {
         title: 'command.relay',
@@ -266,7 +281,8 @@ export class McpService {
           period: z.string().optional(),
         },
       },
-      async ({ provider, period }) => {
+      async (args) => {
+        const { provider, period } = (args ?? {}) as { provider?: string; period?: string };
         const relayProvider = provider || '88code';
         const relayPeriod = period || '24h';
         const url = new URL(`${ctx.apiBaseUrl}/command/relay`);
@@ -277,14 +293,15 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'proxy.request',
       {
         title: 'proxy.request',
         description: 'Proxy HTTP request and return JSON result.',
-        inputSchema: proxyRequestInputSchema as z.ZodTypeAny,
+        inputSchema: proxyRequestInputSchema,
       },
-      async ({ url, method, origin, referer, userAgent, headers, body }: ProxyRequestInput) => {
+      async (args) => {
+        const { url, method, origin, referer, userAgent, headers, body } = args as ProxyRequestInput;
         const payload = this.pickArgs(
           { url, method, origin, referer, userAgent, headers, body },
           ['url', 'method', 'origin', 'referer', 'userAgent', 'headers', 'body']
@@ -299,7 +316,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'proxy.stream',
       {
         title: 'proxy.stream',
@@ -312,7 +329,14 @@ export class McpService {
           headers: z.union([z.string(), z.record(z.unknown())]).optional(),
         },
       },
-      async ({ url, origin, referer, userAgent, headers }) => {
+      async (args) => {
+        const { url, origin, referer, userAgent, headers } = (args ?? {}) as {
+          url: string;
+          origin?: string;
+          referer?: string;
+          userAgent?: string;
+          headers?: string | Record<string, unknown>;
+        };
         const streamUrl = new URL(`${ctx.apiBaseUrl}/proxy/stream`);
         this.appendQuery(
           streamUrl,
@@ -324,7 +348,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'proxy.health',
       {
         title: 'proxy.health',
@@ -337,7 +361,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'bookmark.create',
       {
         title: 'bookmark.create',
@@ -350,7 +374,14 @@ export class McpService {
           content: z.string().optional(),
         },
       },
-      async ({ url, title, image, remark, content }) => {
+      async (args) => {
+        const { url, title, image, remark, content } = (args ?? {}) as {
+          url: string;
+          title?: string;
+          image?: string;
+          remark?: string;
+          content?: string;
+        };
         const payload = this.pickArgs(
           { url, title, image, remark, content },
           ['url', 'title', 'image', 'remark', 'content']
@@ -364,7 +395,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'bookmark.getByUrl',
       {
         title: 'bookmark.getByUrl',
@@ -373,7 +404,8 @@ export class McpService {
           url: z.string(),
         },
       },
-      async ({ url }) => {
+      async (args) => {
+        const { url } = args as { url: string };
         const endpoint = new URL(`${ctx.apiBaseUrl}/bookmark/search`);
         endpoint.searchParams.set('url', url);
         const result = await this.fetchJson<unknown>(endpoint.toString(), { method: 'GET' }, ctx);
@@ -381,7 +413,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'bookmark.deleteByUrl',
       {
         title: 'bookmark.deleteByUrl',
@@ -390,7 +422,8 @@ export class McpService {
           url: z.string(),
         },
       },
-      async ({ url }) => {
+      async (args) => {
+        const { url } = args as { url: string };
         const endpoint = new URL(`${ctx.apiBaseUrl}/bookmark/search`);
         endpoint.searchParams.set('url', url);
         await this.fetchJson<unknown>(endpoint.toString(), { method: 'DELETE' }, ctx);
@@ -398,7 +431,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'bookmark.health',
       {
         title: 'bookmark.health',
@@ -411,7 +444,7 @@ export class McpService {
       }
     );
 
-    server.registerTool(
+    registerTool(
       'fishingTime.get',
       {
         title: 'fishingTime.get',
