@@ -33,21 +33,23 @@ export class McpController {
       return;
     }
 
-    let responsePayload: unknown | null = null;
     try {
-      const ctx = this.mcpService.buildContext(req);
-      responsePayload = await this.mcpService.handleRequest(body, ctx);
+      const protocolError = this.mcpService.validateProtocolVersion(body);
+      if (protocolError) {
+        res.status(400).json(protocolError);
+        return;
+      }
+
+      await this.mcpService.handleHttpRequest(req, res, body);
     } catch (error) {
-      const failure = this.mcpService.toErrorResponse(error);
-      res.status(failure.status).json(failure.payload);
-      return;
+      if (!res.headersSent) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32603, message },
+        });
+      }
     }
-
-    if (!responsePayload) {
-      res.status(204).end();
-      return;
-    }
-
-    res.status(200).json(responsePayload);
   }
 }

@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaClient, Prisma, Bookmark, BookmarkTag } from '../../../prisma/generated/client/client';
 import { CreateBookmarkDto } from './bookmark.dto';
 import { AiService } from '../ai/ai.service';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
+import { Bookmark, BookmarkTag, Prisma, PrismaClient } from '@prisma/client';
 
 // 创建数据库连接适配器
 const pool = new pg.Pool({
