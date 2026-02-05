@@ -15,6 +15,38 @@ interface ToolResult {
   isError?: boolean;
 }
 
+const aiChatInputSchema = z.object({
+  prompt: z.string(),
+  model: z.string().optional(),
+  rolePrompt: z.string().optional(),
+});
+type AiChatInput = z.infer<typeof aiChatInputSchema>;
+
+const aiSummarizeInputSchema = z.object({
+  messages: z.array(
+    z.object({
+      sender: z.string(),
+      content: z.string(),
+      timestamp: z.string(),
+    })
+  ),
+  selfName: z.string().optional(),
+  groupName: z.string().optional(),
+  includeRanking: z.boolean().optional(),
+});
+type AiSummarizeInput = z.infer<typeof aiSummarizeInputSchema>;
+
+const proxyRequestInputSchema = z.object({
+  url: z.string(),
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']).optional(),
+  origin: z.string().optional(),
+  referer: z.string().optional(),
+  userAgent: z.string().optional(),
+  headers: z.union([z.string(), z.record(z.unknown())]).optional(),
+  body: z.string().optional(),
+});
+type ProxyRequestInput = z.infer<typeof proxyRequestInputSchema>;
+
 class UpstreamError extends Error {
   constructor(
     message: string,
@@ -144,13 +176,9 @@ export class McpService {
       {
         title: 'ai.chat',
         description: 'Generate an AI response.',
-        inputSchema: {
-          prompt: z.string(),
-          model: z.string().optional(),
-          rolePrompt: z.string().optional(),
-        },
+        inputSchema: aiChatInputSchema as z.ZodTypeAny,
       },
-      async ({ prompt, model, rolePrompt }) => {
+      async ({ prompt, model, rolePrompt }: AiChatInput) => {
         const body = this.pickArgs({ prompt, model, rolePrompt }, ['prompt', 'model', 'rolePrompt']);
         const text = await this.fetchText(
           `${ctx.apiBaseUrl}/ai/chat`,
@@ -166,20 +194,9 @@ export class McpService {
       {
         title: 'ai.summarize',
         description: 'Summarize chat messages and return a JPEG image.',
-        inputSchema: {
-          messages: z.array(
-            z.object({
-              sender: z.string(),
-              content: z.string(),
-              timestamp: z.string(),
-            })
-          ),
-          selfName: z.string().optional(),
-          groupName: z.string().optional(),
-          includeRanking: z.boolean().optional(),
-        },
+        inputSchema: aiSummarizeInputSchema as z.ZodTypeAny,
       },
-      async ({ messages, selfName, groupName, includeRanking }) => {
+      async ({ messages, selfName, groupName, includeRanking }: AiSummarizeInput) => {
         const body = this.pickArgs(
           { messages, selfName, groupName, includeRanking },
           ['messages', 'selfName', 'groupName', 'includeRanking']
@@ -265,17 +282,9 @@ export class McpService {
       {
         title: 'proxy.request',
         description: 'Proxy HTTP request and return JSON result.',
-        inputSchema: {
-          url: z.string(),
-          method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']).optional(),
-          origin: z.string().optional(),
-          referer: z.string().optional(),
-          userAgent: z.string().optional(),
-          headers: z.union([z.string(), z.record(z.unknown())]).optional(),
-          body: z.string().optional(),
-        },
+        inputSchema: proxyRequestInputSchema as z.ZodTypeAny,
       },
-      async ({ url, method, origin, referer, userAgent, headers, body }) => {
+      async ({ url, method, origin, referer, userAgent, headers, body }: ProxyRequestInput) => {
         const payload = this.pickArgs(
           { url, method, origin, referer, userAgent, headers, body },
           ['url', 'method', 'origin', 'referer', 'userAgent', 'headers', 'body']
