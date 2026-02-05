@@ -90,17 +90,16 @@ export async function generateGeminiImage(
             })
         );
     } catch (error) {
-        const axiosError = error as {
-            message?: string;
-            response?: { status?: number; data?: unknown };
-        };
-        const status = axiosError.response?.status;
-        const data = axiosError.response?.data;
-        const suffix = status ? ` (status ${status})` : '';
-        const detail = data ? JSON.stringify(data) : axiosError.message || 'unknown error';
-        logger.error(`Gemini image request failed${suffix}`, detail);
         throw new Error('文生图接口请求失败');
     }
+
+    const responseLog = JSON.stringify(response.data, (key, value) => {
+        if (key === 'data' && typeof value === 'string') {
+            return `[base64 ${value.length} chars]`;
+        }
+        return value;
+    });
+    logger.log(`Gemini image response: ${responseLog}`);
 
     const candidates = response.data?.candidates ?? [];
     const parts = candidates[0]?.content?.parts ?? [];
