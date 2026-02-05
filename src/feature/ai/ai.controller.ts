@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, ValidationPipe, UsePipes, BadRequestException, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, ValidationPipe, UsePipes, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AiService } from './ai.service';
 import { AIRequest } from './type';
@@ -12,9 +12,11 @@ export class AiController {
     @Get('')
     async get() {
         return 'Hello ai';
-    }    @ApiOperation({
-        summary: 'Generate AI response with integrated web search',
-        description: 'Generate AI response with built-in internet search capability for real-time information. Web search is enabled by default and can be optionally disabled.'
+    }
+
+    @ApiOperation({
+        summary: 'Generate AI response',
+        description: 'Generate AI response based on the provided prompt.'
     })
     @ApiBody({ type: AIRequest })
     @ApiResponse({

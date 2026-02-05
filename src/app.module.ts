@@ -8,6 +8,7 @@ import { CommandModule } from './feature/command/command.module';
 import { BookmarkModule } from './feature/bookmark/bookmark.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 import { ProxyModule } from './feature/proxy/proxy.module';
+import { McpModule } from './feature/mcp/mcp.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProxyModule } from './feature/proxy/proxy.module';
     CommandModule,
     BookmarkModule,
     ProxyModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

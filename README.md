@@ -107,8 +107,6 @@ pnpm test:cov
 - `DATABASE_URL`: 数据库连接 URL
 - `OPENAI_API_KEY`: OpenAI API 密钥
 - `GOOGLE_API_KEY`: Google AI API 密钥
-- `TAVILY_API_KEY`: Tavily API 密钥（联网搜索）
-- `TAVILY_BASE_URL`: Tavily API 地址（可选，默认 https://api.tavily.com）
 
 ## 贡献指南
 

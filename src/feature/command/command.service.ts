@@ -70,24 +70,15 @@ export class CommandService {
                 key: 'a ',
                 callback: async (params) => {
                     const { tools, toolMap } = this.getAiCommandTools();
-                    const webSearchTool = {
-                        type: 'builtin_function',
-                        function: {
-                            name: '$web_search',
-                        },
-                    } as unknown as OpenAI.ChatCompletionTool;
                     const response = await this.aiService.generateResponseWithTools(
                         {
                             prompt: params?.args ?? '',
-                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。只输出总结，不要包含引用、链接或来源列表。股票相关的数据优先使用 s 命令进行查询。涉及股票/指数/行情/指标（如EPS、PE、PB、涨跌幅、成交额等）时优先调用命令工具（如 s/sd），必要时才用联网搜索；回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔',
+                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。股票相关的数据优先使用 s 命令进行查询。涉及股票/指数/行情/指标（如EPS、PE、PB、涨跌幅、成交额等）时优先调用命令工具（如 s/sd）；回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔',
                         },
                         {
-                            tools: [...tools, webSearchTool] as OpenAI.ChatCompletionTool[],
+                            tools: tools as OpenAI.ChatCompletionTool[],
                             maxToolRounds: 3,
                             executeTool: async (toolName, args) => {
-                                if (toolName === '$web_search') {
-                                    return JSON.stringify(args ?? {});
-                                }
                                 return this.executeAiTool(toolMap, toolName, args);
                             },
                         }

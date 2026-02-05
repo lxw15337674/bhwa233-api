@@ -8,8 +8,6 @@ import MarkdownIt from 'markdown-it';
 import { summaryTemplate } from './templates/summary.template';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import axios from 'axios';
-
 const aiPrompt = process.env.AI_PROMPT ?? '';
 
 type ToolExecutor = (toolName: string, args: unknown) => Promise<string>;
@@ -20,15 +18,6 @@ interface ToolingOptions {
     toolChoice?: OpenAI.ChatCompletionToolChoiceOption;
     maxToolRounds?: number;
 }
-
-type TavilySearchArgs = {
-    query: string;
-    max_results?: number;
-    search_depth?: 'basic' | 'advanced';
-    include_answer?: boolean;
-    include_images?: boolean;
-    include_raw_content?: boolean;
-};
 
 @Injectable()
 export class AiService {
@@ -67,46 +56,13 @@ export class AiService {
         const {
             prompt,
             model = process.env.AI_MODEL ?? 'step-3',
-            rolePrompt = aiPrompt,
-            searchDescription = '当需要获取实时信息、最新新闻、当前事件或用户询问的信息可能需要最新数据时使用网络搜索',
-            enableWebSearch = false // 新增开关，默认为 false
+            rolePrompt = aiPrompt
         } = body;
 
         // 验证 prompt 是否为空
         if (!prompt || prompt.trim() === '') {
             this.logger.error('[AI Service] Empty prompt provided:', { prompt, type: typeof prompt });
             throw new BadRequestException('Prompt cannot be empty');
-        }
-
-        if (enableWebSearch) {
-            const tools = [
-                {
-                    type: 'builtin_function',
-                    function: {
-                        name: '$web_search',
-                        description: searchDescription,
-                    },
-                },
-            ] as unknown as OpenAI.ChatCompletionTool[];
-
-            return this.generateResponseWithTools(
-                {
-                    prompt,
-                    model,
-                    rolePrompt,
-                },
-                {
-                    tools,
-                    toolChoice: 'auto',
-                    maxToolRounds: 3,
-                    executeTool: async (toolName, args) => {
-                        if (toolName === '$web_search') {
-                            return JSON.stringify(args ?? {});
-                        }
-                        return `未知工具: ${toolName}`;
-                    },
-                }
-            );
         }
 
         // 确保 rolePrompt 不为空
@@ -192,14 +148,12 @@ export class AiService {
 
         const logToolingSummary = (extra?: { errorMessage?: string; endedByMaxRounds?: boolean }) => {
             const durationMs = Date.now() - startedAt;
-            const webSearchUsed = toolNames.has('$web_search');
             const payload = {
                 model,
                 usedTools,
                 toolCallsCount,
                 toolRounds,
                 toolNames: Array.from(toolNames),
-                webSearchUsed,
                 durationMs,
                 ...(extra ?? {}),
             };
@@ -314,56 +268,6 @@ export class AiService {
 
         logToolingSummary({ endedByMaxRounds: true });
         return lastToolResult || '未能生成最终回答，请稍后重试。';
-    }
-
-    private async tavilySearch(args: TavilySearchArgs): Promise<string> {
-        if (!args?.query || !args.query.trim()) {
-            return '缺少 query 参数';
-        }
-
-        const apiKey = process.env.TAVILY_API_KEY;
-        if (!apiKey) {
-            return '缺少 TAVILY_API_KEY 配置';
-        }
-
-        const baseUrl = process.env.TAVILY_BASE_URL ?? 'https://api.tavily.com';
-        const payload = {
-            api_key: apiKey,
-            query: args.query.trim(),
-            search_depth: args.search_depth ?? 'basic',
-            max_results: args.max_results ?? 5,
-            include_answer: args.include_answer ?? true,
-            include_images: args.include_images ?? false,
-            include_raw_content: args.include_raw_content ?? false,
-        };
-
-        try {
-            const response = await axios.post(`${baseUrl}/search`, payload, {
-                timeout: 15000,
-            });
-            const data = response.data ?? {};
-            const results = Array.isArray(data.results) ? data.results : [];
-            const normalized = results
-                .slice(0, payload.max_results)
-                .map((item: any) => ({
-                    title: item?.title ?? '',
-                    url: item?.url ?? '',
-                    content: item?.content ?? item?.snippet ?? '',
-                }));
-
-            return JSON.stringify(
-                {
-                    query: args.query,
-                    answer: data.answer ?? '',
-                    results: normalized,
-                },
-                null,
-                2
-            );
-        } catch (error) {
-            this.logger.error('[AI Service] Tavily search failed:', error);
-            return '联网搜索失败';
-        }
     }
 
     // AI 总结聊天记录

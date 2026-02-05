@@ -40,22 +40,4 @@ export class AIRequest {
     @IsOptional()
     @IsString({ message: 'Role prompt must be a string' })
     rolePrompt?: string;
-
-    @ApiProperty({
-        description: 'Enable web search for real-time information (enabled by default)',
-        example: false,
-        required: false,
-        default: true
-    })
-    @IsOptional()
-    enableWebSearch?: boolean;
-
-    @ApiProperty({
-        description: 'Description of when to use web search',
-        example: 'Search for current events, latest news, or real-time information',
-        required: false
-    })
-    @IsOptional()
-    @IsString({ message: 'Search description must be a string' })
-    searchDescription?: string;
 }
