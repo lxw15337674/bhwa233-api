@@ -9,6 +9,7 @@ import { getWeiboData } from './acions/weibo';
 import { takeRelayPulseScreenshot } from './acions/screenshot';
 import { getRandomImage } from './acions/randomImage';
 import { generateGeminiImage } from './acions/generateImage';
+import { getGoldPrice } from './acions/gold';
 import { AiService } from '../ai/ai.service';
 import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
@@ -280,6 +281,18 @@ export class CommandService {
                     };
                 },
                 msg: 'hy - 获取节假日信息',
+                hasArgs: false,
+            },
+            {
+                key: 'gold',
+                callback: async () => {
+                    const result = await getGoldPrice();
+                    return {
+                        content: result || '获取金价失败',
+                        type: 'text',
+                    };
+                },
+                msg: 'gold - 获取实时金价',
                 hasArgs: false,
             },
             // 网页截图
