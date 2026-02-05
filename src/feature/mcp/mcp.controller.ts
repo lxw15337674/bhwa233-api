@@ -8,25 +8,26 @@ export class McpController {
 
   @Get()
   async handleGet(@Req() req: Request, @Res() res: Response) {
-    if (!this.mcpService.isEventStreamRequest(req)) {
-      res.status(405).send('Method Not Allowed');
+    if (!this.mcpService.isOriginAllowed(req)) {
+      res.status(403).send('Forbidden');
       return;
     }
 
-    if (!this.mcpService.isAuthorized(req)) {
-      this.mcpService.sendUnauthorized(res);
-      return;
-    }
-
-    this.mcpService.sendSse(res, {
-      jsonrpc: '2.0',
-      method: 'mcp/ready',
-      params: { message: 'SSE channel is not used for server-initiated messages.' },
-    });
+    res.status(405).send('Method Not Allowed');
   }
 
   @Post()
   async handlePost(@Req() req: Request, @Res() res: Response, @Body() body: unknown) {
+    if (!this.mcpService.isOriginAllowed(req)) {
+      res.status(403).send('Forbidden');
+      return;
+    }
+
+    if (this.mcpService.shouldUseEventStream(req)) {
+      res.status(406).send('Event-stream responses are not supported.');
+      return;
+    }
+
     if (!this.mcpService.isAuthorized(req)) {
       this.mcpService.sendUnauthorized(res);
       return;
@@ -44,11 +45,6 @@ export class McpController {
 
     if (!responsePayload) {
       res.status(204).end();
-      return;
-    }
-
-    if (this.mcpService.shouldUseEventStream(req)) {
-      this.mcpService.sendSse(res, responsePayload);
       return;
     }
 

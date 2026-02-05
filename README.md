@@ -100,6 +100,25 @@ pnpm test:cov
 
 项目集成了 Swagger，运行项目后可以访问 `/api` 路径查看完整的 API 文档。
 
+## MCP 接入
+
+本服务提供 MCP（Model Context Protocol）HTTP 接入，使用 Streamable HTTP 的 JSON-only 模式。
+
+### 接入要点
+- **入口路径**: `POST /mcp`（不带 `/api` 前缀）
+- **协议版本**: 仅支持 `2025-11-25`
+- **鉴权方式**:
+  - `x-api-key: <API_SECRET_KEY>`
+  - 或 `Authorization: Bearer <API_SECRET_KEY>`
+- **响应模式**: 仅支持 JSON，不支持 SSE；`Accept: text/event-stream` 会返回 406
+- **Origin/Host 校验**: 可选白名单校验，见下方环境变量说明
+
+### 客户端接入（概述）
+1. 选择支持 MCP Streamable HTTP 的客户端（如 Codex/Claude Code 等）。
+2. 配置 MCP 服务地址为你的部署域名的 `/mcp` 路径。
+3. 设置请求头 `x-api-key`（或 `Authorization: Bearer`）。
+4. `initialize` 请求中传入 `protocolVersion: "2025-11-25"`。
+
 ## 环境变量
 
 项目使用 @nestjs/config 来管理环境变量，需要配置以下环境变量：
@@ -107,6 +126,10 @@ pnpm test:cov
 - `DATABASE_URL`: 数据库连接 URL
 - `OPENAI_API_KEY`: OpenAI API 密钥
 - `GOOGLE_API_KEY`: Google AI API 密钥
+- `API_SECRET_KEY`: MCP 与部分内部接口鉴权密钥
+- `API_BASE_URL`: MCP 代理上游 API 的基础地址（默认自动使用当前请求域名的 `/api`）
+- `MCP_ALLOWED_ORIGINS`: 允许的 Origin 白名单（逗号分隔）
+- `MCP_ALLOWED_HOSTS`: 允许的 Host 白名单（逗号分隔）
 
 ## 贡献指南
 

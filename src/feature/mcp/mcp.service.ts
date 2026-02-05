@@ -32,6 +32,7 @@ interface McpContext {
   apiKey: string;
   apiBaseUrl: string;
   protocolVersion: string;
+  hasProtocolVersionHeader: boolean;
 }
 
 interface ToolDefinition {
@@ -67,7 +68,7 @@ export class McpService {
     version: '1.0.0',
   };
 
-  private readonly supportedProtocolVersions = new Set(['2025-11-25', '2025-03-26']);
+  private readonly supportedProtocolVersions = new Set(['2025-11-25']);
 
   private readonly tools: ToolDefinition[] = [
     {
@@ -286,11 +287,12 @@ export class McpService {
   }
 
   buildContext(req: Request): McpContext {
-    const protocolVersion = this.resolveProtocolVersion(req);
+    const { version: protocolVersion, hasHeader: hasProtocolVersionHeader } = this.resolveProtocolVersion(req);
     return {
       apiKey: this.extractApiKey(req) ?? '',
       apiBaseUrl: this.resolveApiBase(req),
       protocolVersion,
+      hasProtocolVersionHeader,
     };
   }
 
@@ -323,33 +325,34 @@ export class McpService {
     }
 
     const request = payload as JsonRpcRequest;
-    const id = request.id ?? null;
+    const hasId = Object.prototype.hasOwnProperty.call(request, 'id');
+    const id = hasId ? request.id ?? null : null;
 
     if (request.jsonrpc !== '2.0' || typeof request.method !== 'string') {
-      return this.buildError(id, -32600, 'Invalid Request');
+      return hasId ? this.buildError(id, -32600, 'Invalid Request') : null;
     }
 
     try {
       switch (request.method) {
         case 'initialize':
-          return this.buildSuccess(id, this.buildInitializeResult(ctx, request.params));
+          return hasId ? this.buildSuccess(id, this.buildInitializeResult(ctx, request.params)) : null;
         case 'initialized':
           return null;
         case 'tools/list':
-          return this.buildSuccess(id, { tools: this.tools });
+          return hasId ? this.buildSuccess(id, { tools: this.tools }) : null;
         case 'tools/call':
-          return this.buildSuccess(id, await this.handleToolCall(request.params, ctx));
+          return hasId ? this.buildSuccess(id, await this.handleToolCall(request.params, ctx)) : null;
         default:
-          return this.buildError(id, -32601, `Method not found: ${request.method}`);
+          return hasId ? this.buildError(id, -32601, `Method not found: ${request.method}`) : null;
       }
     } catch (error) {
       if (error instanceof UpstreamError && error.status === 400) {
-        return this.buildError(id, -32602, error.message, error.body);
+        return hasId ? this.buildError(id, -32602, error.message, error.body) : null;
       }
       if (error instanceof Error) {
-        return this.buildError(id, -32603, error.message);
+        return hasId ? this.buildError(id, -32603, error.message) : null;
       }
-      return this.buildError(id, -32603, 'Unknown error');
+      return hasId ? this.buildError(id, -32603, 'Unknown error') : null;
     }
   }
 
@@ -363,8 +366,20 @@ export class McpService {
       throw new UpstreamError(`Unsupported protocol version: ${paramVersion}`, 400);
     }
 
+    if (ctx.hasProtocolVersionHeader && paramVersion && paramVersion !== ctx.protocolVersion) {
+      throw new UpstreamError(
+        `Protocol version mismatch between header (${ctx.protocolVersion}) and params (${paramVersion})`,
+        400
+      );
+    }
+
+    const protocolVersion = paramVersion ?? ctx.protocolVersion;
+    if (!this.supportedProtocolVersions.has(protocolVersion)) {
+      throw new UpstreamError(`Unsupported protocol version: ${protocolVersion}`, 400);
+    }
+
     return {
-      protocolVersion: ctx.protocolVersion,
+      protocolVersion,
       capabilities: {
         tools: {},
       },
@@ -580,16 +595,55 @@ export class McpService {
     return `${proto}://${host}/api`;
   }
 
-  private resolveProtocolVersion(req: Request): string {
+  private resolveProtocolVersion(req: Request): { version: string; hasHeader: boolean } {
     const header = req.headers['mcp-protocol-version'];
     if (typeof header === 'string' && header.trim()) {
       const version = header.trim();
       if (!this.supportedProtocolVersions.has(version)) {
         throw new UpstreamError(`Unsupported protocol version: ${version}`, 400);
       }
-      return version;
+      return { version, hasHeader: true };
     }
-    return '2025-03-26';
+    return { version: '2025-11-25', hasHeader: false };
+  }
+
+  isOriginAllowed(req: Request): boolean {
+    const originHeader = req.headers['origin'];
+    const origin = typeof originHeader === 'string' ? originHeader.trim() : '';
+
+    const allowedOrigins = (process.env.MCP_ALLOWED_ORIGINS ?? '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const allowedHosts = (process.env.MCP_ALLOWED_HOSTS ?? '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const forwardedHost = req.headers['x-forwarded-host'];
+    const hostHeader = (typeof forwardedHost === 'string' && forwardedHost.trim()) ? forwardedHost : req.headers['host'];
+    const host = typeof hostHeader === 'string' ? hostHeader.split(',')[0].trim() : '';
+
+    if (allowedHosts.length > 0 && !allowedHosts.includes(host)) {
+      return false;
+    }
+
+    if (!origin) {
+      return true;
+    }
+
+    let originUrl: URL | null = null;
+    try {
+      originUrl = new URL(origin);
+    } catch {
+      return false;
+    }
+
+    if (allowedOrigins.length > 0) {
+      return allowedOrigins.includes(origin);
+    }
+
+    return originUrl.host === host;
   }
 
   private pickArgs(source: Record<string, unknown>, keys: string[]) {
