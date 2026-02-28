@@ -1,5 +1,6 @@
 # compiled output
 /node_modules
+/.pnpm
 
 # Prisma generated files
 /prisma/generated
