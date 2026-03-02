@@ -11,8 +11,10 @@ import { getRandomImage } from './acions/randomImage';
 import { generateGeminiImage } from './acions/generateImage';
 import { getGoldPrice } from './acions/gold';
 import { AiService } from '../ai/ai.service';
+import { TavilyService } from '../ai/tavily.service';
 import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
+import { AiSessionCacheService } from './ai-session-cache.service';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import satori from 'satori';
@@ -24,7 +26,6 @@ export interface CommandParams {
     args?: string,
     key: string,
 }
-
 
 export interface Command {
     key: string;
@@ -54,8 +55,10 @@ export class CommandService {
 
     constructor(
         private readonly aiService: AiService,
+        private readonly tavilyService: TavilyService,
         private readonly screenshotService: ScreenshotService,
         private readonly httpService: HttpService,
+        private readonly aiSessionCacheService: AiSessionCacheService,
     ) { }
 
     private commandMap: {
@@ -70,20 +73,37 @@ export class CommandService {
             {
                 key: 'a ',
                 callback: async (params) => {
-                    const { tools, toolMap } = this.getAiCommandTools();
+                    const turns = await this.aiSessionCacheService.getTurns();
+                    const conversationMessages: OpenAI.ChatCompletionMessageParam[] = turns.flatMap((turn) => ([
+                        {
+                            role: 'user',
+                            content: turn.user,
+                        } satisfies OpenAI.ChatCompletionUserMessageParam,
+                        {
+                            role: 'assistant',
+                            content: turn.assistant,
+                        } satisfies OpenAI.ChatCompletionAssistantMessageParam,
+                    ]));
+
+                    const { tools, toolMap, extraToolMap } = this.getAiCommandTools();
+                    const prompt = params?.args ?? '';
                     const response = await this.aiService.generateResponseWithTools(
                         {
-                            prompt: params?.args ?? '',
+                            prompt,
                             rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，回答控制在100字以内。股票相关的数据优先使用 s 命令进行查询。涉及股票/指数/行情/指标（如EPS、PE、PB、涨跌幅、成交额等）时优先调用命令工具（如 s/sd）；回答开头是：坤哥告诉你，结尾是：厉不厉害 你坤哥🐔',
                         },
                         {
                             tools: tools as OpenAI.ChatCompletionTool[],
                             maxToolRounds: 3,
+                            conversationMessages,
                             executeTool: async (toolName, args) => {
-                                return this.executeAiTool(toolMap, toolName, args);
+                                return this.executeAiTool(toolMap, extraToolMap, toolName, args);
                             },
                         }
                     );
+
+                    await this.aiSessionCacheService.appendTurn(prompt, response);
+
                     return {
                         content: response,
                         type: 'text'
@@ -409,6 +429,13 @@ export class CommandService {
         ];
 
     async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
+        if (!msg || !msg.trim()) {
+            return {
+                content: '',
+                type: 'text'
+            };
+        }
+
         for (const command of this.commandMap) {
             const isMatch = command.hasArgs 
                 ? msg.startsWith(command.key)
@@ -435,9 +462,11 @@ export class CommandService {
     private getAiCommandTools(): {
         tools: OpenAI.ChatCompletionTool[];
         toolMap: Map<string, (typeof this.commandMap)[number]>;
+        extraToolMap: Map<string, (args: unknown) => Promise<string>>;
     } {
         const tools: OpenAI.ChatCompletionTool[] = [];
         const toolMap = new Map<string, (typeof this.commandMap)[number]>();
+        const extraToolMap = new Map<string, (args: unknown) => Promise<string>>();
 
         for (const command of this.commandMap) {
             if (command.enable === false) {
@@ -480,14 +509,53 @@ export class CommandService {
             });
         }
 
-        return { tools, toolMap };
+        const tavilyToolName = 'tavily_search';
+        tools.push({
+            type: 'function',
+            function: {
+                name: tavilyToolName,
+                description: '搜索互联网最新信息。适合时效性问题、新闻、公告、产品更新和事实核验。',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        query: {
+                            type: 'string',
+                            description: '搜索关键词或问题',
+                        },
+                        maxResults: {
+                            type: 'integer',
+                            description: '返回结果数量，范围 1-10，默认 5',
+                        },
+                    },
+                    required: ['query'],
+                    additionalProperties: false,
+                },
+            },
+        });
+        extraToolMap.set(tavilyToolName, async (args: unknown) => {
+            const query = typeof (args as { query?: unknown })?.query === 'string'
+                ? (args as { query: string }).query.trim()
+                : '';
+            const maxResults = typeof (args as { maxResults?: unknown })?.maxResults === 'number'
+                ? (args as { maxResults: number }).maxResults
+                : 5;
+            return this.tavilyService.search(query, maxResults);
+        });
+
+        return { tools, toolMap, extraToolMap };
     }
 
     private async executeAiTool(
         toolMap: Map<string, (typeof this.commandMap)[number]>,
+        extraToolMap: Map<string, (args: unknown) => Promise<string>>,
         toolName: string,
         args: unknown
     ): Promise<string> {
+        const extraToolExecutor = extraToolMap.get(toolName);
+        if (extraToolExecutor) {
+            return extraToolExecutor(args);
+        }
+
         const command = toolMap.get(toolName);
         if (!command) {
             return `未知工具: ${toolName}`;

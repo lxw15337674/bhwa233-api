@@ -17,6 +17,7 @@ interface ToolingOptions {
     executeTool: ToolExecutor;
     toolChoice?: OpenAI.ChatCompletionToolChoiceOption;
     maxToolRounds?: number;
+    conversationMessages?: OpenAI.ChatCompletionMessageParam[];
 }
 
 @Injectable()
@@ -132,6 +133,7 @@ export class AiService {
                 role: 'system',
                 content: systemPrompt,
             },
+            ...(tooling.conversationMessages ?? []),
             {
                 role: 'user',
                 content: userPrompt,

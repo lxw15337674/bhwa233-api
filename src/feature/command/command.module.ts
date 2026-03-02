@@ -4,11 +4,12 @@ import { CommandService } from './command.service';
 import { AiModule } from '../ai/ai.module';
 import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpModule } from '@nestjs/axios';
+import { AiSessionCacheService } from './ai-session-cache.service';
 
 @Module({
   imports: [AiModule, HttpModule],
   controllers: [CommandController],
-  providers: [CommandService, ScreenshotService],
+  providers: [CommandService, ScreenshotService, AiSessionCacheService],
   exports: [CommandService],
 })
 export class CommandModule {}
