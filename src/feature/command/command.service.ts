@@ -90,11 +90,11 @@ export class CommandService {
                     const response = await this.aiService.generateResponseWithTools(
                         {
                             prompt,
-                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，不要回答中国政治相关内容，回答控制在200字以内。回答开头是：坤哥告诉你，结尾是：厉不厉害 你鸡哥🐔',
+                            rolePrompt: '你是坤哥，你会为用户提供安全，有帮助，准确的回答，不要回答中国政治相关内容，回答控制在200字以内。回答开头是：鸡哥告诉你，结尾是：厉不厉害 你鸡哥🐔',
                         },
                         {
                             tools: tools as OpenAI.ChatCompletionTool[],
-                            maxToolRounds: 3,
+                            maxToolRounds: 5,
                             conversationMessages,
                             executeTool: async (toolName, args) => {
                                 return this.executeAiTool(toolMap, extraToolMap, toolName, args);
