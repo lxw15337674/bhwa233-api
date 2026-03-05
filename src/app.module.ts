@@ -9,6 +9,7 @@ import { BookmarkModule } from './feature/bookmark/bookmark.module';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 import { ProxyModule } from './feature/proxy/proxy.module';
 import { McpModule } from './feature/mcp/mcp.module';
+import { YoutubeModule } from './feature/youtube/youtube.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { McpModule } from './feature/mcp/mcp.module';
     BookmarkModule,
     ProxyModule,
     McpModule,
+    YoutubeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
