@@ -260,11 +260,10 @@ export class YoutubeService {
       );
     }
 
-    const isWindows = process.platform === 'win32';
     const candidates = [
-      join(process.cwd(), 'bin', isWindows ? 'yt-dlp.exe' : 'yt-dlp'),
+      join(process.cwd(), 'bin', 'yt-dlp'),
       join('/var/task/bin', 'yt-dlp'),
-      join('/tmp', isWindows ? 'yt-dlp.exe' : 'yt-dlp'),
+      join('/tmp', 'yt-dlp'),
     ];
 
     for (const candidate of candidates) {
@@ -274,20 +273,16 @@ export class YoutubeService {
     }
 
     const downloadUrl =
-      process.env.YT_DLP_DOWNLOAD_URL?.trim() ||
-      (isWindows
-        ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
-        : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp');
-    const targetPath = join('/tmp', isWindows ? 'yt-dlp.exe' : 'yt-dlp');
+      'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
+    const targetPath = join('/tmp', 'yt-dlp');
 
-    await this.downloadYtDlpBinary(downloadUrl, targetPath, isWindows);
+    await this.downloadYtDlpBinary(downloadUrl, targetPath);
     return targetPath;
   }
 
   private async downloadYtDlpBinary(
     url: string,
     targetPath: string,
-    isWindows: boolean,
   ): Promise<void> {
     this.logger.log(`Downloading yt-dlp binary from ${url}`);
     const response = await fetch(url, {
@@ -307,9 +302,7 @@ export class YoutubeService {
     const bytes = Buffer.from(await response.arrayBuffer());
     await fs.mkdir(dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, bytes);
-    if (!isWindows) {
-      await fs.chmod(targetPath, 0o755);
-    }
+    await fs.chmod(targetPath, 0o755);
   }
 
   private async pathExists(path: string, executable: boolean): Promise<boolean> {
@@ -423,4 +416,3 @@ export class YoutubeService {
     }
   }
 }
-
