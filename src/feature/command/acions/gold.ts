@@ -1,90 +1,93 @@
 import axios from 'axios';
+import dayjs from 'dayjs';
 
-interface GoldMetal {
-  name: string;
-  sell_price: string;
-  today_price: string;
-  high_price: string;
-  low_price: string;
+interface GoldQuote {
+  label: string;
+  price: string;
   unit: string;
-  updated?: string;
-  updated_at?: number;
 }
 
-interface GoldPriceApiResponse {
-  code: number;
-  message: string;
-  data?: {
-    date?: string;
-    metals?: GoldMetal[];
-  };
-}
-
-const GOLD_API_URL = 'https://60s.viki.moe/v2/gold-price?encoding=json';
+const GOLD_PRICE_SCRIPT_URL = 'http://res.huangjinjiage.com.cn/panjia2.js';
+const GOLD_TIME_SCRIPT_URL = 'http://res.huangjinjiage.com.cn/panjia1.js';
 
 const DISPLAY_ITEMS = [
-  { names: ['今日金价', '黄金价格'], label: '黄金' },
-  { names: ['白银价格'], label: '白银' },
-  { names: ['铂金价格'], label: '铂金' },
-  { names: ['钯金价格'], label: '钯金' },
+  { label: '黄金', start: 12, unit: '元/克' },
+  { label: '白银', start: 16, unit: '元/克' },
+  { label: '铂金', start: 20, unit: '元/克' },
+  { label: '钯金', start: 24, unit: '元/克' },
 ] as const;
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-function formatMetalLine(label: string, metal: GoldMetal): string {
-  return `${label}：${metal.sell_price}${metal.unit}`;
-}
+function extractScriptList(script: string, variableName: string): string[] {
+  const match = new RegExp(`${variableName}\\s*=\\s*"(?<listStr>[^"]+)"`).exec(script);
+  const listStr = match?.groups?.listStr;
 
-function getUpdatedTime(metals: GoldMetal[]): string | undefined {
-  return metals.find((metal) => metal.updated)?.updated;
-}
-
-function findMetalByNames(
-  metalMap: Map<string, GoldMetal>,
-  names: readonly string[],
-): GoldMetal | undefined {
-  return names.map((name) => metalMap.get(name)).find((metal) => Boolean(metal));
-}
-
-export function formatGoldPriceResponse(payload: GoldPriceApiResponse): string {
-  if (payload.code !== 200) {
-    throw new Error(payload.message || '金价接口返回异常');
+  if (!listStr) {
+    throw new Error('金价数据解析失败');
   }
 
-  const metals = payload.data?.metals;
+  return listStr.split(',');
+}
 
-  if (!Array.isArray(metals) || metals.length === 0) {
-    throw new Error('金价数据为空');
+function extractQuoteTime(script: string): string | undefined {
+  const list = extractScriptList(script, 'panjia');
+  const rawTime = list.at(-1)?.trim();
+
+  if (!rawTime || !/^\d{1,2}:\d{2}:\d{2}$/.test(rawTime)) {
+    return undefined;
   }
 
-  const metalMap = new Map(metals.map((metal) => [metal.name, metal]));
-  const lines = DISPLAY_ITEMS.map(({ names, label }) => {
-    const metal = findMetalByNames(metalMap, names);
-    if (!metal?.sell_price || !metal.unit) {
-      return null;
+  return `${dayjs().format('YYYY-MM-DD')} ${rawTime}`;
+}
+
+export function buildGoldQuotes(priceList: string[]): GoldQuote[] {
+  const quotes: GoldQuote[] = [];
+
+  DISPLAY_ITEMS.forEach(({ label, start, unit }) => {
+    const price = priceList[start]?.trim();
+    if (!price || price === '--' || price === 'N/A') {
+      return;
     }
 
-    return formatMetalLine(label, metal);
-  }).filter((line): line is string => Boolean(line));
+    quotes.push({ label, price, unit });
+  });
 
-  if (lines.length === 0) {
+  if (quotes.length === 0) {
     throw new Error('缺少可展示的金价数据');
   }
 
-  const updatedTime = getUpdatedTime(metals);
+  return quotes;
+}
 
-  if (!updatedTime) {
+export function formatGoldPriceResponse(quotes: GoldQuote[], quoteTime?: string): string {
+  if (quotes.length === 0) {
+    throw new Error('缺少可展示的金价数据');
+  }
+
+  const lines = quotes.map((quote) => `${quote.label}：${quote.price}${quote.unit}`);
+
+  if (!quoteTime) {
     return lines.join('\n');
   }
 
-  return [`报价时间：${updatedTime}`, ...lines].join('\n');
+  return [`报价时间：${quoteTime}`, ...lines].join('\n');
 }
 
 export async function getGoldPrice(): Promise<string> {
-  const { data } = await axios.get<GoldPriceApiResponse>(GOLD_API_URL, {
-    headers: { 'User-Agent': USER_AGENT },
-  });
+  const [{ data: priceScript }, { data: timeScript }] = await Promise.all([
+    axios.get<string>(GOLD_PRICE_SCRIPT_URL, {
+      headers: { 'User-Agent': USER_AGENT },
+    }),
+    axios.get<string>(GOLD_TIME_SCRIPT_URL, {
+      headers: { 'User-Agent': USER_AGENT },
+    }),
+  ]);
 
-  return formatGoldPriceResponse(data);
+  const priceList = extractScriptList(priceScript, 'panjia2');
+  const quotes = buildGoldQuotes(priceList);
+  const quoteTime = extractQuoteTime(timeScript);
+
+  return formatGoldPriceResponse(quotes, quoteTime);
 }
