@@ -1,10 +1,7 @@
 import axios from 'axios';
 import { Logger } from '@nestjs/common';
 import { convertToNumber, formatAmount } from '../../../utils';
-import {
-  getStockSuggest,
-  FinancialProductType,
-} from './stock';
+import { getStockSuggest, FinancialProductType } from './stock';
 
 interface Market {
   status_id: number; // 市场状态ID，2代表盘前交易
@@ -103,14 +100,42 @@ interface StockData {
   error_description: string; // 错误描述
 }
 
+interface EastmoneyStockResponse {
+  rc: number;
+  data?: {
+    f43?: number | string;
+    f57?: string;
+    f58?: string;
+    f59?: number;
+    f169?: number | string;
+    f170?: number | string;
+  } | null;
+}
+
+interface EastmoneyQuote {
+  name: string;
+  symbol: string;
+  current: number;
+  percent: number;
+}
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
 const TENCENT_SMARTBOX_API_URL =
   'https://proxy.finance.qq.com/ifzqgtimg/appstock/smartbox/search/get';
+const EASTMONEY_STOCK_API_URL =
+  'https://push2delay.eastmoney.com/api/qt/stock/get';
+const EASTMONEY_STOCK_FIELDS = [
+  'f43',
+  'f57',
+  'f58',
+  'f59',
+  'f169',
+  'f170',
+].join(',');
 const logger = new Logger('StockInfo');
-// 
-const STOCK_TAG_API_URL = 'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
-
+//
+const STOCK_TAG_API_URL =
+  'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
 
 // 读取环境变量
 let Cookie = '';
@@ -119,7 +144,11 @@ const COOKIE_EXPIRATION_TIME = 1 * 24 * 60 * 60 * 1000; // 2天
 
 export async function getToken(forceRefresh = false): Promise<string> {
   const now = Date.now();
-  if (!forceRefresh && Cookie && now - cookieTimestamp < COOKIE_EXPIRATION_TIME) {
+  if (
+    !forceRefresh &&
+    Cookie &&
+    now - cookieTimestamp < COOKIE_EXPIRATION_TIME
+  ) {
     return Cookie;
   }
 
@@ -246,7 +275,8 @@ async function getSuggestStockFromXueqiu(
       return symbol;
     }
 
-    const blockedByLogin = response?.code === 400016 || response?.success === false;
+    const blockedByLogin =
+      response?.code === 400016 || response?.success === false;
     if (blockedByLogin) {
       const retryResp = await requestXueqiuSuggest(query, true);
       return pickXueqiuSuggestSymbol(retryResp, query);
@@ -362,7 +392,10 @@ function mapTencentStockToSymbol(
     // 腾讯可能返回 brk.b.us，去掉最后的市场后缀并转大写
     const parts = code.split('.');
     if (parts.length >= 2) {
-      return parts.slice(0, parts.length - 1).join('.').toUpperCase();
+      return parts
+        .slice(0, parts.length - 1)
+        .join('.')
+        .toUpperCase();
     }
     return code.toUpperCase();
   }
@@ -400,6 +433,139 @@ async function getSuggestStockFromTencent(
   }
 }
 
+function getEastmoneySecid(
+  symbol: string,
+):
+  | { secid: string; displaySymbol: string; pricePrecision: number }
+  | undefined {
+  const normalized =
+    normalizeDirectSymbol(symbol) ?? symbol.trim().toUpperCase();
+
+  if (/^SH\d{6}$/.test(normalized)) {
+    return {
+      secid: `1.${normalized.slice(2)}`,
+      displaySymbol: normalized,
+      pricePrecision: 2,
+    };
+  }
+
+  if (/^SZ\d{6}$/.test(normalized)) {
+    return {
+      secid: `0.${normalized.slice(2)}`,
+      displaySymbol: normalized,
+      pricePrecision: 2,
+    };
+  }
+
+  if (/^BJ\d{6}$/.test(normalized)) {
+    return {
+      secid: `0.${normalized.slice(2)}`,
+      displaySymbol: normalized,
+      pricePrecision: 2,
+    };
+  }
+
+  if (/^\d{5}$/.test(normalized)) {
+    return {
+      secid: `116.${normalized}`,
+      displaySymbol: normalized,
+      pricePrecision: 3,
+    };
+  }
+
+  if (/^HK\d{5}$/.test(normalized)) {
+    const code = normalized.slice(2);
+    return {
+      secid: `116.${code}`,
+      displaySymbol: code,
+      pricePrecision: 3,
+    };
+  }
+
+  return undefined;
+}
+
+async function resolveEastmoneySymbol(query: string): Promise<string> {
+  const directSymbol = normalizeDirectSymbol(query);
+  if (directSymbol) {
+    return directSymbol;
+  }
+
+  const tencentSymbol = await getSuggestStockFromTencent(query);
+  if (tencentSymbol) {
+    return tencentSymbol;
+  }
+
+  throw new Error('未找到相关股票');
+}
+
+function parseEastmoneyScaledNumber(
+  value: number | string | undefined,
+  precision: number,
+): number | undefined {
+  if (value === undefined || value === null || value === '-') {
+    return undefined;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return undefined;
+  }
+
+  return numericValue / Math.pow(10, precision);
+}
+
+function formatEastmoneyPrice(value: number, precision: number): string {
+  const fixed = value.toFixed(precision);
+  return fixed.includes('.')
+    ? fixed.replace(/0+$/, '').replace(/\.$/, '')
+    : fixed;
+}
+
+async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
+  const resolvedSymbol = await resolveEastmoneySymbol(query);
+  const secidInfo = getEastmoneySecid(resolvedSymbol);
+  if (!secidInfo) {
+    throw new Error(`暂不支持的股票代码：${resolvedSymbol}`);
+  }
+
+  const response = await axios.get<EastmoneyStockResponse>(
+    EASTMONEY_STOCK_API_URL,
+    {
+      params: {
+        secid: secidInfo.secid,
+        fields: EASTMONEY_STOCK_FIELDS,
+      },
+      validateStatus: () => true,
+    },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`东方财富行情接口返回 ${response.status}`);
+  }
+
+  const data = response.data?.data;
+  if (response.data?.rc !== 0 || !data) {
+    throw new Error(`东方财富未返回行情数据：${secidInfo.secid}`);
+  }
+
+  const precision =
+    typeof data.f59 === 'number' && data.f59 >= 0
+      ? data.f59
+      : secidInfo.pricePrecision;
+  const current = parseEastmoneyScaledNumber(data.f43, precision);
+  const percent = parseEastmoneyScaledNumber(data.f170, 2);
+  if (current === undefined || percent === undefined) {
+    throw new Error(`东方财富行情数据不完整：${secidInfo.secid}`);
+  }
+
+  return {
+    name: data.f58 || secidInfo.displaySymbol,
+    symbol: secidInfo.displaySymbol,
+    current,
+    percent,
+  };
+}
 async function retryWithNewToken<T>(
   fetchFunction: () => Promise<T>,
 ): Promise<T> {
@@ -461,21 +627,11 @@ export async function getStockBasicData(
 async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
   const promises = symbols.map(async (symbol) => {
     try {
-      const { quote, market } = await getStockBasicData(symbol);
+      const quote = await getEastmoneyStockQuote(symbol);
       const isGrowing = quote.percent > 0;
       const trend = isGrowing ? '📈' : '📉';
-      let text = `${quote?.name}(${quote?.symbol}): ${quote.current} (${trend}${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%)`;
-      if (
-        quote.current_ext &&
-        quote.percent_ext &&
-        quote.current !== quote.current_ext &&
-        market.status_id !== 5
-      ) {
-        const preIsGrowing = quote.percent_ext > 0;
-        const preTrend = preIsGrowing ? '📈' : '📉';
-        text += `\n⏰ 盘前：${quote.current_ext} ${preTrend} ${preIsGrowing ? '+' : ''}${convertToNumber(quote.percent_ext)}%`;
-      }
-      return text;
+      const precision = /^\d{5}$/.test(quote.symbol) ? 3 : 2;
+      return `${quote.name}(${quote.symbol}): ${formatEastmoneyPrice(quote.current, precision)} (${trend}${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%)`;
     } catch (error: unknown) {
       if (error instanceof Error) {
         return `❌ 获取 ${symbol} 失败：${error.message}`;
@@ -487,13 +643,12 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
 }
 
 export async function getStocksByTag(tag: string): Promise<string> {
-  const response = await axios.get(STOCK_TAG_API_URL)
-  const results = await getMultipleStocksData(response.data[tag])
+  const response = await axios.get(STOCK_TAG_API_URL);
+  const results = await getMultipleStocksData(response.data[tag]);
   const textContent = results.join('\n'); // 用换行符分隔每个股票的数据
   try {
     return textContent;
-  }
-  catch (error: unknown) {
+  } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取 ${tag} 失败：${error.message}`;
     }
@@ -589,14 +744,14 @@ export async function getCNMarketIndexData() {
       getStockBasicData('SH000001'),
       getStockBasicData('SZ399001'),
       getStockBasicData('SZ399006'),
-      getGzjc()
+      getGzjc(),
     ]);
 
     const data = [
       formatIndexData(data1),
       formatIndexData(data2),
       formatIndexData(data3),
-      gzjcData
+      gzjcData,
     ];
 
     return `${data.join('\n')}`;
@@ -696,9 +851,9 @@ export async function fetchCFFEXFuturesCodes(): Promise<FuturesData[]> {
       const fields = line.split(',');
       if (fields.length >= 11 && fields[0].startsWith('IF')) {
         futuresData.push({
-          instrument: fields[0],  // 期货代码
-          lastprice: fields[4],   // 最新价
-          volume: fields[10]      // 成交量
+          instrument: fields[0], // 期货代码
+          lastprice: fields[4], // 最新价
+          volume: fields[10], // 成交量
         });
       }
     }
@@ -707,7 +862,9 @@ export async function fetchCFFEXFuturesCodes(): Promise<FuturesData[]> {
       throw new Error('❌ 无法从中金所获取期货数据');
     }
 
-    logger.log(`成功获取期货数据: ${futuresData.map(d => `${d.instrument}:${d.lastprice}:${d.volume}`).join(', ')}`);
+    logger.log(
+      `成功获取期货数据: ${futuresData.map((d) => `${d.instrument}:${d.lastprice}:${d.volume}`).join(', ')}`,
+    );
 
     return futuresData;
   } catch (error) {
@@ -721,7 +878,7 @@ export async function getGzjc() {
     // 并发获取期货数据和沪深300指数数据
     const [futuresData, hs300] = await Promise.all([
       fetchCFFEXFuturesCodes(),
-      getStockSuggest('000300', [FinancialProductType.INDEX])
+      getStockSuggest('000300', [FinancialProductType.INDEX]),
     ]);
 
     if (!hs300) {
@@ -739,7 +896,7 @@ export async function getGzjc() {
       (sum, item) =>
         sum +
         ((Number(item.volume) || 0) / volumeTotal) *
-        (Number(item.lastprice) || 0),
+          (Number(item.lastprice) || 0),
       0,
     );
 
