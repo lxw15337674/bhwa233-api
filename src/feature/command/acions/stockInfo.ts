@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { Logger } from '@nestjs/common';
 import { convertToNumber, formatAmount } from '../../../utils';
-import { getStockSuggest, FinancialProductType } from './stock';
+import {
+  getStockSuggest,
+  FinancialProductType,
+} from './stock';
 
 interface Market {
   status_id: number; // 市场状态ID，2代表盘前交易
@@ -102,10 +105,11 @@ interface StockData {
 
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
+const TENCENT_SMARTBOX_API_URL =
+  'https://proxy.finance.qq.com/ifzqgtimg/appstock/smartbox/search/get';
 const logger = new Logger('StockInfo');
-//
-const STOCK_TAG_API_URL =
-  'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
+// 
+const STOCK_TAG_API_URL = 'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
 const XUEQIU_BROWSER_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
@@ -114,6 +118,7 @@ const XUEQIU_BROWSER_HEADERS = {
   'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
 };
 
+
 // 读取环境变量
 let Cookie = '';
 let cookieTimestamp = 0;
@@ -121,11 +126,7 @@ const COOKIE_EXPIRATION_TIME = 1 * 24 * 60 * 60 * 1000; // 2天
 
 export async function getToken(forceRefresh = false): Promise<string> {
   const now = Date.now();
-  if (
-    !forceRefresh &&
-    Cookie &&
-    now - cookieTimestamp < COOKIE_EXPIRATION_TIME
-  ) {
+  if (!forceRefresh && Cookie && now - cookieTimestamp < COOKIE_EXPIRATION_TIME) {
     return Cookie;
   }
 
@@ -136,9 +137,7 @@ export async function getToken(forceRefresh = false): Promise<string> {
         headers: XUEQIU_BROWSER_HEADERS,
         validateStatus: () => true,
       });
-      const cookie = buildCookieFromSetCookieHeader(
-        response.headers['set-cookie'],
-      );
+      const cookie = buildCookieFromSetCookieHeader(response.headers['set-cookie']);
       if (cookie) {
         Cookie = cookie;
         cookieTimestamp = now;
@@ -200,6 +199,11 @@ export async function getSuggestStock(q: string): Promise<string | undefined> {
   if (xueqiuSymbol) {
     return xueqiuSymbol;
   }
+
+  const tencentSymbol = await getSuggestStockFromTencent(query);
+  if (tencentSymbol) {
+    return tencentSymbol;
+  }
   return undefined;
 }
 
@@ -255,8 +259,7 @@ async function getSuggestStockFromXueqiu(
       return symbol;
     }
 
-    const blockedByLogin =
-      response?.code === 400016 || response?.success === false;
+    const blockedByLogin = response?.code === 400016 || response?.success === false;
     if (blockedByLogin) {
       const retryResp = await requestXueqiuSuggest(query, true);
       return pickXueqiuSuggestSymbol(retryResp, query);
@@ -273,10 +276,6 @@ interface XueqiuSuggestItem {
   symbol?: string;
   market?: string;
   query?: string;
-  label?: string;
-  state?: number;
-  stock_type?: number;
-  type?: number;
 }
 
 interface XueqiuSuggestResponse {
@@ -314,37 +313,13 @@ function pickXueqiuSuggestSymbol(
   }
 
   const queryUpper = query.toUpperCase();
-  const mappedItems = items
-    .map((item) => ({
-      item,
-      symbol: mapXueqiuStockToSymbol(item),
-    }))
-    .filter((item): item is { item: XueqiuSuggestItem; symbol: string } =>
-      Boolean(item.symbol),
-    );
-  if (mappedItems.length === 0) {
-    return undefined;
-  }
-
-  const exactName = mappedItems.find(({ item }) => {
-    const alias = (item?.query || '').toUpperCase();
-    return alias === queryUpper;
-  });
-  if (exactName) {
-    return exactName.symbol;
-  }
-
-  if (isExplicitSymbolQuery(query)) {
-    const exactCode = mappedItems.find(({ item }) => {
+  const best =
+    items.find((item) => {
       const code = (item?.code || item?.symbol || '').toUpperCase();
-      return code === queryUpper;
-    });
-    if (exactCode) {
-      return exactCode.symbol;
-    }
-  }
-
-  return mappedItems[0].symbol;
+      const alias = (item?.query || '').toUpperCase();
+      return code === queryUpper || alias === queryUpper;
+    }) ?? items[0];
+  return mapXueqiuStockToSymbol(best);
 }
 
 function mapXueqiuStockToSymbol(item: XueqiuSuggestItem): string | undefined {
@@ -370,24 +345,69 @@ function mapXueqiuStockToSymbol(item: XueqiuSuggestItem): string | undefined {
   return normalizeDirectSymbol(raw) ?? raw.toUpperCase();
 }
 
-function isExplicitSymbolQuery(query: string): boolean {
-  const symbol = query.trim();
-  if (!symbol) {
-    return false;
+type TencentSmartboxItem = [string, string, string, string];
+
+function mapTencentStockToSymbol(
+  item: TencentSmartboxItem,
+): string | undefined {
+  const [market, rawCode] = item;
+  const code = (rawCode || '').trim();
+  const marketLower = (market || '').trim().toLowerCase();
+  if (!code || !marketLower) {
+    return undefined;
   }
 
-  if (
-    /^(SH|SZ|BJ)\d{6}$/i.test(symbol) ||
-    /^HK\d{5}$/i.test(symbol) ||
-    /^\d{5,6}$/.test(symbol) ||
-    /^\.[A-Z]{2,8}$/i.test(symbol)
-  ) {
-    return true;
+  if (marketLower === 'sh' || marketLower === 'sz' || marketLower === 'bj') {
+    return `${marketLower.toUpperCase()}${code}`;
   }
 
-  return (
-    symbol === symbol.toUpperCase() && /^[A-Z][A-Z0-9.]{1,9}$/.test(symbol)
-  );
+  if (marketLower === 'hk') {
+    if (/^\d+$/.test(code)) {
+      return code.padStart(5, '0');
+    }
+    return `HK${code.toUpperCase()}`;
+  }
+
+  if (marketLower === 'us') {
+    // 腾讯可能返回 brk.b.us，去掉最后的市场后缀并转大写
+    const parts = code.split('.');
+    if (parts.length >= 2) {
+      return parts.slice(0, parts.length - 1).join('.').toUpperCase();
+    }
+    return code.toUpperCase();
+  }
+
+  return undefined;
+}
+
+async function getSuggestStockFromTencent(
+  query: string,
+): Promise<string | undefined> {
+  try {
+    const response = await axios.get(TENCENT_SMARTBOX_API_URL, {
+      params: {
+        q: query,
+      },
+    });
+
+    const stockList: TencentSmartboxItem[] = response?.data?.data?.stock ?? [];
+    if (!Array.isArray(stockList) || stockList.length === 0) {
+      return undefined;
+    }
+
+    const queryUpper = query.toUpperCase();
+    const byExactCode =
+      stockList.find((item) => {
+        const code = (item?.[1] || '').toUpperCase();
+        const abbr = (item?.[3] || '').toUpperCase();
+        return code === queryUpper || abbr === queryUpper;
+      }) ?? stockList[0];
+
+    return mapTencentStockToSymbol(byExactCode);
+  } catch (error) {
+    logger.warn(`tencent smartbox failed for "${query}"`);
+    return undefined;
+  }
 }
 
 async function retryWithNewToken<T>(
@@ -486,12 +506,13 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
 }
 
 export async function getStocksByTag(tag: string): Promise<string> {
-  const response = await axios.get(STOCK_TAG_API_URL);
-  const results = await getMultipleStocksData(response.data[tag]);
+  const response = await axios.get(STOCK_TAG_API_URL)
+  const results = await getMultipleStocksData(response.data[tag])
   const textContent = results.join('\n'); // 用换行符分隔每个股票的数据
   try {
     return textContent;
-  } catch (error: unknown) {
+  }
+  catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取 ${tag} 失败：${error.message}`;
     }
@@ -587,14 +608,14 @@ export async function getCNMarketIndexData() {
       getStockBasicData('SH000001'),
       getStockBasicData('SZ399001'),
       getStockBasicData('SZ399006'),
-      getGzjc(),
+      getGzjc()
     ]);
 
     const data = [
       formatIndexData(data1),
       formatIndexData(data2),
       formatIndexData(data3),
-      gzjcData,
+      gzjcData
     ];
 
     return `${data.join('\n')}`;
@@ -694,9 +715,9 @@ export async function fetchCFFEXFuturesCodes(): Promise<FuturesData[]> {
       const fields = line.split(',');
       if (fields.length >= 11 && fields[0].startsWith('IF')) {
         futuresData.push({
-          instrument: fields[0], // 期货代码
-          lastprice: fields[4], // 最新价
-          volume: fields[10], // 成交量
+          instrument: fields[0],  // 期货代码
+          lastprice: fields[4],   // 最新价
+          volume: fields[10]      // 成交量
         });
       }
     }
@@ -705,9 +726,7 @@ export async function fetchCFFEXFuturesCodes(): Promise<FuturesData[]> {
       throw new Error('❌ 无法从中金所获取期货数据');
     }
 
-    logger.log(
-      `成功获取期货数据: ${futuresData.map((d) => `${d.instrument}:${d.lastprice}:${d.volume}`).join(', ')}`,
-    );
+    logger.log(`成功获取期货数据: ${futuresData.map(d => `${d.instrument}:${d.lastprice}:${d.volume}`).join(', ')}`);
 
     return futuresData;
   } catch (error) {
@@ -721,7 +740,7 @@ export async function getGzjc() {
     // 并发获取期货数据和沪深300指数数据
     const [futuresData, hs300] = await Promise.all([
       fetchCFFEXFuturesCodes(),
-      getStockSuggest('000300', [FinancialProductType.INDEX]),
+      getStockSuggest('000300', [FinancialProductType.INDEX])
     ]);
 
     if (!hs300) {
@@ -739,7 +758,7 @@ export async function getGzjc() {
       (sum, item) =>
         sum +
         ((Number(item.volume) || 0) / volumeTotal) *
-          (Number(item.lastprice) || 0),
+        (Number(item.lastprice) || 0),
       0,
     );
 
