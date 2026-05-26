@@ -110,13 +110,6 @@ const TENCENT_SMARTBOX_API_URL =
 const logger = new Logger('StockInfo');
 // 
 const STOCK_TAG_API_URL = 'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
-const XUEQIU_BROWSER_HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
-  Referer: 'https://xueqiu.com/',
-  Accept: 'application/json, text/plain, */*',
-  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-};
 
 
 // 读取环境变量
@@ -130,29 +123,23 @@ export async function getToken(forceRefresh = false): Promise<string> {
     return Cookie;
   }
 
-  const errors: string[] = [];
-  for (const url of ['https://xueqiu.com/', 'https://xueqiu.com/about']) {
-    try {
-      const response = await axios.get(url, {
-        headers: XUEQIU_BROWSER_HEADERS,
-        validateStatus: () => true,
-      });
-      const cookie = buildCookieFromSetCookieHeader(response.headers['set-cookie']);
-      if (cookie) {
-        Cookie = cookie;
-        cookieTimestamp = now;
-        return Cookie;
-      }
-      errors.push(`${url} status=${response.status} no-cookie`);
-    } catch (error) {
-      if (error instanceof Error) {
-        errors.push(`${url} ${error.message}`);
-      } else {
-        errors.push(`${url} unknown-error`);
-      }
-    }
+  const response = await axios.get('https://xueqiu.com/', {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      Referer: 'https://xueqiu.com/',
+      Accept: 'application/json, text/plain, */*',
+    },
+  });
+
+  const cookie = buildCookieFromSetCookieHeader(response.headers['set-cookie']);
+  if (!cookie) {
+    throw new Error('❌ Failed to get xueqiu cookies.');
   }
-  throw new Error(`❌ Failed to get xueqiu cookies: ${errors.join('; ')}`);
+
+  Cookie = cookie;
+  cookieTimestamp = now;
+  return Cookie;
 }
 
 function buildCookieFromSetCookieHeader(setCookie?: string[]): string {
@@ -294,7 +281,10 @@ async function requestXueqiuSuggest(
     },
     headers: {
       Cookie: await getToken(forceRefresh),
-      ...XUEQIU_BROWSER_HEADERS,
+      Referer: 'https://xueqiu.com/',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      Accept: 'application/json, text/plain, */*',
     },
     validateStatus: () => true,
   });
@@ -446,25 +436,16 @@ export async function getStockBasicData(
         },
         headers: {
           Cookie: await getToken(),
-          ...XUEQIU_BROWSER_HEADERS,
         },
-        validateStatus: () => true,
       });
 
       if (response.status === 200 && response?.data?.data?.quote) {
         return response.data.data;
-      }
-
-      const responseErrorCode = response?.data?.error_code;
-      if (responseErrorCode === 400016 || response.status === 400) {
+      } else {
         throw new Error(
-          `❌ Failed to fetch stock data for ${suggestedSymbol}: ${response.status} error_code=${responseErrorCode ?? 'unknown'}`,
+          `❌ Failed to fetch stock data for ${suggestedSymbol}: ${response.status}`,
         );
       }
-
-      throw new Error(
-        `❌ Failed to fetch stock data for ${suggestedSymbol}: ${response.status} has_quote=0`,
-      );
     };
 
     return await retryWithNewToken(fetchStockData);
