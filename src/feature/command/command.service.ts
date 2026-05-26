@@ -155,7 +155,10 @@ export class CommandService {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: s 600519 000858');
                     }
-                    const result = await getStockData(params.args);
+                    let result = await getStockData(params.args);
+                    if (this.shouldFallbackToAlternateStockSource(result)) {
+                        result = await getStockNewData(params.args);
+                    }
                     return {
                         content: result,
                         type: 'text'
@@ -170,7 +173,10 @@ export class CommandService {
                     if (!params.args) {
                         throw new Error('请输入股票代码，例如: sd gzmt');
                     }
-                    const result = await getStockDetailData(params.args);
+                    let result = await getStockDetailData(params.args);
+                    if (this.shouldFallbackToAlternateStockSource(result)) {
+                        result = await getStockDetailNewData(params.args);
+                    }
                     return {
                         content: result,
                         type: 'text'
@@ -677,5 +683,9 @@ export class CommandService {
 
     async getRelayPulseScreenshot(provider: string = '88code', period: string = '24h'): Promise<Buffer> {
         return await takeRelayPulseScreenshot(this.screenshotService, provider, period);
+    }
+
+    private shouldFallbackToAlternateStockSource(result: string): boolean {
+        return result.includes('error_code=400016');
     }
 }
