@@ -104,11 +104,23 @@ interface EastmoneyStockResponse {
   rc: number;
   data?: {
     f43?: number | string;
+    f44?: number | string;
+    f45?: number | string;
+    f46?: number | string;
+    f47?: number | string;
+    f48?: number | string;
     f57?: string;
     f58?: string;
     f59?: number;
+    f60?: number | string;
+    f116?: number | string;
+    f122?: number | string;
+    f162?: number | string;
+    f167?: number | string;
+    f168?: number | string;
     f169?: number | string;
     f170?: number | string;
+    f171?: number | string;
   } | null;
 }
 
@@ -117,6 +129,19 @@ interface EastmoneyQuote {
   symbol: string;
   current: number;
   percent: number;
+  pricePrecision: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  previousClose?: number;
+  volume?: number;
+  amount?: number;
+  currentYearPercent?: number;
+  marketCapital?: number;
+  pe?: number;
+  pb?: number;
+  turnoverRate?: number;
+  amplitude?: number;
 }
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
@@ -126,11 +151,23 @@ const EASTMONEY_STOCK_API_URL =
   'https://push2delay.eastmoney.com/api/qt/stock/get';
 const EASTMONEY_STOCK_FIELDS = [
   'f43',
+  'f44',
+  'f45',
+  'f46',
+  'f47',
+  'f48',
   'f57',
   'f58',
   'f59',
+  'f60',
+  'f116',
+  'f122',
+  'f162',
+  'f167',
+  'f168',
   'f169',
   'f170',
+  'f171',
 ].join(',');
 const logger = new Logger('StockInfo');
 //
@@ -482,6 +519,14 @@ function getEastmoneySecid(
     };
   }
 
+  if (/^[A-Z][A-Z0-9.-]{0,14}$/.test(normalized)) {
+    return {
+      secid: `105.${normalized}`,
+      displaySymbol: normalized,
+      pricePrecision: 3,
+    };
+  }
+
   return undefined;
 }
 
@@ -522,6 +567,20 @@ function formatEastmoneyPrice(value: number, precision: number): string {
     : fixed;
 }
 
+function formatEastmoneyOptionalPrice(
+  value: number | undefined,
+  precision: number,
+): string {
+  return value === undefined ? '-' : formatEastmoneyPrice(value, precision);
+}
+
+function formatEastmoneyOptionalPercent(value: number | undefined): string {
+  return value === undefined ? '-' : `${convertToNumber(value)}%`;
+}
+
+function formatEastmoneyOptionalAmount(value: number | undefined): string {
+  return value === undefined ? '-' : formatAmount(value);
+}
 async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
   const resolvedSymbol = await resolveEastmoneySymbol(query);
   const secidInfo = getEastmoneySecid(resolvedSymbol);
@@ -564,6 +623,19 @@ async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
     symbol: secidInfo.displaySymbol,
     current,
     percent,
+    pricePrecision: precision,
+    open: parseEastmoneyScaledNumber(data.f46, precision),
+    high: parseEastmoneyScaledNumber(data.f44, precision),
+    low: parseEastmoneyScaledNumber(data.f45, precision),
+    previousClose: parseEastmoneyScaledNumber(data.f60, precision),
+    volume: parseEastmoneyScaledNumber(data.f47, 0),
+    amount: parseEastmoneyScaledNumber(data.f48, 0),
+    currentYearPercent: parseEastmoneyScaledNumber(data.f122, 2),
+    marketCapital: parseEastmoneyScaledNumber(data.f116, 0),
+    pe: parseEastmoneyScaledNumber(data.f162, 2),
+    pb: parseEastmoneyScaledNumber(data.f167, 2),
+    turnoverRate: parseEastmoneyScaledNumber(data.f168, 2),
+    amplitude: parseEastmoneyScaledNumber(data.f171, 2),
   };
 }
 async function retryWithNewToken<T>(
@@ -630,7 +702,7 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
       const quote = await getEastmoneyStockQuote(symbol);
       const isGrowing = quote.percent > 0;
       const trend = isGrowing ? '📈' : '📉';
-      const precision = /^\d{5}$/.test(quote.symbol) ? 3 : 2;
+      const precision = quote.pricePrecision;
       return `${quote.name}(${quote.symbol}): ${formatEastmoneyPrice(quote.current, precision)} (${trend}${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%)`;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -797,25 +869,23 @@ export async function getHKMarketIndexData() {
 
 export async function getStockDetailData(symbol: string): Promise<string> {
   try {
-    const { quote } = await getStockBasicData(symbol);
+    const quote = await getEastmoneyStockQuote(symbol);
     const isGrowing = quote.percent > 0;
     const trend = isGrowing ? '📈' : '📉';
+    const pricePrecision = quote.pricePrecision;
 
-    let text = `${quote?.name}(${quote?.symbol})\n`;
-    text += `🏷️ 现价：${quote.current} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
-    text += `↕️ 振幅：${convertToNumber(quote.amplitude)}%\n`;
-    text += `⚡ 成交均价：${convertToNumber(quote.avg_price)}\n`;
-    text += `💫 成交额：${formatAmount(quote.amount)}\n`;
-    text += `📊 成交量：${formatAmount(quote.volume)}手\n`;
-    text += `🔁 换手率：${convertToNumber(quote.turnover_rate)}%\n`;
-    text += `🏢 总市值：${formatAmount(quote.market_capital)}\n`;
-    text += `📆 年初至今：${quote.current_year_percent > 0 ? '+' : ''}${convertToNumber(quote.current_year_percent)}%\n`;
-    text += `📌 市盈率TTM：${convertToNumber(quote.pe_ttm || 0)}\n`;
-    text += `📋 市净率：${convertToNumber(quote.pb || 0)}`;
-
-    if (quote.dividend_yield) {
-      text += `\n💰 股息率：${convertToNumber(quote.dividend_yield)}%`;
-    }
+    let text = `${quote.name}(${quote.symbol})\n`;
+    text += `🏷️ 现价：${formatEastmoneyPrice(quote.current, pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
+    text += `↕️ 振幅：${formatEastmoneyOptionalPercent(quote.amplitude)}\n`;
+    text += `📈 今开：${formatEastmoneyOptionalPrice(quote.open, pricePrecision)}\n`;
+    text += `🔼 最高：${formatEastmoneyOptionalPrice(quote.high, pricePrecision)}\n`;
+    text += `🔽 最低：${formatEastmoneyOptionalPrice(quote.low, pricePrecision)}\n`;
+    text += `💫 成交额：${formatEastmoneyOptionalAmount(quote.amount)}\n`;
+    text += `🔁 换手率：${formatEastmoneyOptionalPercent(quote.turnoverRate)}\n`;
+    text += `🏢 总市值：${formatEastmoneyOptionalAmount(quote.marketCapital)}\n`;
+    text += `📌 市盈率：${quote.pe === undefined ? '-' : convertToNumber(quote.pe)}\n`;
+    text += `📋 市净率：${quote.pb === undefined ? '-' : convertToNumber(quote.pb)}\n`;
+    text += `📅 今年以来：${formatEastmoneyOptionalPercent(quote.currentYearPercent)}`;
 
     return text;
   } catch (error: unknown) {
