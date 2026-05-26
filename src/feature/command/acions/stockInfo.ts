@@ -117,29 +117,57 @@ let Cookie = '';
 let cookieTimestamp = 0;
 const COOKIE_EXPIRATION_TIME = 1 * 24 * 60 * 60 * 1000; // 2天
 
-export async function getToken(): Promise<string> {
+export async function getToken(forceRefresh = false): Promise<string> {
   const now = Date.now();
-  if (Cookie && now - cookieTimestamp < COOKIE_EXPIRATION_TIME) {
+  if (!forceRefresh && Cookie && now - cookieTimestamp < COOKIE_EXPIRATION_TIME) {
     return Cookie;
   }
-  const cookieKey = 'xq_a_token';
 
-  try {
-    // 先请求第一个 URL
-    const res1 = await axios.get('https://xueqiu.com/about');
-    Cookie =
-      res1.headers['set-cookie']
-        ?.find((c: string) => c.includes(cookieKey))
-        ?.split(';')[0] || '';
-    if (!Cookie) {
-      throw new Error(`❌ Failed to get ${cookieKey} cookie.`);
-    }
-    cookieTimestamp = now; // 记录获取 Cookie 的时间
-    return Cookie;
-  } catch (error) {
-    logger.error('Error getting cookie:', error);
-    throw error;
+  const response = await axios.get('https://xueqiu.com/', {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      Referer: 'https://xueqiu.com/',
+      Accept: 'application/json, text/plain, */*',
+    },
+  });
+
+  const cookie = buildCookieFromSetCookieHeader(response.headers['set-cookie']);
+  if (!cookie) {
+    throw new Error('❌ Failed to get xueqiu cookies.');
   }
+
+  Cookie = cookie;
+  cookieTimestamp = now;
+  return Cookie;
+}
+
+function buildCookieFromSetCookieHeader(setCookie?: string[]): string {
+  if (!Array.isArray(setCookie) || setCookie.length === 0) {
+    return '';
+  }
+
+  const cookieMap = new Map<string, string>();
+  for (const row of setCookie) {
+    const pair = row?.split(';')?.[0]?.trim();
+    if (!pair || !pair.includes('=')) {
+      continue;
+    }
+    const [name, ...rest] = pair.split('=');
+    if (!name || rest.length === 0) {
+      continue;
+    }
+    const value = rest.join('=').trim();
+    if (!value) {
+      continue;
+    }
+    cookieMap.set(name.trim(), `${name.trim()}=${value}`);
+  }
+
+  if (cookieMap.size === 0) {
+    return '';
+  }
+  return `${Array.from(cookieMap.values()).join(';')};`;
 }
 
 // https://xueqiu.com/query/v1/suggest_stock.json?q=gzmt
@@ -154,12 +182,16 @@ export async function getSuggestStock(q: string): Promise<string | undefined> {
     return directSymbol;
   }
 
+  const xueqiuSymbol = await getSuggestStockFromXueqiu(query);
+  if (xueqiuSymbol) {
+    return xueqiuSymbol;
+  }
+
   const tencentSymbol = await getSuggestStockFromTencent(query);
   if (tencentSymbol) {
     return tencentSymbol;
   }
-
-  return await getSuggestStockFromXueqiu(query);
+  return undefined;
 }
 
 function normalizeDirectSymbol(query: string): string | undefined {
@@ -208,23 +240,99 @@ async function getSuggestStockFromXueqiu(
   query: string,
 ): Promise<string | undefined> {
   try {
-    const response = await axios.get(SUGGESTION_API_URL, {
-      params: {
-        q: query,
-      },
-      headers: {
-        Cookie: await getToken(),
-      },
-    });
+    const response = await requestXueqiuSuggest(query);
+    const symbol = pickXueqiuSuggestSymbol(response, query);
+    if (symbol) {
+      return symbol;
+    }
 
-    if (response.status === 200 && response.data?.data?.[0]?.code) {
-      return response.data.data[0].code;
+    const blockedByLogin = response?.code === 400016 || response?.success === false;
+    if (blockedByLogin) {
+      const retryResp = await requestXueqiuSuggest(query, true);
+      return pickXueqiuSuggestSymbol(retryResp, query);
     }
   } catch (error) {
     logger.warn(`xueqiu suggest failed for "${query}"`);
   }
 
   return undefined;
+}
+
+interface XueqiuSuggestItem {
+  code?: string;
+  symbol?: string;
+  market?: string;
+  query?: string;
+}
+
+interface XueqiuSuggestResponse {
+  code?: number;
+  success?: boolean;
+  data?: XueqiuSuggestItem[] | { items?: XueqiuSuggestItem[] };
+}
+
+async function requestXueqiuSuggest(
+  query: string,
+  forceRefresh = false,
+): Promise<XueqiuSuggestResponse> {
+  const response = await axios.get<XueqiuSuggestResponse>(SUGGESTION_API_URL, {
+    params: {
+      q: query,
+    },
+    headers: {
+      Cookie: await getToken(forceRefresh),
+      Referer: 'https://xueqiu.com/',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      Accept: 'application/json, text/plain, */*',
+    },
+    validateStatus: () => true,
+  });
+  return response.data ?? {};
+}
+
+function pickXueqiuSuggestSymbol(
+  response: XueqiuSuggestResponse,
+  query: string,
+): string | undefined {
+  const items = Array.isArray(response?.data)
+    ? response.data
+    : response?.data?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    return undefined;
+  }
+
+  const queryUpper = query.toUpperCase();
+  const best =
+    items.find((item) => {
+      const code = (item?.code || item?.symbol || '').toUpperCase();
+      const alias = (item?.query || '').toUpperCase();
+      return code === queryUpper || alias === queryUpper;
+    }) ?? items[0];
+  return mapXueqiuStockToSymbol(best);
+}
+
+function mapXueqiuStockToSymbol(item: XueqiuSuggestItem): string | undefined {
+  const raw = (item?.code || item?.symbol || '').trim();
+  if (!raw) {
+    return undefined;
+  }
+
+  const market = (item?.market || '').trim().toUpperCase();
+  if (market === 'HK' && /^\d+$/.test(raw)) {
+    return raw.padStart(5, '0');
+  }
+  if (market === 'US') {
+    return raw.toUpperCase();
+  }
+  if (market === 'SH' || market === 'SZ' || market === 'BJ') {
+    if (/^\d{6}$/.test(raw)) {
+      return `${market}${raw}`;
+    }
+    return raw.toUpperCase();
+  }
+
+  return normalizeDirectSymbol(raw) ?? raw.toUpperCase();
 }
 
 type TencentSmartboxItem = [string, string, string, string];
