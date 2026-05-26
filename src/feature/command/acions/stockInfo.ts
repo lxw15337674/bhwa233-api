@@ -124,6 +124,20 @@ interface EastmoneyStockResponse {
   } | null;
 }
 
+interface EastmoneySuggestItem {
+  Code?: string;
+  UnifiedCode?: string;
+  Name?: string;
+  QuoteID?: string;
+  SecurityTypeName?: string;
+  Classify?: string;
+}
+
+interface EastmoneySuggestResponse {
+  QuotationCodeTable?: {
+    Data?: EastmoneySuggestItem[];
+  };
+}
 interface EastmoneyQuote {
   name: string;
   symbol: string;
@@ -149,6 +163,8 @@ const TENCENT_SMARTBOX_API_URL =
   'https://proxy.finance.qq.com/ifzqgtimg/appstock/smartbox/search/get';
 const EASTMONEY_STOCK_API_URL =
   'https://push2delay.eastmoney.com/api/qt/stock/get';
+const EASTMONEY_SUGGEST_API_URL =
+  'https://searchapi.eastmoney.com/api/suggest/get';
 const EASTMONEY_STOCK_FIELDS = [
   'f43',
   'f44',
@@ -256,6 +272,10 @@ export async function getSuggestStock(q: string): Promise<string | undefined> {
   const tencentSymbol = await getSuggestStockFromTencent(query);
   if (tencentSymbol) {
     return tencentSymbol;
+  }
+
+  if (/^[a-zA-Z][a-zA-Z0-9.-]{0,14}$/.test(query)) {
+    return query.toUpperCase();
   }
   return undefined;
 }
@@ -519,14 +539,6 @@ function getEastmoneySecid(
     };
   }
 
-  if (/^[A-Z][A-Z0-9.-]{0,14}$/.test(normalized)) {
-    return {
-      secid: `105.${normalized}`,
-      displaySymbol: normalized,
-      pricePrecision: 3,
-    };
-  }
-
   return undefined;
 }
 
@@ -541,9 +553,65 @@ async function resolveEastmoneySymbol(query: string): Promise<string> {
     return tencentSymbol;
   }
 
+  if (/^[a-zA-Z][a-zA-Z0-9.-]{0,14}$/.test(query)) {
+    return query.toUpperCase();
+  }
+
   throw new Error('未找到相关股票');
 }
 
+function canResolveFromEastmoneySearch(symbol: string): boolean {
+  return /^[A-Z][A-Z0-9.-]{0,14}$/.test(symbol.trim().toUpperCase());
+}
+
+async function getEastmoneySecidFromSearch(
+  symbol: string,
+): Promise<
+  { secid: string; displaySymbol: string; pricePrecision: number } | undefined
+> {
+  const query = symbol.trim().toUpperCase();
+  if (!canResolveFromEastmoneySearch(query)) {
+    return undefined;
+  }
+
+  const response = await axios.get<EastmoneySuggestResponse>(
+    EASTMONEY_SUGGEST_API_URL,
+    {
+      params: {
+        input: query,
+        type: 14,
+        count: 10,
+      },
+      validateStatus: () => true,
+    },
+  );
+
+  if (response.status !== 200) {
+    logger.warn(`eastmoney suggest failed for "${query}": ${response.status}`);
+    return undefined;
+  }
+
+  const items = response.data?.QuotationCodeTable?.Data;
+  if (!Array.isArray(items) || items.length === 0) {
+    return undefined;
+  }
+
+  const exact =
+    items.find((item) => {
+      const code = (item.Code || item.UnifiedCode || '').toUpperCase();
+      return code === query && item.QuoteID;
+    }) ?? items.find((item) => !!item.QuoteID);
+
+  if (!exact?.QuoteID) {
+    return undefined;
+  }
+
+  return {
+    secid: exact.QuoteID,
+    displaySymbol: (exact.Code || exact.UnifiedCode || query).toUpperCase(),
+    pricePrecision: 3,
+  };
+}
 function parseEastmoneyScaledNumber(
   value: number | string | undefined,
   precision: number,
@@ -583,7 +651,10 @@ function formatEastmoneyOptionalAmount(value: number | undefined): string {
 }
 async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
   const resolvedSymbol = await resolveEastmoneySymbol(query);
-  const secidInfo = getEastmoneySecid(resolvedSymbol);
+  let secidInfo = getEastmoneySecid(resolvedSymbol);
+  if (!secidInfo) {
+    secidInfo = await getEastmoneySecidFromSearch(resolvedSymbol);
+  }
   if (!secidInfo) {
     throw new Error(`暂不支持的股票代码：${resolvedSymbol}`);
   }
