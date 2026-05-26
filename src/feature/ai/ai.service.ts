@@ -391,14 +391,12 @@ export class AiService {
 
         try {
             const page = await browser.newPage();
-            await page.setContent(html, { waitUntil: 'networkidle0' }); // 等待字体加载完成
-
+            await page.setContent(html, { waitUntil: 'load' }); // 等待页面基础资源加载完成
             const screenshot = await page.screenshot({
                 type: 'jpeg',
                 quality: 85,
                 fullPage: true,
             });
-
             return screenshot as Buffer;
         } finally {
             await browser.close();
