@@ -105,6 +105,8 @@ interface StockData {
 
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
+const TENCENT_SMARTBOX_API_URL =
+  'https://proxy.finance.qq.com/ifzqgtimg/appstock/smartbox/search/get';
 const logger = new Logger('StockInfo');
 // 
 const STOCK_TAG_API_URL = 'https://raw.githubusercontent.com/lxw15337674/stock-json/refs/heads/main/stockGroup.json';
@@ -142,19 +144,152 @@ export async function getToken(): Promise<string> {
 
 // https://xueqiu.com/query/v1/suggest_stock.json?q=gzmt
 export async function getSuggestStock(q: string): Promise<string | undefined> {
-  const response = await axios.get(SUGGESTION_API_URL, {
-    params: {
-      q,
-    },
-    headers: {
-      Cookie: await getToken(),
-    },
-  });
-
-  if (response.status === 200 && response.data?.data?.[0]?.code) {
-    return response.data.data[0].code;
+  const query = q.trim();
+  if (!query) {
+    return undefined;
   }
+
+  const directSymbol = normalizeDirectSymbol(query);
+  if (directSymbol) {
+    return directSymbol;
+  }
+
+  const tencentSymbol = await getSuggestStockFromTencent(query);
+  if (tencentSymbol) {
+    return tencentSymbol;
+  }
+
+  return await getSuggestStockFromXueqiu(query);
+}
+
+function normalizeDirectSymbol(query: string): string | undefined {
+  const symbol = query.trim();
+
+  if (/^(SH|SZ|BJ)\d{6}$/i.test(symbol)) {
+    return symbol.toUpperCase();
+  }
+
+  if (/^HK\d{5}$/i.test(symbol)) {
+    return symbol.slice(2);
+  }
+
+  if (/^\d{6}$/.test(symbol)) {
+    if (/^(60|68|90)/.test(symbol)) return `SH${symbol}`;
+    if (/^(00|30|12|15|16|18|20)/.test(symbol)) return `SZ${symbol}`;
+    if (/^(4|8)/.test(symbol)) return `BJ${symbol}`;
+    return symbol;
+  }
+
+  if (/^\d{5}$/.test(symbol)) {
+    return symbol;
+  }
+
+  if (/^\.[A-Z]{2,8}$/.test(symbol)) {
+    return symbol.toUpperCase();
+  }
+
+  if (/^[A-Z]{2,10}$/.test(symbol)) {
+    const hkIndexMap: Record<string, string> = {
+      HSI: 'HKHSI',
+      HSCEI: 'HKHSCEI',
+      HSTECH: 'HKHSTECH',
+    };
+    if (hkIndexMap[symbol]) {
+      return hkIndexMap[symbol];
+    }
+    // 港股指数/美股代码，如 HSI、AAPL、TX
+    return symbol.toUpperCase();
+  }
+
   return undefined;
+}
+
+async function getSuggestStockFromXueqiu(
+  query: string,
+): Promise<string | undefined> {
+  try {
+    const response = await axios.get(SUGGESTION_API_URL, {
+      params: {
+        q: query,
+      },
+      headers: {
+        Cookie: await getToken(),
+      },
+    });
+
+    if (response.status === 200 && response.data?.data?.[0]?.code) {
+      return response.data.data[0].code;
+    }
+  } catch (error) {
+    logger.warn(`xueqiu suggest failed for "${query}"`);
+  }
+
+  return undefined;
+}
+
+type TencentSmartboxItem = [string, string, string, string];
+
+function mapTencentStockToSymbol(
+  item: TencentSmartboxItem,
+): string | undefined {
+  const [market, rawCode] = item;
+  const code = (rawCode || '').trim();
+  const marketLower = (market || '').trim().toLowerCase();
+  if (!code || !marketLower) {
+    return undefined;
+  }
+
+  if (marketLower === 'sh' || marketLower === 'sz' || marketLower === 'bj') {
+    return `${marketLower.toUpperCase()}${code}`;
+  }
+
+  if (marketLower === 'hk') {
+    if (/^\d+$/.test(code)) {
+      return code.padStart(5, '0');
+    }
+    return `HK${code.toUpperCase()}`;
+  }
+
+  if (marketLower === 'us') {
+    // 腾讯可能返回 brk.b.us，去掉最后的市场后缀并转大写
+    const parts = code.split('.');
+    if (parts.length >= 2) {
+      return parts.slice(0, parts.length - 1).join('.').toUpperCase();
+    }
+    return code.toUpperCase();
+  }
+
+  return undefined;
+}
+
+async function getSuggestStockFromTencent(
+  query: string,
+): Promise<string | undefined> {
+  try {
+    const response = await axios.get(TENCENT_SMARTBOX_API_URL, {
+      params: {
+        q: query,
+      },
+    });
+
+    const stockList: TencentSmartboxItem[] = response?.data?.data?.stock ?? [];
+    if (!Array.isArray(stockList) || stockList.length === 0) {
+      return undefined;
+    }
+
+    const queryUpper = query.toUpperCase();
+    const byExactCode =
+      stockList.find((item) => {
+        const code = (item?.[1] || '').toUpperCase();
+        const abbr = (item?.[3] || '').toUpperCase();
+        return code === queryUpper || abbr === queryUpper;
+      }) ?? stockList[0];
+
+    return mapTencentStockToSymbol(byExactCode);
+  } catch (error) {
+    logger.warn(`tencent smartbox failed for "${query}"`);
+    return undefined;
+  }
 }
 
 async function retryWithNewToken<T>(
