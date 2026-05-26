@@ -138,6 +138,13 @@ interface EastmoneySuggestResponse {
     Data?: EastmoneySuggestItem[];
   };
 }
+interface ExtendedHoursQuote {
+  label: '⏰ 盘前' | '🌙 盘后';
+  price: number;
+  percent: number;
+  pricePrecision: number;
+}
+
 interface EastmoneyQuote {
   name: string;
   symbol: string;
@@ -156,6 +163,7 @@ interface EastmoneyQuote {
   pb?: number;
   turnoverRate?: number;
   amplitude?: number;
+  extended?: ExtendedHoursQuote;
 }
 const STOCK_API_URL = 'https://stock.xueqiu.com/v5/stock/quote.json'; // Replace with your actual API URL
 const SUGGESTION_API_URL = 'https://xueqiu.com/query/v1/suggest_stock.json'; // Replace with your actual API URL
@@ -165,6 +173,7 @@ const EASTMONEY_STOCK_API_URL =
   'https://push2delay.eastmoney.com/api/qt/stock/get';
 const EASTMONEY_SUGGEST_API_URL =
   'https://searchapi.eastmoney.com/api/suggest/get';
+const YAHOO_CHART_API_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const EASTMONEY_STOCK_FIELDS = [
   'f43',
   'f44',
@@ -649,6 +658,136 @@ function formatEastmoneyOptionalPercent(value: number | undefined): string {
 function formatEastmoneyOptionalAmount(value: number | undefined): string {
   return value === undefined ? '-' : formatAmount(value);
 }
+function isUSEastmoneySecid(secid: string): boolean {
+  return /^(105|106|107)\./.test(secid);
+}
+
+function toYahooSymbol(symbol: string): string {
+  return symbol.replace(/\./g, '-');
+}
+
+function findLastCloseInPeriod(
+  timestamps: number[] | undefined,
+  closes: Array<number | null | undefined> | undefined,
+  start: number,
+  end: number,
+): number | undefined {
+  if (!Array.isArray(timestamps) || !Array.isArray(closes)) {
+    return undefined;
+  }
+
+  for (
+    let index = Math.min(timestamps.length, closes.length) - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const timestamp = timestamps[index];
+    const close = closes[index];
+    if (
+      typeof timestamp === 'number' &&
+      timestamp >= start &&
+      timestamp < end &&
+      typeof close === 'number' &&
+      Number.isFinite(close)
+    ) {
+      return close;
+    }
+  }
+
+  return undefined;
+}
+
+async function getYahooExtendedHoursQuote(
+  symbol: string,
+  pricePrecision: number,
+): Promise<ExtendedHoursQuote | undefined> {
+  try {
+    const yahooSymbol = toYahooSymbol(symbol);
+    const response = await axios.get(
+      `${YAHOO_CHART_API_URL}/${encodeURIComponent(yahooSymbol)}`,
+      {
+        params: {
+          interval: '1m',
+          range: '1d',
+          includePrePost: 'true',
+        },
+        timeout: 2500,
+        validateStatus: () => true,
+      },
+    );
+
+    if (response.status !== 200) {
+      logger.warn(`yahoo chart failed for "${symbol}": ${response.status}`);
+      return undefined;
+    }
+
+    const result = response.data?.chart?.result?.[0];
+    const meta = result?.meta;
+    if (!meta?.hasPrePostMarketData) {
+      return undefined;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const pre = meta.currentTradingPeriod?.pre;
+    const post = meta.currentTradingPeriod?.post;
+    let label: ExtendedHoursQuote['label'] | undefined;
+    let start: number | undefined;
+    let end: number | undefined;
+    let basePrice: number | undefined;
+
+    if (
+      typeof pre?.start === 'number' &&
+      typeof pre?.end === 'number' &&
+      now >= pre.start &&
+      now < pre.end
+    ) {
+      label = '⏰ 盘前';
+      start = pre.start;
+      end = pre.end;
+      basePrice = meta.previousClose ?? meta.chartPreviousClose;
+    } else if (
+      typeof post?.start === 'number' &&
+      typeof post?.end === 'number' &&
+      now >= post.start &&
+      now < post.end
+    ) {
+      label = '🌙 盘后';
+      start = post.start;
+      end = post.end;
+      basePrice = meta.regularMarketPrice ?? meta.previousClose;
+    }
+
+    if (!label || start === undefined || end === undefined || !basePrice) {
+      return undefined;
+    }
+
+    const close = findLastCloseInPeriod(
+      result.timestamp,
+      result.indicators?.quote?.[0]?.close,
+      start,
+      end,
+    );
+    if (close === undefined) {
+      return undefined;
+    }
+
+    return {
+      label,
+      price: close,
+      percent: ((close - basePrice) / basePrice) * 100,
+      pricePrecision,
+    };
+  } catch (error) {
+    logger.warn(`yahoo chart failed for "${symbol}"`);
+    return undefined;
+  }
+}
+
+function formatExtendedHoursQuote(extended: ExtendedHoursQuote): string {
+  const isGrowing = extended.percent > 0;
+  const trend = isGrowing ? '📈' : '📉';
+  return `${extended.label}：${formatEastmoneyPrice(extended.price, extended.pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(extended.percent)}%`;
+}
 async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
   const resolvedSymbol = await resolveEastmoneySymbol(query);
   let secidInfo = getEastmoneySecid(resolvedSymbol);
@@ -689,7 +828,7 @@ async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
     throw new Error(`东方财富行情数据不完整：${secidInfo.secid}`);
   }
 
-  return {
+  const quote: EastmoneyQuote = {
     name: data.f58 || secidInfo.displaySymbol,
     symbol: secidInfo.displaySymbol,
     current,
@@ -708,6 +847,12 @@ async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
     turnoverRate: parseEastmoneyScaledNumber(data.f168, 2),
     amplitude: parseEastmoneyScaledNumber(data.f171, 2),
   };
+
+  if (isUSEastmoneySecid(secidInfo.secid)) {
+    quote.extended = await getYahooExtendedHoursQuote(quote.symbol, precision);
+  }
+
+  return quote;
 }
 async function retryWithNewToken<T>(
   fetchFunction: () => Promise<T>,
@@ -774,7 +919,11 @@ async function getMultipleStocksData(symbols: string[]): Promise<string[]> {
       const isGrowing = quote.percent > 0;
       const trend = isGrowing ? '📈' : '📉';
       const precision = quote.pricePrecision;
-      return `${quote.name}(${quote.symbol}): ${formatEastmoneyPrice(quote.current, precision)} (${trend}${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%)`;
+      let text = `${quote.name}(${quote.symbol}): ${formatEastmoneyPrice(quote.current, precision)} (${trend}${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%)`;
+      if (quote.extended) {
+        text += `\n${formatExtendedHoursQuote(quote.extended)}`;
+      }
+      return text;
     } catch (error: unknown) {
       if (error instanceof Error) {
         return `❌ 获取 ${symbol} 失败：${error.message}`;
@@ -947,6 +1096,9 @@ export async function getStockDetailData(symbol: string): Promise<string> {
 
     let text = `${quote.name}(${quote.symbol})\n`;
     text += `🏷️ 现价：${formatEastmoneyPrice(quote.current, pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
+    if (quote.extended) {
+      text += `${formatExtendedHoursQuote(quote.extended)}\n`;
+    }
     text += `↕️ 振幅：${formatEastmoneyOptionalPercent(quote.amplitude)}\n`;
     text += `📈 今开：${formatEastmoneyOptionalPrice(quote.open, pricePrecision)}\n`;
     text += `🔼 最高：${formatEastmoneyOptionalPrice(quote.high, pricePrecision)}\n`;
