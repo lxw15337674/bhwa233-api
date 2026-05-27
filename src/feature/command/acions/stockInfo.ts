@@ -507,6 +507,44 @@ function getEastmoneySecid(
   const normalized =
     normalizeDirectSymbol(symbol) ?? symbol.trim().toUpperCase();
 
+  const predefinedIndexSecidMap: Record<
+    string,
+    { secid: string; displaySymbol: string; pricePrecision: number }
+  > = {
+    '.DJI': { secid: '100.DJIA', displaySymbol: 'DJIA', pricePrecision: 2 },
+    'DJI': { secid: '100.DJIA', displaySymbol: 'DJIA', pricePrecision: 2 },
+    '.IXIC': { secid: '100.NDX', displaySymbol: 'NDX', pricePrecision: 2 },
+    'IXIC': { secid: '100.NDX', displaySymbol: 'NDX', pricePrecision: 2 },
+    '.INX': { secid: '100.SPX', displaySymbol: 'SPX', pricePrecision: 2 },
+    'INX': { secid: '100.SPX', displaySymbol: 'SPX', pricePrecision: 2 },
+    'HSI': { secid: '100.HSI', displaySymbol: 'HSI', pricePrecision: 2 },
+    'HKHSI': { secid: '100.HSI', displaySymbol: 'HSI', pricePrecision: 2 },
+    'HSCEI': {
+      secid: '100.HSCEI',
+      displaySymbol: 'HSCEI',
+      pricePrecision: 2,
+    },
+    'HKHSCEI': {
+      secid: '100.HSCEI',
+      displaySymbol: 'HSCEI',
+      pricePrecision: 2,
+    },
+    'HSTECH': {
+      secid: '124.HSTECH',
+      displaySymbol: 'HSTECH',
+      pricePrecision: 2,
+    },
+    'HKHSTECH': {
+      secid: '124.HSTECH',
+      displaySymbol: 'HSTECH',
+      pricePrecision: 2,
+    },
+  };
+
+  if (predefinedIndexSecidMap[normalized]) {
+    return predefinedIndexSecidMap[normalized];
+  }
+
   if (/^SH\d{6}$/.test(normalized)) {
     return {
       secid: `1.${normalized.slice(2)}`,
@@ -1051,10 +1089,11 @@ function formatEastmoneyIndexData(quote: EastmoneyQuote): string {
 
 export async function getCNMarketIndexData() {
   try {
-    const [data1, data2, data3, gzjcData] = await Promise.all([
+    const [data1, data2, data3, data4, gzjcData] = await Promise.all([
       getEastmoneyStockQuote('SH000001'),
       getEastmoneyStockQuote('SZ399001'),
       getEastmoneyStockQuote('SZ399006'),
+      getEastmoneyStockQuote('SH000688'),
       getGzjc(),
     ]);
 
@@ -1062,6 +1101,7 @@ export async function getCNMarketIndexData() {
       formatEastmoneyIndexData(data1),
       formatEastmoneyIndexData(data2),
       formatEastmoneyIndexData(data3),
+      formatEastmoneyIndexData(data4),
       gzjcData,
     ];
 
