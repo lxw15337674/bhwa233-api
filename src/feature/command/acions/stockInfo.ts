@@ -1030,19 +1030,38 @@ function formatIndexData(quoteData: any) {
   return text;
 }
 
+function formatEastmoneyIndexData(quote: EastmoneyQuote): string {
+  const isGrowing = quote.percent > 0;
+  const trend = isGrowing ? '📈' : '📉';
+
+  let text = quote?.name
+    ? `${quote.name}${quote.symbol ? ` (${quote.symbol})` : ''}\n`
+    : '';
+  text += `💰 现价：${formatEastmoneyPrice(quote.current, quote.pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
+
+  if (quote?.amount !== undefined) {
+    text += `💎 成交额：${formatAmount(quote.amount)}\n`;
+  }
+
+  if (quote?.currentYearPercent !== undefined) {
+    text += `📅 年初至今：${quote.currentYearPercent > 0 ? '+' : ''}${convertToNumber(quote.currentYearPercent)}%`;
+  }
+  return text.trimEnd();
+}
+
 export async function getCNMarketIndexData() {
   try {
     const [data1, data2, data3, gzjcData] = await Promise.all([
-      getStockBasicData('SH000001'),
-      getStockBasicData('SZ399001'),
-      getStockBasicData('SZ399006'),
+      getEastmoneyStockQuote('SH000001'),
+      getEastmoneyStockQuote('SZ399001'),
+      getEastmoneyStockQuote('SZ399006'),
       getGzjc(),
     ]);
 
     const data = [
-      formatIndexData(data1),
-      formatIndexData(data2),
-      formatIndexData(data3),
+      formatEastmoneyIndexData(data1),
+      formatEastmoneyIndexData(data2),
+      formatEastmoneyIndexData(data3),
       gzjcData,
     ];
 
@@ -1058,11 +1077,11 @@ export async function getCNMarketIndexData() {
 export async function getUSMarketIndexData() {
   try {
     const data = await Promise.all([
-      getStockBasicData('.DJI'),
-      getStockBasicData('.IXIC'),
-      getStockBasicData('.INX'),
+      getEastmoneyStockQuote('.DJI'),
+      getEastmoneyStockQuote('.IXIC'),
+      getEastmoneyStockQuote('.INX'),
     ]);
-    return `${data.map(formatIndexData).join('\n')}`;
+    return `${data.map(formatEastmoneyIndexData).join('\n')}`;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取美国市场指数失败：${error.message}`;
@@ -1074,11 +1093,11 @@ export async function getUSMarketIndexData() {
 export async function getHKMarketIndexData() {
   try {
     const data = await Promise.all([
-      getStockBasicData('HSI'),
-      getStockBasicData('HSCEI'),
-      getStockBasicData('HSTECH'),
+      getEastmoneyStockQuote('HSI'),
+      getEastmoneyStockQuote('HSCEI'),
+      getEastmoneyStockQuote('HSTECH'),
     ]);
-    return `${data.map(formatIndexData).join('\n')}`;
+    return `${data.map(formatEastmoneyIndexData).join('\n')}`;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取港股市场指数失败：${error.message}`;
