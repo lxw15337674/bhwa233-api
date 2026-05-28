@@ -359,6 +359,8 @@ interface XueqiuSuggestItem {
   symbol?: string;
   market?: string;
   query?: string;
+  label?: string;
+  stock_type?: number;
 }
 
 interface XueqiuSuggestResponse {
@@ -387,7 +389,89 @@ async function requestXueqiuSuggest(
   return response.data ?? {};
 }
 
-function pickXueqiuSuggestSymbol(
+function hasChineseCharacter(text: string): boolean {
+  return /[\u3400-\u9fff]/.test(text);
+}
+
+function normalizeSuggestText(text?: string): string {
+  return (text || '').trim().toUpperCase();
+}
+
+function isAdrLikeLabel(text?: string): boolean {
+  return /\bADR\b|\bADS\b|\bOTC\b|DEPOSITARY|存托|预托/i.test(text || '');
+}
+
+function getXueqiuSuggestMarket(item: XueqiuSuggestItem): string {
+  const market = normalizeSuggestText(item.market);
+  if (market) {
+    return market;
+  }
+
+  const stockType = item.stock_type;
+  if (stockType === 6) return 'US';
+  if (stockType === 12 || stockType === 30) return 'HK';
+  if (stockType === 1) return 'SH';
+  if (stockType === 2) return 'SZ';
+  if (stockType === 3) return 'BJ';
+  return '';
+}
+
+function matchTextScore(text: string, query: string): number {
+  if (!text) {
+    return 0;
+  }
+  if (text === query) {
+    return 100;
+  }
+  if (text.startsWith(query)) {
+    return 80;
+  }
+  if (text.includes(query)) {
+    return 60;
+  }
+  return 0;
+}
+
+function scoreXueqiuSuggestItem(
+  item: XueqiuSuggestItem,
+  query: string,
+  hasHKCandidate: boolean,
+  hasUSCandidate: boolean,
+): number {
+  const queryUpper = normalizeSuggestText(query);
+  const code = normalizeSuggestText(item.code || item.symbol);
+  const alias = normalizeSuggestText(item.query);
+  const label = normalizeSuggestText(item.label);
+  const market = getXueqiuSuggestMarket(item);
+
+  let score = 0;
+
+  if (code === queryUpper || alias === queryUpper) {
+    score += 1000;
+  }
+
+  score += Math.max(
+    matchTextScore(code, queryUpper),
+    matchTextScore(alias, queryUpper),
+    matchTextScore(label, queryUpper),
+  );
+
+  if (hasChineseCharacter(query) && hasHKCandidate && hasUSCandidate) {
+    if (market === 'HK') {
+      score += 80;
+    }
+    if (market === 'US') {
+      score -= 20;
+      if (isAdrLikeLabel(`${item.label || ''} ${item.query || ''}`)) {
+        score -= 80;
+      }
+    }
+  }
+
+  return score;
+}
+
+export function pickXueqiuSuggestSymbol(
   response: XueqiuSuggestResponse,
   query: string,
 ): string | undefined {
@@ -398,13 +482,33 @@ function pickXueqiuSuggestSymbol(
     return undefined;
   }
 
-  const queryUpper = query.toUpperCase();
-  const best =
-    items.find((item) => {
-      const code = (item?.code || item?.symbol || '').toUpperCase();
-      const alias = (item?.query || '').toUpperCase();
-      return code === queryUpper || alias === queryUpper;
-    }) ?? items[0];
+  const hasHKCandidate = items.some(
+    (item) => getXueqiuSuggestMarket(item) === 'HK',
+  );
+  const hasUSCandidate = items.some(
+    (item) => getXueqiuSuggestMarket(item) === 'US',
+  );
+
+  const best = items.reduce((currentBest, item) => {
+    if (!currentBest) {
+      return item;
+    }
+
+    const currentScore = scoreXueqiuSuggestItem(
+      currentBest,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    const nextScore = scoreXueqiuSuggestItem(
+      item,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    return nextScore > currentScore ? item : currentBest;
+  }, items[0]);
+
   return mapXueqiuStockToSymbol(best);
 }
 
@@ -484,19 +588,89 @@ async function getSuggestStockFromTencent(
       return undefined;
     }
 
-    const queryUpper = query.toUpperCase();
-    const byExactCode =
-      stockList.find((item) => {
-        const code = (item?.[1] || '').toUpperCase();
-        const abbr = (item?.[3] || '').toUpperCase();
-        return code === queryUpper || abbr === queryUpper;
-      }) ?? stockList[0];
-
-    return mapTencentStockToSymbol(byExactCode);
+    return pickTencentSuggestSymbol(stockList, query);
   } catch (error) {
     logger.warn(`tencent smartbox failed for "${query}"`);
     return undefined;
   }
+}
+
+function scoreTencentSuggestItem(
+  item: TencentSmartboxItem,
+  query: string,
+  hasHKCandidate: boolean,
+  hasUSCandidate: boolean,
+): number {
+  const [market, rawCode, name, abbr] = item;
+  const queryUpper = normalizeSuggestText(query);
+  const code = normalizeSuggestText(rawCode);
+  const alias = normalizeSuggestText(abbr);
+  const label = normalizeSuggestText(name);
+  const marketUpper = normalizeSuggestText(market);
+
+  let score = 0;
+
+  if (code === queryUpper || alias === queryUpper) {
+    score += 1000;
+  }
+
+  score += Math.max(
+    matchTextScore(code, queryUpper),
+    matchTextScore(alias, queryUpper),
+    matchTextScore(label, queryUpper),
+  );
+
+  if (hasChineseCharacter(query) && hasHKCandidate && hasUSCandidate) {
+    if (marketUpper === 'HK') {
+      score += 80;
+    }
+    if (marketUpper === 'US') {
+      score -= 20;
+      if (isAdrLikeLabel(`${name || ''} ${abbr || ''}`)) {
+        score -= 80;
+      }
+    }
+  }
+
+  return score;
+}
+
+export function pickTencentSuggestSymbol(
+  stockList: TencentSmartboxItem[],
+  query: string,
+): string | undefined {
+  if (!Array.isArray(stockList) || stockList.length === 0) {
+    return undefined;
+  }
+
+  const hasHKCandidate = stockList.some(
+    (item) => normalizeSuggestText(item?.[0]) === 'HK',
+  );
+  const hasUSCandidate = stockList.some(
+    (item) => normalizeSuggestText(item?.[0]) === 'US',
+  );
+
+  const best = stockList.reduce((currentBest, item) => {
+    if (!currentBest) {
+      return item;
+    }
+
+    const currentScore = scoreTencentSuggestItem(
+      currentBest,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    const nextScore = scoreTencentSuggestItem(
+      item,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    return nextScore > currentScore ? item : currentBest;
+  }, stockList[0]);
+
+  return mapTencentStockToSymbol(best);
 }
 
 function getEastmoneySecid(
