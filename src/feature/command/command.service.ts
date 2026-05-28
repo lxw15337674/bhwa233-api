@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getCryptoData } from './acions/crypto';
+import { getCryptoData, getCryptoDetailData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
 import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
 import { getHotSpot } from './acions/stockHotSpot';
@@ -265,6 +265,21 @@ export class CommandService {
                 msg: 'b [货币代码] - 获取数字货币信息 例如: b btc',
                 hasArgs: true,
             },
+            {
+                key: 'bd ',
+                callback: async (params) => {
+                    if (!params.args) {
+                        throw new Error('请输入数字货币代码，例如: bd btc');
+                    }
+                    const result = await getCryptoDetailData(params.args);
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'bd [货币代码] - 获取数字货币详情，例如: bd btc',
+                hasArgs: true,
+            },
             // 热点资讯
             {
                 key: 'hot',
@@ -312,7 +327,7 @@ export class CommandService {
                         type: 'text',
                     };
                 },
-                msg: 'gold - 获取实时金价',
+                msg: 'gold - 获取当前金价和年内涨幅',
                 hasArgs: false,
             },
             // 网页截图

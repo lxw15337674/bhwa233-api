@@ -145,7 +145,7 @@ interface ExtendedHoursQuote {
   pricePrecision: number;
 }
 
-interface EastmoneyQuote {
+export interface EastmoneyQuote {
   name: string;
   symbol: string;
   current: number;
@@ -1000,7 +1000,9 @@ function formatExtendedHoursQuote(extended: ExtendedHoursQuote): string {
   const trend = isGrowing ? '📈' : '📉';
   return `${extended.label}：${formatEastmoneyPrice(extended.price, extended.pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(extended.percent)}%`;
 }
-async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
+export async function getEastmoneyStockQuote(
+  query: string,
+): Promise<EastmoneyQuote> {
   const resolvedSymbol = await resolveEastmoneySymbol(query);
   let secidInfo = getEastmoneySecid(resolvedSymbol);
   if (!secidInfo) {
