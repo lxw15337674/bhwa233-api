@@ -32,7 +32,6 @@ describe('crypto detail', () => {
       '今年以来：+15.65%',
       '总市值：$2.12T',
       '24h 成交额：$52B',
-      '市值排名：#1',
     ].join('\n'));
   });
 
@@ -68,7 +67,6 @@ describe('crypto detail', () => {
 
     expect(result).toContain('Bitcoin (BTC)');
     expect(result).toContain('今年以来：+15.65%');
-    expect(result).toContain('市值排名：#1');
   });
 
   it('should fall back when year-to-date history is unavailable', async () => {

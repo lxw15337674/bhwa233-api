@@ -416,7 +416,6 @@ export function formatCryptoDetailResponse(detail: CryptoDetailQuote): string {
     `今年以来：${formatSignedPercent(detail.currentYearPercent)}`,
     `总市值：${formatUsdCompactAmount(detail.marketCap)}`,
     `24h 成交额：${formatUsdCompactAmount(detail.totalVolume)}`,
-    `市值排名：${detail.marketCapRank ? `#${detail.marketCapRank}` : '-'}`,
   ].join('\n');
 }
 
