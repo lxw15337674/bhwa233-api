@@ -916,6 +916,14 @@ function formatEastmoneyOptionalPercent(value: number | undefined): string {
 function formatEastmoneyOptionalAmount(value: number | undefined): string {
   return value === undefined ? '-' : formatAmount(value);
 }
+
+function formatPositiveMetric(value: number | undefined): string | undefined {
+  if (value === undefined || value <= 0) {
+    return undefined;
+  }
+  return convertToNumber(value);
+}
+
 function isUSEastmoneySecid(secid: string): boolean {
   return /^(105|106|107)\./.test(secid);
 }
@@ -1387,8 +1395,14 @@ export async function getStockDetailData(symbol: string): Promise<string> {
     text += `💫 成交额：${formatEastmoneyOptionalAmount(quote.amount)}\n`;
     text += `🔁 换手率：${formatEastmoneyOptionalPercent(quote.turnoverRate)}\n`;
     text += `🏢 总市值：${formatEastmoneyOptionalAmount(quote.marketCapital)}\n`;
-    text += `📌 市盈率：${quote.pe === undefined ? '-' : convertToNumber(quote.pe)}\n`;
-    text += `📋 市净率：${quote.pb === undefined ? '-' : convertToNumber(quote.pb)}\n`;
+    const pe = formatPositiveMetric(quote.pe);
+    if (pe) {
+      text += `📌 市盈率：${pe}\n`;
+    }
+    const pb = formatPositiveMetric(quote.pb);
+    if (pb) {
+      text += `📋 市净率：${pb}\n`;
+    }
     text += `📅 今年以来：${formatEastmoneyOptionalPercent(quote.currentYearPercent)}`;
 
     return text;
