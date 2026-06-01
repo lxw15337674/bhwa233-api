@@ -1,6 +1,7 @@
 import {
   pickTencentSuggestSymbol,
   pickXueqiuSuggestSymbol,
+  resolveNumericSymbol,
 } from './stockInfo';
 
 describe('stock suggest ranking', () => {
@@ -59,5 +60,20 @@ describe('stock suggest ranking', () => {
     );
 
     expect(symbol).toBe('MPNGY');
+  });
+
+  it('prefers suggest result for six-digit ETF codes', () => {
+    const symbol = resolveNumericSymbol('513300', {
+      xueqiuSymbol: 'SH513300',
+      tencentSymbol: 'SZ513300',
+    });
+
+    expect(symbol).toBe('SH513300');
+  });
+
+  it('falls back to local exchange inference when suggest is unavailable', () => {
+    expect(resolveNumericSymbol('513300')).toBe('SH513300');
+    expect(resolveNumericSymbol('159915')).toBe('SZ159915');
+    expect(resolveNumericSymbol('830799')).toBe('BJ830799');
   });
 });

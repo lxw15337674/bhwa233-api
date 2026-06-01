@@ -274,11 +274,19 @@ export async function getSuggestStock(q: string): Promise<string | undefined> {
   }
 
   const xueqiuSymbol = await getSuggestStockFromXueqiu(query);
+  const tencentSymbol = await getSuggestStockFromTencent(query);
+  const numericSymbol = resolveNumericSymbol(query, {
+    xueqiuSymbol,
+    tencentSymbol,
+  });
+  if (numericSymbol) {
+    return numericSymbol;
+  }
+
   if (xueqiuSymbol) {
     return xueqiuSymbol;
   }
 
-  const tencentSymbol = await getSuggestStockFromTencent(query);
   if (tencentSymbol) {
     return tencentSymbol;
   }
@@ -298,13 +306,6 @@ function normalizeDirectSymbol(query: string): string | undefined {
 
   if (/^HK\d{5}$/i.test(symbol)) {
     return symbol.slice(2);
-  }
-
-  if (/^\d{6}$/.test(symbol)) {
-    if (/^(60|68|90)/.test(symbol)) return `SH${symbol}`;
-    if (/^(00|30|12|15|16|18|20)/.test(symbol)) return `SZ${symbol}`;
-    if (/^(4|8)/.test(symbol)) return `BJ${symbol}`;
-    return symbol;
   }
 
   if (/^\d{5}$/.test(symbol)) {
@@ -329,6 +330,37 @@ function normalizeDirectSymbol(query: string): string | undefined {
   }
 
   return undefined;
+}
+
+function normalizeNumericSymbolFallback(query: string): string | undefined {
+  const symbol = query.trim();
+  if (!/^\d{6}$/.test(symbol)) {
+    return undefined;
+  }
+
+  if (/^(51|56|58|60|68|90|10|11)/.test(symbol)) return `SH${symbol}`;
+  if (/^(00|12|15|16|18|20|30)/.test(symbol)) return `SZ${symbol}`;
+  if (/^(4|8)/.test(symbol)) return `BJ${symbol}`;
+  return undefined;
+}
+
+export function resolveNumericSymbol(
+  query: string,
+  suggestions: {
+    xueqiuSymbol?: string;
+    tencentSymbol?: string;
+  } = {},
+): string | undefined {
+  const symbol = query.trim();
+  if (!/^\d{6}$/.test(symbol)) {
+    return undefined;
+  }
+
+  return (
+    suggestions.xueqiuSymbol ||
+    suggestions.tencentSymbol ||
+    normalizeNumericSymbolFallback(symbol)
+  );
 }
 
 async function getSuggestStockFromXueqiu(
@@ -764,18 +796,32 @@ function getEastmoneySecid(
 }
 
 async function resolveEastmoneySymbol(query: string): Promise<string> {
-  const directSymbol = normalizeDirectSymbol(query);
+  const normalizedQuery = query.trim();
+  const directSymbol = normalizeDirectSymbol(normalizedQuery);
   if (directSymbol) {
     return directSymbol;
   }
 
-  const tencentSymbol = await getSuggestStockFromTencent(query);
+  const xueqiuSymbol = await getSuggestStockFromXueqiu(normalizedQuery);
+  const tencentSymbol = await getSuggestStockFromTencent(normalizedQuery);
+  const numericSymbol = resolveNumericSymbol(normalizedQuery, {
+    xueqiuSymbol,
+    tencentSymbol,
+  });
+  if (numericSymbol) {
+    return numericSymbol;
+  }
+
+  if (xueqiuSymbol) {
+    return xueqiuSymbol;
+  }
+
   if (tencentSymbol) {
     return tencentSymbol;
   }
 
-  if (/^[a-zA-Z][a-zA-Z0-9.-]{0,14}$/.test(query)) {
-    return query.toUpperCase();
+  if (/^[a-zA-Z][a-zA-Z0-9.-]{0,14}$/.test(normalizedQuery)) {
+    return normalizedQuery.toUpperCase();
   }
 
   throw new Error('未找到相关股票');
