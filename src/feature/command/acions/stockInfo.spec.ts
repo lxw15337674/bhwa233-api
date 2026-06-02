@@ -138,7 +138,7 @@ describe('yahoo extended hours parsing', () => {
     expect(extended?.percent).toBeCloseTo(22.22, 2);
   });
 
-  it('uses caller fallback previous close before Yahoo chart previousClose', () => {
+  it('uses caller fallback regular close before Yahoo chart previousClose', () => {
     const extended = parseYahooQuoteExtendedHours(
       {
         preMarketPrice: 272.54,
@@ -152,5 +152,21 @@ describe('yahoo extended hours parsing', () => {
     expect(extended?.label).toBe('⏰ 盘前');
     expect(extended?.price).toBe(272.54);
     expect(extended?.percent).toBeCloseTo(24.2, 1);
+  });
+
+  it('uses latest regular close when quote percent already reflects prior session gain', () => {
+    const extended = parseYahooQuoteExtendedHours(
+      {
+        preMarketPrice: 276.47,
+        previousClose: 205.01,
+        chartPreviousClose: 205.01,
+      },
+      2,
+      219.43,
+    );
+
+    expect(extended?.label).toBe('⏰ 盘前');
+    expect(extended?.price).toBe(276.47);
+    expect(extended?.percent).toBeCloseTo(26, 1);
   });
 });
