@@ -1,4 +1,5 @@
 import {
+  getExtendedHoursBasePrice,
   pickTencentSuggestSymbol,
   pickXueqiuSuggestSymbol,
   resolveNumericSymbol,
@@ -75,5 +76,28 @@ describe('stock suggest ranking', () => {
     expect(resolveNumericSymbol('513300')).toBe('SH513300');
     expect(resolveNumericSymbol('159915')).toBe('SZ159915');
     expect(resolveNumericSymbol('830799')).toBe('BJ830799');
+  });
+});
+
+describe('extended hours base price', () => {
+  it('prefers regular market previous close for pre-market quotes', () => {
+    expect(
+      getExtendedHoursBasePrice('⏰ 盘前', {
+        previousClose: 205,
+        chartPreviousClose: 205,
+        regularMarketPreviousClose: 219.43,
+      }),
+    ).toBe(219.43);
+  });
+
+  it('falls back to regular market price for post-market quotes', () => {
+    expect(
+      getExtendedHoursBasePrice('🌙 盘后', {
+        previousClose: 205,
+        chartPreviousClose: 205,
+        regularMarketPreviousClose: 219.43,
+        regularMarketPrice: 220.1,
+      }),
+    ).toBe(220.1);
   });
 });

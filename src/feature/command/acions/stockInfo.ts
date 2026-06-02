@@ -145,6 +145,13 @@ interface ExtendedHoursQuote {
   pricePrecision: number;
 }
 
+interface YahooExtendedHoursMetaLike {
+  previousClose?: number;
+  chartPreviousClose?: number;
+  regularMarketPreviousClose?: number;
+  regularMarketPrice?: number;
+}
+
 export interface EastmoneyQuote {
   name: string;
   symbol: string;
@@ -932,6 +939,30 @@ function toYahooSymbol(symbol: string): string {
   return symbol.replace(/\./g, '-');
 }
 
+export function getExtendedHoursBasePrice(
+  label: ExtendedHoursQuote['label'],
+  meta: YahooExtendedHoursMetaLike | undefined,
+): number | undefined {
+  if (!meta) {
+    return undefined;
+  }
+
+  if (label === '⏰ 盘前') {
+    return (
+      meta.regularMarketPreviousClose ??
+      meta.previousClose ??
+      meta.chartPreviousClose
+    );
+  }
+
+  return (
+    meta.regularMarketPrice ??
+    meta.regularMarketPreviousClose ??
+    meta.previousClose ??
+    meta.chartPreviousClose
+  );
+}
+
 function findLastCloseInPeriod(
   timestamps: number[] | undefined,
   closes: Array<number | null | undefined> | undefined,
@@ -1010,7 +1041,6 @@ async function getYahooExtendedHoursQuote(
       label = '⏰ 盘前';
       start = pre.start;
       end = pre.end;
-      basePrice = meta.previousClose ?? meta.chartPreviousClose;
     } else if (
       typeof post?.start === 'number' &&
       typeof post?.end === 'number' &&
@@ -1020,7 +1050,10 @@ async function getYahooExtendedHoursQuote(
       label = '🌙 盘后';
       start = post.start;
       end = post.end;
-      basePrice = meta.regularMarketPrice ?? meta.previousClose;
+    }
+
+    if (label) {
+      basePrice = getExtendedHoursBasePrice(label, meta);
     }
 
     if (!label || start === undefined || end === undefined || !basePrice) {
