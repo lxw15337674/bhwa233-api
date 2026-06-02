@@ -1,5 +1,6 @@
 import {
   getExtendedHoursBasePrice,
+  parseYahooQuoteExtendedHours,
   pickTencentSuggestSymbol,
   pickXueqiuSuggestSymbol,
   resolveNumericSymbol,
@@ -99,5 +100,41 @@ describe('extended hours base price', () => {
         regularMarketPrice: 220.1,
       }),
     ).toBe(220.1);
+  });
+});
+
+describe('yahoo extended hours parsing', () => {
+  it('prefers direct pre-market fields and preserves Yahoo percent', () => {
+    expect(
+      parseYahooQuoteExtendedHours(
+        {
+          preMarketPrice: 269.19,
+          preMarketChangePercent: 22.68,
+          previousClose: 205.01,
+          regularMarketPreviousClose: 219.43,
+        },
+        2,
+      ),
+    ).toEqual({
+      label: '⏰ 盘前',
+      price: 269.19,
+      percent: 22.68,
+      pricePrecision: 2,
+    });
+  });
+
+  it('falls back to regular market previous close when Yahoo percent is absent', () => {
+    const extended = parseYahooQuoteExtendedHours(
+      {
+        preMarketPrice: 268.19,
+        previousClose: 205.01,
+        regularMarketPreviousClose: 219.43,
+      },
+      2,
+    );
+
+    expect(extended?.label).toBe('⏰ 盘前');
+    expect(extended?.price).toBe(268.19);
+    expect(extended?.percent).toBeCloseTo(22.22, 2);
   });
 });

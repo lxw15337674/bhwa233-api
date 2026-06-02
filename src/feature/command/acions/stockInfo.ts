@@ -152,6 +152,16 @@ interface YahooExtendedHoursMetaLike {
   regularMarketPrice?: number;
 }
 
+interface YahooQuoteResultLike extends YahooExtendedHoursMetaLike {
+  marketState?: string;
+  preMarketPrice?: number;
+  preMarketChangePercent?: number;
+  preMarketChange?: number;
+  postMarketPrice?: number;
+  postMarketChangePercent?: number;
+  postMarketChange?: number;
+}
+
 export interface EastmoneyQuote {
   name: string;
   symbol: string;
@@ -180,6 +190,7 @@ const EASTMONEY_STOCK_API_URL =
   'https://push2delay.eastmoney.com/api/qt/stock/get';
 const EASTMONEY_SUGGEST_API_URL =
   'https://searchapi.eastmoney.com/api/suggest/get';
+const YAHOO_QUOTE_API_URL = 'https://query1.finance.yahoo.com/v7/finance/quote';
 const YAHOO_CHART_API_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const EASTMONEY_STOCK_FIELDS = [
   'f43',
@@ -963,6 +974,63 @@ export function getExtendedHoursBasePrice(
   );
 }
 
+export function parseYahooQuoteExtendedHours(
+  quote: YahooQuoteResultLike | undefined,
+  pricePrecision: number,
+): ExtendedHoursQuote | undefined {
+  if (!quote) {
+    return undefined;
+  }
+
+  if (
+    typeof quote.preMarketPrice === 'number' &&
+    Number.isFinite(quote.preMarketPrice)
+  ) {
+    const percent =
+      typeof quote.preMarketChangePercent === 'number' &&
+      Number.isFinite(quote.preMarketChangePercent)
+        ? quote.preMarketChangePercent
+        : undefined;
+    const basePrice = getExtendedHoursBasePrice('⏰ 盘前', quote);
+    if (percent !== undefined || basePrice) {
+      return {
+        label: '⏰ 盘前',
+        price: quote.preMarketPrice,
+        percent:
+          percent ??
+          ((quote.preMarketPrice - (basePrice as number)) / (basePrice as number)) *
+            100,
+        pricePrecision,
+      };
+    }
+  }
+
+  if (
+    typeof quote.postMarketPrice === 'number' &&
+    Number.isFinite(quote.postMarketPrice)
+  ) {
+    const percent =
+      typeof quote.postMarketChangePercent === 'number' &&
+      Number.isFinite(quote.postMarketChangePercent)
+        ? quote.postMarketChangePercent
+        : undefined;
+    const basePrice = getExtendedHoursBasePrice('🌙 盘后', quote);
+    if (percent !== undefined || basePrice) {
+      return {
+        label: '🌙 盘后',
+        price: quote.postMarketPrice,
+        percent:
+          percent ??
+          ((quote.postMarketPrice - (basePrice as number)) / (basePrice as number)) *
+            100,
+        pricePrecision,
+      };
+    }
+  }
+
+  return undefined;
+}
+
 function findLastCloseInPeriod(
   timestamps: number[] | undefined,
   closes: Array<number | null | undefined> | undefined,
@@ -1000,6 +1068,24 @@ async function getYahooExtendedHoursQuote(
 ): Promise<ExtendedHoursQuote | undefined> {
   try {
     const yahooSymbol = toYahooSymbol(symbol);
+    const quoteResponse = await axios.get(YAHOO_QUOTE_API_URL, {
+      params: { symbols: yahooSymbol },
+      timeout: 2500,
+      validateStatus: () => true,
+    });
+    if (quoteResponse.status === 200) {
+      const quoteResult = quoteResponse.data?.quoteResponse?.result?.[0];
+      const directQuote = parseYahooQuoteExtendedHours(
+        quoteResult,
+        pricePrecision,
+      );
+      if (directQuote) {
+        return directQuote;
+      }
+    } else {
+      logger.warn(`yahoo quote failed for "${symbol}": ${quoteResponse.status}`);
+    }
+
     const response = await axios.get(
       `${YAHOO_CHART_API_URL}/${encodeURIComponent(yahooSymbol)}`,
       {
