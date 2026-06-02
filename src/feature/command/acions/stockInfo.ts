@@ -953,14 +953,16 @@ function toYahooSymbol(symbol: string): string {
 export function getExtendedHoursBasePrice(
   label: ExtendedHoursQuote['label'],
   meta: YahooExtendedHoursMetaLike | undefined,
+  fallbackPreviousClose?: number,
 ): number | undefined {
   if (!meta) {
-    return undefined;
+    return fallbackPreviousClose;
   }
 
   if (label === '⏰ 盘前') {
     return (
       meta.regularMarketPreviousClose ??
+      fallbackPreviousClose ??
       meta.previousClose ??
       meta.chartPreviousClose
     );
@@ -969,6 +971,7 @@ export function getExtendedHoursBasePrice(
   return (
     meta.regularMarketPrice ??
     meta.regularMarketPreviousClose ??
+    fallbackPreviousClose ??
     meta.previousClose ??
     meta.chartPreviousClose
   );
@@ -977,6 +980,7 @@ export function getExtendedHoursBasePrice(
 export function parseYahooQuoteExtendedHours(
   quote: YahooQuoteResultLike | undefined,
   pricePrecision: number,
+  fallbackPreviousClose?: number,
 ): ExtendedHoursQuote | undefined {
   if (!quote) {
     return undefined;
@@ -991,7 +995,11 @@ export function parseYahooQuoteExtendedHours(
       Number.isFinite(quote.preMarketChangePercent)
         ? quote.preMarketChangePercent
         : undefined;
-    const basePrice = getExtendedHoursBasePrice('⏰ 盘前', quote);
+    const basePrice = getExtendedHoursBasePrice(
+      '⏰ 盘前',
+      quote,
+      fallbackPreviousClose,
+    );
     if (percent !== undefined || basePrice) {
       return {
         label: '⏰ 盘前',
@@ -1014,7 +1022,11 @@ export function parseYahooQuoteExtendedHours(
       Number.isFinite(quote.postMarketChangePercent)
         ? quote.postMarketChangePercent
         : undefined;
-    const basePrice = getExtendedHoursBasePrice('🌙 盘后', quote);
+    const basePrice = getExtendedHoursBasePrice(
+      '🌙 盘后',
+      quote,
+      fallbackPreviousClose,
+    );
     if (percent !== undefined || basePrice) {
       return {
         label: '🌙 盘后',
@@ -1065,6 +1077,7 @@ function findLastCloseInPeriod(
 async function getYahooExtendedHoursQuote(
   symbol: string,
   pricePrecision: number,
+  fallbackPreviousClose?: number,
 ): Promise<ExtendedHoursQuote | undefined> {
   try {
     const yahooSymbol = toYahooSymbol(symbol);
@@ -1078,6 +1091,7 @@ async function getYahooExtendedHoursQuote(
       const directQuote = parseYahooQuoteExtendedHours(
         quoteResult,
         pricePrecision,
+        fallbackPreviousClose,
       );
       if (directQuote) {
         return directQuote;
@@ -1139,7 +1153,11 @@ async function getYahooExtendedHoursQuote(
     }
 
     if (label) {
-      basePrice = getExtendedHoursBasePrice(label, meta);
+      basePrice = getExtendedHoursBasePrice(
+        label,
+        meta,
+        fallbackPreviousClose,
+      );
     }
 
     if (!label || start === undefined || end === undefined || !basePrice) {
@@ -1236,7 +1254,11 @@ export async function getEastmoneyStockQuote(
   };
 
   if (isUSEastmoneySecid(secidInfo.secid)) {
-    quote.extended = await getYahooExtendedHoursQuote(quote.symbol, precision);
+    quote.extended = await getYahooExtendedHoursQuote(
+      quote.symbol,
+      precision,
+      quote.previousClose,
+    );
   }
 
   return quote;
