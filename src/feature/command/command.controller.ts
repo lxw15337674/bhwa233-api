@@ -89,14 +89,13 @@ export class CommandController {
   }
 
   @Get('config')
-  async getCustomCommands(@Req() req: Request) {
-    this.commandAuthService.resolveRequiredOwnerKeyHash(req);
+  async getCustomCommands(@Req() _req: Request) {
     return this.customCommandService.list();
   }
 
   @Post('config')
   async createCustomCommand(@Req() req: Request, @Body() body: UpsertCustomCommandDto) {
-    const ownerKeyHash = this.commandAuthService.resolveRequiredOwnerKeyHash(req);
+    const ownerKeyHash = this.commandAuthService.resolveOptionalOwnerKeyHash(req) || 'public';
     return this.customCommandService.create(ownerKeyHash, body);
   }
 

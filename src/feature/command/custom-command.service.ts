@@ -16,6 +16,7 @@ const COMMAND_STATUS = {
 } as const;
 
 type CommandStatus = (typeof COMMAND_STATUS)[keyof typeof COMMAND_STATUS];
+const ANONYMOUS_OWNER_KEY = 'public';
 
 @Injectable()
 export class CustomCommandService {
@@ -194,7 +195,7 @@ export class CustomCommandService {
   private buildPayload(ownerKeyHash: string, dto: UpsertCustomCommandDto) {
     this.validatePayload(dto);
     return {
-      ownerKeyHash,
+      ownerKeyHash: ownerKeyHash || ANONYMOUS_OWNER_KEY,
       name: dto.command.trim(),
       command: dto.command.trim(),
       description: dto.description?.trim() || null,
