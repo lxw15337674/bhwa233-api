@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
+import express from 'express';
 
 async function createApp() {
   const app = await NestFactory.create(AppModule, {
@@ -10,6 +11,8 @@ async function createApp() {
   app.setGlobalPrefix('api', {
     exclude: [{ path: 'mcp', method: RequestMethod.ALL }],
   });
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
   // 添加全局验证管道
   app.useGlobalPipes(

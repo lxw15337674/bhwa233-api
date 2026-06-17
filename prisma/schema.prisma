@@ -176,6 +176,24 @@ model Asset {
   updatedAt   DateTime @updatedAt
 }
 
+model CustomCommand {
+  id           String                 @id @default(uuid())
+  ownerKeyHash String
+  name         String
+  command      String
+  description  String?
+  replyType    CustomCommandReplyType
+  contentText  String?
+  imageUrl     String?
+  enabled      Boolean                @default(true)
+  sortOrder    Int                    @default(0)
+  createTime   DateTime               @default(now())
+  updateTime   DateTime               @default(now()) @updatedAt
+
+  @@unique([ownerKeyHash, command])
+  @@index([ownerKeyHash, enabled, sortOrder])
+}
+
 enum Priority {
   IMPORTANT_URGENT
   IMPORTANT_NOT_URGENT
@@ -203,4 +221,10 @@ enum Platform {
   WEIBO
   XIAOHONGSHU
   DOUYIN
+}
+
+enum CustomCommandReplyType {
+  TEXT
+  IMAGE_URL
+  RENDERED_IMAGE
 }

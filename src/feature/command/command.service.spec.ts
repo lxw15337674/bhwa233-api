@@ -4,12 +4,14 @@ import { TavilyService } from '../ai/tavily.service';
 import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
 import { AiSessionCacheService } from './ai-session-cache.service';
+import { CustomCommandService } from './custom-command.service';
 
 describe('CommandService (a command + Tavily)', () => {
   let service: CommandService;
   let aiService: { generateResponseWithTools: jest.Mock };
   let tavilyService: { search: jest.Mock };
   let aiSessionCacheService: { getTurns: jest.Mock; appendTurn: jest.Mock };
+  let customCommandService: { execute: jest.Mock };
 
   beforeEach(() => {
     aiService = {
@@ -22,6 +24,9 @@ describe('CommandService (a command + Tavily)', () => {
       getTurns: jest.fn().mockResolvedValue([]),
       appendTurn: jest.fn().mockResolvedValue(undefined),
     };
+    customCommandService = {
+      execute: jest.fn().mockResolvedValue(null),
+    };
 
     service = new CommandService(
       aiService as unknown as AiService,
@@ -29,6 +34,7 @@ describe('CommandService (a command + Tavily)', () => {
       {} as ScreenshotService,
       {} as HttpService,
       aiSessionCacheService as unknown as AiSessionCacheService,
+      customCommandService as unknown as CustomCommandService,
     );
   });
 
