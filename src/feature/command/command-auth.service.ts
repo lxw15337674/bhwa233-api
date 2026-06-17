@@ -6,11 +6,15 @@ export const COMMAND_KEY_HEADER = 'x-command-key';
 
 @Injectable()
 export class CommandAuthService {
-  private getAllowedKeys(): string[] {
-    return (process.env.COMMAND_API_KEYS || '')
+  private parseKeys(source: string | undefined): string[] {
+    return (source || '')
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
+  }
+
+  private getAllowedKeys(): string[] {
+    return this.parseKeys(process.env.COMMAND_API_KEYS);
   }
 
   private getRawKey(request: Request): string {
@@ -49,6 +53,24 @@ export class CommandAuthService {
 
     if (!allowedKeys.includes(rawKey)) {
       throw new UnauthorizedException('Invalid command key');
+    }
+
+    return this.hashKey(rawKey);
+  }
+
+  resolveRequiredReviewerKeyHash(request: Request): string {
+    const rawKey = this.getRawKey(request);
+    if (!rawKey) {
+      throw new UnauthorizedException(`Missing ${COMMAND_KEY_HEADER} header`);
+    }
+
+    const allowedKeys = this.getAllowedKeys();
+    if (allowedKeys.length === 0) {
+      throw new UnauthorizedException('COMMAND_API_KEYS is not configured');
+    }
+
+    if (!allowedKeys.includes(rawKey)) {
+      throw new UnauthorizedException('Invalid review key');
     }
 
     return this.hashKey(rawKey);

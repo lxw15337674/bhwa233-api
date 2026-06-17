@@ -185,13 +185,19 @@ model CustomCommand {
   replyType    CustomCommandReplyType
   contentText  String?
   imageUrl     String?
+  status       CustomCommandStatus     @default(PENDING)
+  reviewerKeyHash String?
+  reviewComment String?
+  submittedAt  DateTime               @default(now())
+  reviewedAt   DateTime?
   enabled      Boolean                @default(true)
   sortOrder    Int                    @default(0)
   createTime   DateTime               @default(now())
   updateTime   DateTime               @default(now()) @updatedAt
 
-  @@unique([ownerKeyHash, command])
-  @@index([ownerKeyHash, enabled, sortOrder])
+  @@unique([command])
+  @@index([status, enabled, sortOrder])
+  @@index([ownerKeyHash, status])
 }
 
 enum Priority {
@@ -227,4 +233,10 @@ enum CustomCommandReplyType {
   TEXT
   IMAGE_URL
   RENDERED_IMAGE
+}
+
+enum CustomCommandStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

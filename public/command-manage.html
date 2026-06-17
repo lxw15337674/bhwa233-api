@@ -3,18 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>命令配置中心</title>
+    <title>命令审核中心</title>
     <style>
       :root {
-        --bg: #f6f1e8;
-        --panel: rgba(255, 252, 246, 0.92);
-        --line: #d9cbb5;
-        --ink: #1f2933;
-        --subtle: #6b7280;
-        --accent: #a64b2a;
-        --accent-soft: #f3d7c5;
-        --success: #1f7a4c;
-        --danger: #c0392b;
+        --bg: #f5efe5;
+        --panel: rgba(255, 251, 245, 0.95);
+        --line: #d8c7b0;
+        --ink: #20262e;
+        --subtle: #6f7681;
+        --accent: #a34c2a;
+        --accent-soft: #f7ddd0;
+        --ok: #1b7f4b;
+        --warn: #c57c17;
+        --danger: #bf3d30;
       }
 
       * {
@@ -23,39 +24,57 @@
 
       body {
         margin: 0;
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         color: var(--ink);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         background:
-          radial-gradient(circle at top left, #f7dbc5 0, transparent 28%),
-          radial-gradient(circle at bottom right, #eed8b7 0, transparent 34%),
-          linear-gradient(135deg, #f8f4ed, #efe6d9 55%, #f4efe6);
-        min-height: 100vh;
+          radial-gradient(circle at top left, #f9ddc7 0, transparent 26%),
+          radial-gradient(circle at bottom right, #f2dfc2 0, transparent 35%),
+          linear-gradient(135deg, #faf7f2, #efe4d6 55%, #f8f2e9);
       }
 
       .shell {
-        max-width: 1320px;
+        max-width: 1380px;
         margin: 0 auto;
-        padding: 32px 20px 40px;
+        padding: 28px 18px 36px;
+      }
+
+      .hero,
+      .panel {
+        border-radius: 24px;
+        border: 1px solid rgba(163, 76, 42, 0.14);
+        background: var(--panel);
+        box-shadow: 0 14px 42px rgba(89, 57, 31, 0.08);
       }
 
       .hero {
         padding: 28px;
-        border: 1px solid rgba(166, 75, 42, 0.18);
-        background: linear-gradient(140deg, rgba(255,255,255,0.86), rgba(252,242,233,0.9));
-        border-radius: 24px;
-        box-shadow: 0 18px 60px rgba(64, 39, 22, 0.08);
       }
 
-      h1, h2 {
-        margin: 0 0 10px;
+      h1,
+      h2,
+      h3 {
+        margin: 0;
         font-family: Georgia, "Times New Roman", serif;
-        letter-spacing: 0.02em;
       }
 
       p {
         margin: 0;
         color: var(--subtle);
         line-height: 1.6;
+      }
+
+      .toolbar,
+      .filters,
+      .actions,
+      .inline-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .toolbar {
+        margin-top: 18px;
       }
 
       .layout {
@@ -66,17 +85,13 @@
       }
 
       .panel {
-        background: var(--panel);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(217, 203, 181, 0.9);
-        border-radius: 22px;
         padding: 22px;
-        box-shadow: 0 12px 36px rgba(88, 58, 33, 0.08);
       }
 
       .fields {
         display: grid;
         gap: 14px;
+        margin-top: 18px;
       }
 
       label {
@@ -86,34 +101,34 @@
         color: var(--subtle);
       }
 
-      input, select, textarea {
-        width: 100%;
-        padding: 12px 14px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.82);
-        color: var(--ink);
+      input,
+      select,
+      textarea,
+      button {
         font: inherit;
       }
 
+      input,
+      select,
       textarea {
-        min-height: 120px;
-        resize: vertical;
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--ink);
       }
 
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
+      textarea {
+        min-height: 110px;
+        resize: vertical;
       }
 
       button {
         border: 0;
         border-radius: 999px;
-        padding: 11px 16px;
+        padding: 10px 16px;
         cursor: pointer;
-        font: inherit;
       }
 
       .primary {
@@ -122,47 +137,33 @@
       }
 
       .secondary {
-        background: #f2e7da;
+        background: #efe3d5;
         color: var(--ink);
       }
 
       .danger {
-        background: #f9ded8;
+        background: #f7dcd7;
         color: var(--danger);
       }
 
+      .success {
+        background: #dceedd;
+        color: var(--ok);
+      }
+
+      .warning {
+        background: #f8e8c7;
+        color: var(--warn);
+      }
+
       .muted {
-        font-size: 13px;
         color: var(--subtle);
-      }
-
-      .inline-row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .inline-row input[type="file"] {
-        padding: 10px;
-        background: rgba(255, 255, 255, 0.72);
-      }
-
-      .toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 18px;
-        align-items: center;
-      }
-
-      .toolbar input {
-        max-width: 280px;
+        font-size: 13px;
       }
 
       .status {
-        margin-top: 12px;
         min-height: 22px;
+        margin-top: 12px;
         font-size: 14px;
       }
 
@@ -171,56 +172,70 @@
       }
 
       .status.success {
-        color: var(--success);
+        color: var(--ok);
       }
 
-      .command-list {
+      .filters {
+        margin-top: 16px;
+      }
+
+      .list {
         display: grid;
         gap: 12px;
         margin-top: 18px;
       }
 
-      .command-card {
-        border: 1px solid rgba(166, 75, 42, 0.12);
-        background: rgba(255,255,255,0.72);
+      .item {
         border-radius: 18px;
+        border: 1px solid rgba(163, 76, 42, 0.12);
+        background: rgba(255, 255, 255, 0.72);
         padding: 16px;
       }
 
-      .command-card header {
+      .item header {
         display: flex;
         justify-content: space-between;
         gap: 12px;
-        align-items: start;
-      }
-
-      .command-card h3 {
-        margin: 0 0 6px;
-        font-size: 18px;
       }
 
       .chips {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin-top: 10px;
       }
 
       .chip {
+        display: inline-flex;
+        align-items: center;
         border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
         background: var(--accent-soft);
         color: var(--accent);
-        font-size: 12px;
-        padding: 5px 10px;
+      }
+
+      .chip.pending {
+        background: #f8e8c7;
+        color: var(--warn);
+      }
+
+      .chip.approved {
+        background: #dceedd;
+        color: var(--ok);
+      }
+
+      .chip.rejected {
+        background: #f7dcd7;
+        color: var(--danger);
       }
 
       .preview {
         margin-top: 18px;
-        border: 1px dashed var(--line);
         border-radius: 18px;
-        padding: 16px;
+        border: 1px dashed var(--line);
+        background: rgba(255, 255, 255, 0.55);
         min-height: 180px;
-        background: rgba(255,255,255,0.52);
+        padding: 16px;
       }
 
       .preview img {
@@ -230,9 +245,9 @@
       }
 
       pre {
+        margin: 0;
         white-space: pre-wrap;
         word-break: break-word;
-        margin: 0;
         font-family: Consolas, "Courier New", monospace;
       }
 
@@ -246,35 +261,34 @@
   <body>
     <div class="shell">
       <section class="hero">
-        <h1>命令配置中心</h1>
-        <p>使用独立的命令 Key 进入管理后台。已保存的命令会全局生效，当前只支持精确匹配，不支持参数。</p>
+        <h1>命令审核中心</h1>
+        <p>命令创建后默认进入列表待审核，只有审核通过的命令才会生效。管理和审核都使用同一个 `x-command-key`。</p>
         <div class="toolbar">
-          <input id="commandKey" type="password" placeholder="输入 x-command-key" />
-          <button class="secondary" id="loadBtn" type="button">加载命令</button>
-          <span class="muted">请求头使用 `x-command-key`，与 `API_SECRET_KEY` 独立。</span>
+          <input id="commandKey" type="password" placeholder="输入管理 x-command-key" />
+          <button class="secondary" id="loadBtn" type="button">刷新列表</button>
         </div>
         <div id="topStatus" class="status"></div>
       </section>
 
       <section class="layout">
         <div class="panel">
-          <h2>编辑命令</h2>
-          <p class="muted">支持文本、真实图片 URL、本地上传转 base64、文本渲染成图片。</p>
+          <h2>新建 / 编辑命令</h2>
+          <p class="muted">保存后默认进入待审核。图片类型支持 URL、本地上传转 base64，文本类型支持文本渲染图。</p>
           <form id="commandForm" class="fields">
             <input id="commandId" type="hidden" />
             <label>
               命令
-              <input id="command" type="text" maxlength="100" placeholder="例如：图片1" required />
+              <input id="command" type="text" maxlength="100" placeholder="例如：辣椒" required />
             </label>
             <label>
               说明
-              <input id="description" type="text" maxlength="500" placeholder="给自己看的备注" />
+              <input id="description" type="text" maxlength="500" placeholder="给审核人看的说明" />
             </label>
             <label>
               回复类型
               <select id="replyType">
                 <option value="TEXT">文本</option>
-                <option value="IMAGE_URL">图片 URL</option>
+                <option value="IMAGE_URL">图片 URL / Base64</option>
                 <option value="RENDERED_IMAGE">文本渲染图</option>
               </select>
             </label>
@@ -284,7 +298,7 @@
             </label>
             <label id="imageUrlWrap" style="display:none">
               图片地址或 Base64
-              <input id="imageUrl" type="text" placeholder="https://example.com/demo.jpg 或 data:image/...;base64,..." />
+              <input id="imageUrl" type="text" placeholder="https://example.com/a.png 或 data:image/...;base64,..." />
             </label>
             <label id="imageUploadWrap" style="display:none">
               上传图片转 Base64
@@ -292,14 +306,7 @@
                 <input id="imageFile" type="file" accept="image/*" />
                 <button class="secondary" id="clearImageBtn" type="button">清空图片</button>
               </div>
-              <span class="muted">上传后会自动转成 base64 并填入上面的字段。建议单张图片控制在 8MB 内。</span>
-            </label>
-            <label>
-              <span>启用</span>
-              <select id="enabled">
-                <option value="true">启用</option>
-                <option value="false">禁用</option>
-              </select>
+              <span class="muted">建议图片控制在 8MB 内。</span>
             </label>
             <div class="actions">
               <button class="primary" id="saveBtn" type="submit">保存命令</button>
@@ -308,23 +315,28 @@
             </div>
           </form>
           <div id="formStatus" class="status"></div>
+          <div class="preview">
+            <h3 style="margin-bottom:12px">预览</h3>
+            <div id="previewArea" class="muted">点“预览效果”查看返回内容。</div>
+          </div>
         </div>
 
         <div class="panel">
           <h2>命令列表</h2>
-          <p class="muted">这里展示的是全局命令列表。`x-command-key` 只用于管理权限，不影响命令执行。</p>
-          <div id="list" class="command-list"></div>
-          <div class="preview">
-            <h2 style="margin-bottom:12px">预览</h2>
-            <div id="previewArea" class="muted">点“预览效果”查看返回内容。</div>
+          <p class="muted">只要审核状态是“已通过”，命令就会进入全局可执行列表。</p>
+          <div class="filters">
+            <button class="secondary" data-filter="ALL" type="button">全部</button>
+            <button class="secondary" data-filter="PENDING" type="button">待审核</button>
+            <button class="secondary" data-filter="APPROVED" type="button">已通过</button>
+            <button class="secondary" data-filter="REJECTED" type="button">已拒绝</button>
           </div>
+          <div id="list" class="list"></div>
         </div>
       </section>
     </div>
 
     <script>
       const commandKeyInput = document.getElementById('commandKey');
-      const loadBtn = document.getElementById('loadBtn');
       const listEl = document.getElementById('list');
       const topStatus = document.getElementById('topStatus');
       const formStatus = document.getElementById('formStatus');
@@ -336,16 +348,17 @@
       const imageUploadWrap = document.getElementById('imageUploadWrap');
       const imageFileInput = document.getElementById('imageFile');
 
+      let currentFilter = 'ALL';
+      let commandItems = [];
+
       function setStatus(target, text, type) {
         target.textContent = text || '';
         target.className = 'status' + (type ? ' ' + type : '');
       }
 
-      function getHeaders(includeJson = true) {
+      function getHeaders(_useReviewKey = false, includeJson = true) {
         const key = commandKeyInput.value.trim();
-        const headers = {
-          'x-command-key': key,
-        };
+        const headers = { 'x-command-key': key };
         if (includeJson) {
           headers['Content-Type'] = 'application/json';
         }
@@ -366,7 +379,6 @@
           replyType: replyType.value,
           contentText: document.getElementById('contentText').value,
           imageUrl: document.getElementById('imageUrl').value.trim(),
-          enabled: document.getElementById('enabled').value === 'true',
         };
       }
 
@@ -377,14 +389,13 @@
         document.getElementById('replyType').value = item.replyType || 'TEXT';
         document.getElementById('contentText').value = item.contentText || '';
         document.getElementById('imageUrl').value = item.imageUrl || '';
-        document.getElementById('enabled').value = String(item.enabled ?? true);
         syncReplyFields();
       }
 
       function resetForm() {
+        document.getElementById('commandId').value = '';
         fillForm({
           replyType: 'TEXT',
-          enabled: true,
         });
         imageFileInput.value = '';
         setStatus(formStatus, '', '');
@@ -430,64 +441,92 @@
         return data;
       }
 
+      function escapeHtml(value) {
+        return String(value || '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function statusLabel(status) {
+        if (status === 'APPROVED') return '已通过';
+        if (status === 'REJECTED') return '已拒绝';
+        return '待审核';
+      }
+
+      function renderList() {
+        const items = currentFilter === 'ALL'
+          ? commandItems
+          : commandItems.filter((item) => item.status === currentFilter);
+
+        listEl.innerHTML = '';
+
+        if (!items.length) {
+          listEl.innerHTML = '<div class="muted">当前筛选下没有命令。</div>';
+          return;
+        }
+
+        items.forEach((item) => {
+          const article = document.createElement('article');
+          article.className = 'item';
+          article.innerHTML = `
+            <header>
+              <div>
+                <h3>${escapeHtml(item.command)}</h3>
+                <p style="margin-top:6px">${escapeHtml(item.description || '无说明')}</p>
+              </div>
+              <div class="chips">
+                <span class="chip ${item.status.toLowerCase()}">${statusLabel(item.status)}</span>
+                <span class="chip">${escapeHtml(item.replyType)}</span>
+              </div>
+            </header>
+            <div class="muted" style="margin-top:10px">审核备注：${escapeHtml(item.reviewComment || '无')}</div>
+            <div class="actions" style="margin-top:14px">
+              <button class="secondary" data-action="edit">编辑</button>
+              <button class="secondary" data-action="preview">预览</button>
+              <button class="warning" data-action="submit">提交审核</button>
+              <button class="success" data-action="approve">审核通过</button>
+              <button class="danger" data-action="reject">审核拒绝</button>
+              <button class="danger" data-action="delete">删除</button>
+            </div>
+          `;
+
+          article.querySelector('[data-action="edit"]').addEventListener('click', () => fillForm(item));
+          article.querySelector('[data-action="preview"]').addEventListener('click', () => previewItem(item));
+          article.querySelector('[data-action="submit"]').addEventListener('click', () => submitItem(item.id));
+          article.querySelector('[data-action="approve"]').addEventListener('click', () => approveItem(item.id));
+          article.querySelector('[data-action="reject"]').addEventListener('click', () => rejectItem(item.id));
+          article.querySelector('[data-action="delete"]').addEventListener('click', () => removeItem(item.id));
+          listEl.appendChild(article);
+        });
+      }
+
       async function loadCommands() {
         try {
           setStatus(topStatus, '加载中...', '');
-          const data = await request('/api/command/config', {
+          commandItems = await request('/api/command/config', {
             headers: getHeaders(false),
           });
-          listEl.innerHTML = '';
-
-          if (!data.length) {
-            listEl.innerHTML = '<div class="muted">当前 Key 还没有命令。</div>';
-          }
-
-          data.forEach((item) => {
-            const card = document.createElement('article');
-            card.className = 'command-card';
-            card.innerHTML = `
-              <header>
-                <div>
-                  <h3>${escapeHtml(item.command)}</h3>
-                  <div class="muted">命令：${escapeHtml(item.command)}</div>
-                </div>
-                <div class="chips">
-                  <span class="chip">${escapeHtml(item.replyType)}</span>
-                  <span class="chip">${item.enabled ? '启用' : '禁用'}</span>
-                </div>
-              </header>
-              <p style="margin-top:12px">${escapeHtml(item.description || '无说明')}</p>
-              <div class="actions">
-                <button class="secondary" data-action="edit" data-id="${item.id}">编辑</button>
-                <button class="secondary" data-action="preview" data-id="${item.id}">预览</button>
-                <button class="danger" data-action="delete" data-id="${item.id}">删除</button>
-              </div>
-            `;
-
-            card.querySelector('[data-action="edit"]').addEventListener('click', () => fillForm(item));
-            card.querySelector('[data-action="preview"]').addEventListener('click', () => renderPreviewFromItem(item));
-            card.querySelector('[data-action="delete"]').addEventListener('click', () => removeCommand(item.id));
-            listEl.appendChild(card);
-          });
-
-          setStatus(topStatus, `已加载 ${data.length} 条命令`, 'success');
+          renderList();
+          setStatus(topStatus, `已加载 ${commandItems.length} 条命令`, 'success');
         } catch (error) {
           setStatus(topStatus, error.message, 'error');
         }
       }
 
-      async function renderPreviewFromItem(item) {
+      async function previewItem(item) {
         try {
           const data = await request('/api/command/config/preview', {
             method: 'POST',
-            headers: getHeaders(),
+            headers: getHeaders(false),
             body: JSON.stringify({
               command: item.command,
               description: item.description || '',
               replyType: item.replyType,
               contentText: item.contentText || '',
               imageUrl: item.imageUrl || '',
-              enabled: item.enabled,
             }),
           });
           renderPreview(data);
@@ -496,7 +535,54 @@
         }
       }
 
-      async function removeCommand(id) {
+      async function submitItem(id) {
+        try {
+          await request(`/api/command/config/${id}/submit`, {
+            method: 'POST',
+            headers: getHeaders(false),
+          });
+          setStatus(topStatus, '已提交审核', 'success');
+          await loadCommands();
+        } catch (error) {
+          setStatus(topStatus, error.message, 'error');
+        }
+      }
+
+      async function approveItem(id) {
+        try {
+          const comment = prompt('审核通过备注', '审核通过') || '审核通过';
+          await request(`/api/command/config/${id}/approve`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify({ comment }),
+          });
+          setStatus(topStatus, '审核通过成功', 'success');
+          await loadCommands();
+        } catch (error) {
+          setStatus(topStatus, error.message, 'error');
+        }
+      }
+
+      async function rejectItem(id) {
+        try {
+          const comment = prompt('拒绝原因', '审核拒绝');
+          if (comment === null) {
+            return;
+          }
+
+          await request(`/api/command/config/${id}/reject`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify({ comment }),
+          });
+          setStatus(topStatus, '已拒绝该命令', 'success');
+          await loadCommands();
+        } catch (error) {
+          setStatus(topStatus, error.message, 'error');
+        }
+      }
+
+      async function removeItem(id) {
         if (!confirm('确定删除这条命令吗？')) {
           return;
         }
@@ -504,7 +590,7 @@
         try {
           await request(`/api/command/config/${id}`, {
             method: 'DELETE',
-            headers: getHeaders(false),
+            headers: getHeaders(false, false),
           });
           setStatus(topStatus, '删除成功', 'success');
           await loadCommands();
@@ -513,23 +599,20 @@
         }
       }
 
-      function escapeHtml(value) {
-        return String(value)
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('"', '&quot;')
-          .replaceAll("'", '&#39;');
-      }
+      document.querySelectorAll('[data-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+          currentFilter = button.getAttribute('data-filter');
+          renderList();
+        });
+      });
 
       replyType.addEventListener('change', syncReplyFields);
-      loadBtn.addEventListener('click', loadCommands);
-
+      document.getElementById('loadBtn').addEventListener('click', loadCommands);
       document.getElementById('previewBtn').addEventListener('click', async () => {
         try {
           const data = await request('/api/command/config/preview', {
             method: 'POST',
-            headers: getHeaders(),
+            headers: getHeaders(false),
             body: JSON.stringify(readFormData()),
           });
           renderPreview(data);
@@ -572,14 +655,14 @@
         event.preventDefault();
         try {
           const id = document.getElementById('commandId').value.trim();
-          const method = id ? 'PUT' : 'POST';
           const path = id ? `/api/command/config/${id}` : '/api/command/config';
+          const method = id ? 'PUT' : 'POST';
           await request(path, {
             method,
-            headers: getHeaders(),
+            headers: getHeaders(false),
             body: JSON.stringify(readFormData()),
           });
-          setStatus(formStatus, id ? '更新成功' : '创建成功', 'success');
+          setStatus(formStatus, id ? '更新成功，状态已重置为待审核' : '创建成功，等待审核', 'success');
           resetForm();
           await loadCommands();
         } catch (error) {

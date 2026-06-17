@@ -9,12 +9,20 @@ export interface CommandExecutionResult {
   type: 'text' | 'image';
 }
 
+const COMMAND_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+type CommandStatus = (typeof COMMAND_STATUS)[keyof typeof COMMAND_STATUS];
+
 @Injectable()
 export class CustomCommandService {
   async list(): Promise<CustomCommand[]> {
     return prisma.customCommand.findMany({
-      where: {},
-      orderBy: [{ sortOrder: 'asc' }, { createTime: 'asc' }],
+      where: {} as any,
+      orderBy: [{ updateTime: 'desc' }],
     });
   }
 
@@ -27,7 +35,7 @@ export class CustomCommandService {
   }
 
   async update(ownerKeyHash: string, id: string, dto: UpsertCustomCommandDto): Promise<CustomCommand> {
-    await this.ensureExists(id);
+    await this.ensureEditable(id);
     await this.ensureCommandUnique(dto.command, id);
     const payload = this.buildPayload(ownerKeyHash, dto);
     return prisma.customCommand.update({
@@ -37,9 +45,54 @@ export class CustomCommandService {
   }
 
   async remove(_ownerKeyHash: string, id: string): Promise<void> {
-    await this.ensureExists(id);
+    await this.ensureEditable(id);
     await prisma.customCommand.delete({
       where: { id },
+    });
+  }
+
+  async submit(id: string): Promise<CustomCommand> {
+    const item = await this.ensureExists(id);
+    if ((item as CustomCommand & { status?: CommandStatus }).status === COMMAND_STATUS.APPROVED) {
+      throw new BadRequestException('命令已审核通过');
+    }
+
+    return prisma.customCommand.update({
+      where: { id },
+      data: {
+        status: COMMAND_STATUS.PENDING,
+        reviewComment: null,
+        reviewedAt: null,
+        reviewerKeyHash: null,
+      } as any,
+    });
+  }
+
+  async approve(id: string, reviewerKeyHash: string, reviewComment?: string): Promise<CustomCommand> {
+    await this.ensureExists(id);
+    return prisma.customCommand.update({
+      where: { id },
+      data: {
+        status: COMMAND_STATUS.APPROVED,
+        enabled: true,
+        reviewerKeyHash,
+        reviewComment: reviewComment?.trim() || '审核通过',
+        reviewedAt: new Date(),
+      } as any,
+    });
+  }
+
+  async reject(id: string, reviewerKeyHash: string, reviewComment?: string): Promise<CustomCommand> {
+    await this.ensureExists(id);
+    return prisma.customCommand.update({
+      where: { id },
+      data: {
+        status: COMMAND_STATUS.REJECTED,
+        enabled: false,
+        reviewerKeyHash,
+        reviewComment: reviewComment?.trim() || '审核拒绝',
+        reviewedAt: new Date(),
+      } as any,
     });
   }
 
@@ -54,11 +107,16 @@ export class CustomCommandService {
       replyType: dto.replyType,
       contentText: dto.contentText?.trim() || null,
       imageUrl: dto.imageUrl?.trim() || null,
-      enabled: dto.enabled ?? true,
+      status: COMMAND_STATUS.PENDING,
+      reviewerKeyHash: null,
+      reviewComment: null,
+      submittedAt: new Date(),
+      reviewedAt: null,
+      enabled: false,
       sortOrder: 0,
       createTime: new Date(),
       updateTime: new Date(),
-    });
+    } as CustomCommand);
   }
 
   async execute(commandText: string): Promise<CommandExecutionResult | null> {
@@ -69,10 +127,10 @@ export class CustomCommandService {
 
     const customCommand = await prisma.customCommand.findFirst({
       where: {
+        status: COMMAND_STATUS.APPROVED,
         enabled: true,
         command: normalizedCommand,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { createTime: 'asc' }],
+      } as any,
     });
 
     if (!customCommand) {
@@ -85,9 +143,10 @@ export class CustomCommandService {
   async listForHelp(): Promise<Array<{ key: string; description: string; type?: 'text' | 'image' }>> {
     const commands = await prisma.customCommand.findMany({
       where: {
+        status: COMMAND_STATUS.APPROVED,
         enabled: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { createTime: 'asc' }],
+      } as any,
+      orderBy: [{ updateTime: 'desc' }],
     });
 
     return commands.map((item) => ({
@@ -97,15 +156,24 @@ export class CustomCommandService {
     }));
   }
 
-  private async ensureExists(id: string): Promise<void> {
+  private async ensureExists(id: string): Promise<CustomCommand> {
     const item = await prisma.customCommand.findFirst({
-      where: { id },
-      select: { id: true },
+      where: { id } as any,
     });
 
     if (!item) {
       throw new BadRequestException('命令不存在');
     }
+
+    return item;
+  }
+
+  private async ensureEditable(id: string): Promise<CustomCommand> {
+    const item = await this.ensureExists(id);
+    if ((item as CustomCommand & { status?: CommandStatus }).status === COMMAND_STATUS.APPROVED) {
+      throw new BadRequestException('已审核通过的命令不能直接编辑，请先重新创建新命令');
+    }
+    return item;
   }
 
   private async ensureCommandUnique(command: string, excludeId?: string): Promise<void> {
@@ -133,9 +201,14 @@ export class CustomCommandService {
       replyType: dto.replyType,
       contentText: dto.contentText?.trim() || null,
       imageUrl: dto.imageUrl?.trim() || null,
-      enabled: dto.enabled ?? true,
+      status: COMMAND_STATUS.PENDING,
+      reviewerKeyHash: null,
+      reviewComment: null,
+      submittedAt: new Date(),
+      reviewedAt: null,
+      enabled: false,
       sortOrder: 0,
-    };
+    } as any;
   }
 
   private validatePayload(dto: UpsertCustomCommandDto): void {

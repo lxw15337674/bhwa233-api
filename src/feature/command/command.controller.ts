@@ -19,6 +19,7 @@ import { Request } from 'express';
 import { CommandAuthService } from './command-auth.service';
 import { CustomCommandService } from './custom-command.service';
 import { PreviewCustomCommandDto, UpsertCustomCommandDto } from './dto/custom-command.dto';
+import { ReviewCommandDto } from './dto/review-command.dto';
 
 @ApiTags('Command')
 @Controller('command')
@@ -119,6 +120,32 @@ export class CommandController {
   @Post('config/preview')
   async previewCustomCommand(@Body() body: PreviewCustomCommandDto) {
     return this.customCommandService.preview(body);
+  }
+
+  @Post('config/:id/submit')
+  async submitCustomCommand(@Req() req: Request, @Param('id') id: string) {
+    this.commandAuthService.resolveRequiredOwnerKeyHash(req);
+    return this.customCommandService.submit(id);
+  }
+
+  @Post('config/:id/approve')
+  async approveCustomCommand(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() body: ReviewCommandDto,
+  ) {
+    const reviewerKeyHash = this.commandAuthService.resolveRequiredReviewerKeyHash(req);
+    return this.customCommandService.approve(id, reviewerKeyHash, body.comment);
+  }
+
+  @Post('config/:id/reject')
+  async rejectCustomCommand(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() body: ReviewCommandDto,
+  ) {
+    const reviewerKeyHash = this.commandAuthService.resolveRequiredReviewerKeyHash(req);
+    return this.customCommandService.reject(id, reviewerKeyHash, body.comment);
   }
 
   @Get('manage')
