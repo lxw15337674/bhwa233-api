@@ -16,7 +16,7 @@ import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
 import { AiSessionCacheService } from './ai-session-cache.service';
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import satori from 'satori';
 import sharp from 'sharp';
 import React from 'react';
@@ -706,7 +706,18 @@ export class CommandService {
     }
 
     async getManagementPageHtml(): Promise<string> {
-        const pagePath = join(process.cwd(), 'public', 'command-manage.html');
-        return readFileSync(pagePath, 'utf-8');
+        const candidatePaths = [
+            join(process.cwd(), 'public', 'command-manage.html'),
+            join(process.cwd(), 'dist', 'assets', 'command-manage.html'),
+            join(__dirname, '..', '..', 'assets', 'command-manage.html'),
+        ];
+
+        for (const pagePath of candidatePaths) {
+            if (existsSync(pagePath)) {
+                return readFileSync(pagePath, 'utf-8');
+            }
+        }
+
+        throw new Error('command-manage.html not found in expected locations');
     }
 }
