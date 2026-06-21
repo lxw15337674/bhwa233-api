@@ -25,7 +25,7 @@
       body {
         margin: 0;
         color: var(--ink);
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
         background:
           radial-gradient(circle at top left, #f9ddc7 0, transparent 26%),
           radial-gradient(circle at bottom right, #f2dfc2 0, transparent 35%),
@@ -54,7 +54,7 @@
       h2,
       h3 {
         margin: 0;
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: Georgia, 'Times New Roman', serif;
       }
 
       p {
@@ -175,6 +175,62 @@
         color: var(--ok);
       }
 
+      .mode-hint {
+        margin-top: 12px;
+        color: var(--subtle);
+        font-size: 14px;
+      }
+
+      .mode-hint strong {
+        color: var(--accent);
+      }
+
+      .item.approved {
+        border-color: rgba(27, 127, 75, 0.24);
+      }
+
+      .item.pending {
+        border-color: rgba(197, 124, 23, 0.24);
+      }
+
+      .item.rejected {
+        border-color: rgba(191, 61, 48, 0.24);
+      }
+
+      .state-line {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      dialog.review-dialog {
+        width: min(620px, calc(100vw - 32px));
+        border: 1px solid rgba(163, 76, 42, 0.18);
+        border-radius: 22px;
+        padding: 22px;
+        background: var(--panel);
+        color: var(--ink);
+        box-shadow: 0 24px 80px rgba(56, 33, 18, 0.26);
+      }
+
+      dialog.review-dialog::backdrop {
+        background: rgba(32, 38, 46, 0.38);
+      }
+
+      .review-summary {
+        margin: 16px 0;
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(163, 76, 42, 0.12);
+      }
+
       .filters {
         margin-top: 16px;
       }
@@ -248,7 +304,7 @@
         margin: 0;
         white-space: pre-wrap;
         word-break: break-word;
-        font-family: Consolas, "Courier New", monospace;
+        font-family: Consolas, 'Courier New', monospace;
       }
 
       @media (max-width: 980px) {
@@ -262,27 +318,49 @@
     <div class="shell">
       <section class="hero">
         <h1>命令审核中心</h1>
-        <p>命令创建后默认进入列表待审核，只有审核通过的命令才会生效。新建命令可以不带 key，管理和审核操作继续使用同一个 `x-command-key`。</p>
+        <p>
+          命令创建后默认进入列表待审核，只有审核通过的命令才会生效。新建命令可以不带
+          key，管理和审核操作需要 `x-command-key`。
+        </p>
         <div class="toolbar">
-          <input id="commandKey" type="password" placeholder="输入管理 x-command-key" />
+          <input
+            id="commandKey"
+            type="password"
+            placeholder="输入管理 x-command-key（审核/编辑/删除时需要）"
+          />
           <button class="secondary" id="loadBtn" type="button">刷新列表</button>
         </div>
+        <div id="modeHint" class="mode-hint"></div>
         <div id="topStatus" class="status"></div>
       </section>
 
       <section class="layout">
         <div class="panel">
-          <h2>新建 / 编辑命令</h2>
-          <p class="muted">保存后默认进入待审核。图片类型支持 URL、本地上传转 base64，文本类型支持文本渲染图。</p>
+          <h2 id="formTitle">新建命令</h2>
+          <p id="formHint" class="muted">
+            投稿模式下可直接新建和预览；填入管理 key
+            后可编辑待审/已拒命令并处理审核。
+          </p>
           <form id="commandForm" class="fields">
             <input id="commandId" type="hidden" />
             <label>
               命令
-              <input id="command" type="text" maxlength="100" placeholder="例如：辣椒" required />
+              <input
+                id="command"
+                type="text"
+                maxlength="100"
+                placeholder="例如：辣椒"
+                required
+              />
             </label>
             <label>
               说明
-              <input id="description" type="text" maxlength="500" placeholder="给审核人看的说明" />
+              <input
+                id="description"
+                type="text"
+                maxlength="500"
+                placeholder="给审核人看的说明"
+              />
             </label>
             <label>
               回复类型
@@ -294,46 +372,96 @@
             </label>
             <label id="contentTextWrap">
               文本内容
-              <textarea id="contentText" placeholder="TEXT 直接返回；RENDERED_IMAGE 会渲染成图片"></textarea>
+              <textarea
+                id="contentText"
+                placeholder="TEXT 直接返回；RENDERED_IMAGE 会渲染成图片"
+              ></textarea>
             </label>
-            <label id="imageUrlWrap" style="display:none">
+            <label id="imageUrlWrap" style="display: none">
               图片地址或 Base64
-              <input id="imageUrl" type="text" placeholder="https://example.com/a.png 或 data:image/...;base64,..." />
+              <input
+                id="imageUrl"
+                type="text"
+                placeholder="https://example.com/a.png 或 data:image/...;base64,..."
+              />
             </label>
-            <label id="imageUploadWrap" style="display:none">
+            <label id="imageUploadWrap" style="display: none">
               上传图片转 Base64
               <div class="inline-row">
                 <input id="imageFile" type="file" accept="image/*" />
-                <button class="secondary" id="clearImageBtn" type="button">清空图片</button>
+                <button class="secondary" id="clearImageBtn" type="button">
+                  清空图片
+                </button>
               </div>
               <span class="muted">建议图片控制在 8MB 内。</span>
             </label>
             <div class="actions">
-              <button class="primary" id="saveBtn" type="submit">保存命令</button>
-              <button class="secondary" id="previewBtn" type="button">预览效果</button>
-              <button class="secondary" id="resetBtn" type="button">清空表单</button>
+              <button class="primary" id="saveBtn" type="submit">
+                保存命令
+              </button>
+              <button class="secondary" id="previewBtn" type="button">
+                预览效果
+              </button>
+              <button class="secondary" id="resetBtn" type="button">
+                清空表单
+              </button>
             </div>
           </form>
           <div id="formStatus" class="status"></div>
           <div class="preview">
-            <h3 style="margin-bottom:12px">预览</h3>
+            <h3 style="margin-bottom: 12px">预览</h3>
             <div id="previewArea" class="muted">点“预览效果”查看返回内容。</div>
           </div>
         </div>
 
         <div class="panel">
           <h2>命令列表</h2>
-          <p class="muted">只要审核状态是“已通过”，命令就会进入全局可执行列表。</p>
+          <p class="muted">
+            只要审核状态是“已通过”，命令就会进入全局可执行列表。
+          </p>
           <div class="filters">
-            <button class="secondary" data-filter="ALL" type="button">全部</button>
-            <button class="secondary" data-filter="PENDING" type="button">待审核</button>
-            <button class="secondary" data-filter="APPROVED" type="button">已通过</button>
-            <button class="secondary" data-filter="REJECTED" type="button">已拒绝</button>
+            <button class="secondary" data-filter="ALL" type="button">
+              全部
+            </button>
+            <button class="secondary" data-filter="PENDING" type="button">
+              待审核
+            </button>
+            <button class="secondary" data-filter="APPROVED" type="button">
+              已通过
+            </button>
+            <button class="secondary" data-filter="REJECTED" type="button">
+              已拒绝
+            </button>
           </div>
+          <p class="muted" style="margin-top: 12px">
+            按钮会按审核状态和 key
+            是否存在自动收敛；灰色不可用代表当前操作缺少管理 key
+            或不符合状态机。
+          </p>
           <div id="list" class="list"></div>
         </div>
       </section>
     </div>
+
+    <dialog id="reviewDialog" class="review-dialog">
+      <h2 id="reviewTitle">审核命令</h2>
+      <p class="muted">
+        请先确认命令内容和预览，再提交审核结论。这个动作会直接改变命令生效状态。
+      </p>
+      <div id="reviewSummary" class="review-summary"></div>
+      <label>
+        审核备注
+        <textarea id="reviewComment" placeholder="请输入审核备注"></textarea>
+      </label>
+      <div class="actions" style="margin-top: 16px">
+        <button class="primary" id="reviewConfirmBtn" type="button">
+          确认
+        </button>
+        <button class="secondary" id="reviewCancelBtn" type="button">
+          取消
+        </button>
+      </div>
+    </dialog>
 
     <script>
       const commandKeyInput = document.getElementById('commandKey');
@@ -342,6 +470,15 @@
       const formStatus = document.getElementById('formStatus');
       const previewArea = document.getElementById('previewArea');
       const form = document.getElementById('commandForm');
+      const formTitle = document.getElementById('formTitle');
+      const formHint = document.getElementById('formHint');
+      const modeHint = document.getElementById('modeHint');
+      const reviewDialog = document.getElementById('reviewDialog');
+      const reviewTitle = document.getElementById('reviewTitle');
+      const reviewSummary = document.getElementById('reviewSummary');
+      const reviewComment = document.getElementById('reviewComment');
+      const reviewConfirmBtn = document.getElementById('reviewConfirmBtn');
+      const reviewCancelBtn = document.getElementById('reviewCancelBtn');
       const replyType = document.getElementById('replyType');
       const contentTextWrap = document.getElementById('contentTextWrap');
       const imageUrlWrap = document.getElementById('imageUrlWrap');
@@ -350,19 +487,59 @@
 
       let currentFilter = 'ALL';
       let commandItems = [];
+      let pendingReviewAction = null;
 
       function setStatus(target, text, type) {
         target.textContent = text || '';
         target.className = 'status' + (type ? ' ' + type : '');
       }
 
+      function hasManagementKey() {
+        return Boolean(commandKeyInput.value.trim());
+      }
+
       function getHeaders(_useReviewKey = false, includeJson = true) {
         const key = commandKeyInput.value.trim();
-        const headers = { 'x-command-key': key };
+        const headers = {};
+        if (key) {
+          headers['x-command-key'] = key;
+        }
         if (includeJson) {
           headers['Content-Type'] = 'application/json';
         }
         return headers;
+      }
+
+      function syncModeHint() {
+        if (hasManagementKey()) {
+          modeHint.innerHTML =
+            '<strong>管理模式</strong>：可以编辑待审/已拒命令、删除未通过命令，并执行审核操作。';
+        } else {
+          modeHint.innerHTML =
+            '<strong>投稿模式</strong>：可以新建和预览命令；审核、编辑、删除需要先输入管理 key。';
+        }
+      }
+
+      function setFormMode(mode, item) {
+        if (mode === 'edit-pending') {
+          formTitle.textContent = '编辑待审核命令';
+          formHint.textContent =
+            '保存后仍会重置为待审核状态，审核备注会被清空。';
+          return;
+        }
+        if (mode === 'edit-rejected') {
+          formTitle.textContent = '修改被拒命令并重新提交';
+          formHint.textContent = '保存后会作为待审核版本重新进入审核流程。';
+          return;
+        }
+        if (mode === 'clone-approved') {
+          formTitle.textContent = '从已通过命令复制新草稿';
+          formHint.textContent = `已通过命令不能直接编辑；这里会复制“${item?.command || ''}”的内容，请确认新命令名后保存。`;
+          return;
+        }
+        formTitle.textContent = '新建命令';
+        formHint.textContent =
+          '投稿模式下可直接新建和预览；填入管理 key 后可编辑待审/已拒命令并处理审核。';
       }
 
       function syncReplyFields() {
@@ -382,22 +559,64 @@
         };
       }
 
-      function fillForm(item) {
+      function validateFormData(data) {
+        if (!data.command) {
+          throw new Error('命令不能为空');
+        }
+        if (
+          (data.replyType === 'TEXT' || data.replyType === 'RENDERED_IMAGE') &&
+          !data.contentText.trim()
+        ) {
+          throw new Error(
+            data.replyType === 'TEXT'
+              ? '文本类型必须填写文本内容'
+              : '文本渲染图必须填写文本内容',
+          );
+        }
+        if (data.replyType === 'IMAGE_URL' && !data.imageUrl) {
+          throw new Error('图片 URL / Base64 类型必须填写图片地址或上传图片');
+        }
+      }
+
+      function fillForm(item, mode = 'edit-pending') {
         document.getElementById('commandId').value = item.id || '';
         document.getElementById('command').value = item.command || '';
         document.getElementById('description').value = item.description || '';
         document.getElementById('replyType').value = item.replyType || 'TEXT';
         document.getElementById('contentText').value = item.contentText || '';
         document.getElementById('imageUrl').value = item.imageUrl || '';
+        setFormMode(mode, item);
         syncReplyFields();
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function cloneApprovedItem(item) {
+        fillForm(
+          {
+            ...item,
+            id: '',
+            command: item.command ? `${item.command}-新版` : '',
+            description: item.description || '',
+          },
+          'clone-approved',
+        );
+        setStatus(
+          formStatus,
+          '已复制为新草稿。已通过命令不能直接编辑，请确认新命令名后保存。',
+          'success',
+        );
       }
 
       function resetForm() {
         document.getElementById('commandId').value = '';
-        fillForm({
-          replyType: 'TEXT',
-        });
+        document.getElementById('command').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('replyType').value = 'TEXT';
+        document.getElementById('contentText').value = '';
+        document.getElementById('imageUrl').value = '';
         imageFileInput.value = '';
+        setFormMode('create');
+        syncReplyFields();
         setStatus(formStatus, '', '');
       }
 
@@ -434,11 +653,32 @@
       async function request(path, options = {}) {
         const response = await fetch(path, options);
         const text = await response.text();
-        const data = text ? JSON.parse(text) : null;
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch (_error) {
+          data = text;
+        }
         if (!response.ok) {
           throw new Error(data?.message || text || '请求失败');
         }
         return data;
+      }
+
+      async function runWithButton(button, loadingText, task) {
+        const oldText = button?.textContent;
+        if (button) {
+          button.disabled = true;
+          button.textContent = loadingText;
+        }
+        try {
+          return await task();
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = oldText;
+          }
+        }
       }
 
       function escapeHtml(value) {
@@ -456,10 +696,101 @@
         return '待审核';
       }
 
+      function effectLabel(item) {
+        return item.status === 'APPROVED' && item.enabled
+          ? '当前可执行'
+          : '当前不生效';
+      }
+
+      function canUseManagementAction() {
+        return hasManagementKey();
+      }
+
+      function createActionButton(label, className, disabled, handler) {
+        const button = document.createElement('button');
+        button.className = className;
+        button.type = 'button';
+        button.textContent = label;
+        button.disabled = disabled;
+        if (handler) {
+          button.addEventListener('click', (event) =>
+            handler(event.currentTarget),
+          );
+        }
+        return button;
+      }
+
+      function renderActions(container, item) {
+        const canManage = canUseManagementAction();
+        container.innerHTML = '';
+        container.appendChild(
+          createActionButton('预览', 'secondary', false, (button) =>
+            runWithButton(button, '预览中...', () => previewItem(item)),
+          ),
+        );
+
+        if (item.status === 'PENDING') {
+          container.appendChild(
+            createActionButton('编辑', 'secondary', !canManage, () =>
+              fillForm(item, 'edit-pending'),
+            ),
+          );
+          container.appendChild(
+            createActionButton('审核通过', 'success', !canManage, () =>
+              openReviewDialog(item, 'approve'),
+            ),
+          );
+          container.appendChild(
+            createActionButton('审核拒绝', 'danger', !canManage, () =>
+              openReviewDialog(item, 'reject'),
+            ),
+          );
+          container.appendChild(
+            createActionButton('删除', 'danger', !canManage, (button) =>
+              runWithButton(button, '删除中...', () => removeItem(item.id)),
+            ),
+          );
+        } else if (item.status === 'REJECTED') {
+          container.appendChild(
+            createActionButton('编辑并重新提交', 'secondary', !canManage, () =>
+              fillForm(item, 'edit-rejected'),
+            ),
+          );
+          container.appendChild(
+            createActionButton(
+              '重新提交审核',
+              'warning',
+              !canManage,
+              (button) =>
+                runWithButton(button, '提交中...', () => submitItem(item.id)),
+            ),
+          );
+          container.appendChild(
+            createActionButton('删除', 'danger', !canManage, (button) =>
+              runWithButton(button, '删除中...', () => removeItem(item.id)),
+            ),
+          );
+        } else if (item.status === 'APPROVED') {
+          container.appendChild(
+            createActionButton('复制为新草稿', 'secondary', false, () =>
+              cloneApprovedItem(item),
+            ),
+          );
+        }
+
+        if (!canManage && item.status !== 'APPROVED') {
+          container.appendChild(
+            createActionButton('管理操作需 key', 'secondary', true),
+          );
+        }
+      }
+
       function renderList() {
-        const items = currentFilter === 'ALL'
-          ? commandItems
-          : commandItems.filter((item) => item.status === currentFilter);
+        syncModeHint();
+        const items =
+          currentFilter === 'ALL'
+            ? commandItems
+            : commandItems.filter((item) => item.status === currentFilter);
 
         listEl.innerHTML = '';
 
@@ -470,7 +801,7 @@
 
         items.forEach((item) => {
           const article = document.createElement('article');
-          article.className = 'item';
+          article.className = `item ${(item.status || 'PENDING').toLowerCase()}`;
           article.innerHTML = `
             <header>
               <div>
@@ -478,29 +809,52 @@
                 <p style="margin-top:6px">${escapeHtml(item.description || '无说明')}</p>
               </div>
               <div class="chips">
-                <span class="chip ${item.status.toLowerCase()}">${statusLabel(item.status)}</span>
-                <span class="chip">${escapeHtml(item.replyType)}</span>
+                <span class="chip ${String(item.status || 'PENDING').toLowerCase()}">${statusLabel(item.status)}</span>
+                <span class="chip">${escapeHtml(effectLabel(item))}</span>
               </div>
             </header>
-            <div class="muted" style="margin-top:10px">审核备注：${escapeHtml(item.reviewComment || '无')}</div>
-            <div class="actions" style="margin-top:14px">
-              <button class="secondary" data-action="edit">编辑</button>
-              <button class="secondary" data-action="preview">预览</button>
-              <button class="warning" data-action="submit">提交审核</button>
-              <button class="success" data-action="approve">审核通过</button>
-              <button class="danger" data-action="reject">审核拒绝</button>
-              <button class="danger" data-action="delete">删除</button>
+            <div class="state-line">
+              <span class="chip">${escapeHtml(item.replyType)}</span>
+              <span class="chip">${escapeHtml(item.enabled ? 'enabled=true' : 'enabled=false')}</span>
+              <span class="chip">更新：${escapeHtml(item.updateTime ? new Date(item.updateTime).toLocaleString() : '未知')}</span>
             </div>
+            <div class="muted" style="margin-top:10px">审核备注：${escapeHtml(item.reviewComment || '无')}</div>
+            <div class="actions" style="margin-top:14px"></div>
           `;
 
-          article.querySelector('[data-action="edit"]').addEventListener('click', () => fillForm(item));
-          article.querySelector('[data-action="preview"]').addEventListener('click', () => previewItem(item));
-          article.querySelector('[data-action="submit"]').addEventListener('click', () => submitItem(item.id));
-          article.querySelector('[data-action="approve"]').addEventListener('click', () => approveItem(item.id));
-          article.querySelector('[data-action="reject"]').addEventListener('click', () => rejectItem(item.id));
-          article.querySelector('[data-action="delete"]').addEventListener('click', () => removeItem(item.id));
+          renderActions(article.querySelector('.actions'), item);
           listEl.appendChild(article);
         });
+      }
+
+      function openReviewDialog(item, action) {
+        pendingReviewAction = { id: item.id, action };
+        const isApprove = action === 'approve';
+        reviewTitle.textContent = isApprove ? '审核通过命令' : '审核拒绝命令';
+        reviewConfirmBtn.textContent = isApprove ? '确认通过' : '确认拒绝';
+        reviewConfirmBtn.className = isApprove ? 'primary' : 'danger';
+        reviewComment.value = isApprove ? '审核通过' : '审核拒绝';
+        reviewSummary.innerHTML = `
+          <div><strong>命令：</strong>${escapeHtml(item.command)}</div>
+          <div style="margin-top:8px"><strong>说明：</strong>${escapeHtml(item.description || '无说明')}</div>
+          <div style="margin-top:8px"><strong>回复类型：</strong>${escapeHtml(item.replyType)}</div>
+          <div style="margin-top:8px"><strong>当前状态：</strong>${statusLabel(item.status)} / ${escapeHtml(effectLabel(item))}</div>
+        `;
+
+        if (typeof reviewDialog.showModal === 'function') {
+          reviewDialog.showModal();
+        } else {
+          reviewDialog.setAttribute('open', 'open');
+        }
+      }
+
+      function closeReviewDialog() {
+        pendingReviewAction = null;
+        if (typeof reviewDialog.close === 'function') {
+          reviewDialog.close();
+        } else {
+          reviewDialog.removeAttribute('open');
+        }
       }
 
       async function loadCommands() {
@@ -510,7 +864,11 @@
             headers: getHeaders(false),
           });
           renderList();
-          setStatus(topStatus, `已加载 ${commandItems.length} 条命令`, 'success');
+          setStatus(
+            topStatus,
+            `已加载 ${commandItems.length} 条命令`,
+            'success',
+          );
         } catch (error) {
           setStatus(topStatus, error.message, 'error');
         }
@@ -548,13 +906,12 @@
         }
       }
 
-      async function approveItem(id) {
+      async function approveItem(id, comment) {
         try {
-          const comment = prompt('审核通过备注', '审核通过') || '审核通过';
           await request(`/api/command/config/${id}/approve`, {
             method: 'POST',
             headers: getHeaders(true),
-            body: JSON.stringify({ comment }),
+            body: JSON.stringify({ comment: comment || '审核通过' }),
           });
           setStatus(topStatus, '审核通过成功', 'success');
           await loadCommands();
@@ -563,17 +920,12 @@
         }
       }
 
-      async function rejectItem(id) {
+      async function rejectItem(id, comment) {
         try {
-          const comment = prompt('拒绝原因', '审核拒绝');
-          if (comment === null) {
-            return;
-          }
-
           await request(`/api/command/config/${id}/reject`, {
             method: 'POST',
             headers: getHeaders(true),
-            body: JSON.stringify({ comment }),
+            body: JSON.stringify({ comment: comment || '审核拒绝' }),
           });
           setStatus(topStatus, '已拒绝该命令', 'success');
           await loadCommands();
@@ -607,22 +959,55 @@
       });
 
       replyType.addEventListener('change', syncReplyFields);
-      document.getElementById('loadBtn').addEventListener('click', loadCommands);
-      document.getElementById('previewBtn').addEventListener('click', async () => {
-        try {
-          const data = await request('/api/command/config/preview', {
-            method: 'POST',
-            headers: getHeaders(false),
-            body: JSON.stringify(readFormData()),
-          });
-          renderPreview(data);
-          setStatus(formStatus, '预览生成成功', 'success');
-        } catch (error) {
-          setStatus(formStatus, error.message, 'error');
-        }
+      commandKeyInput.addEventListener('input', () => {
+        syncModeHint();
+        renderList();
       });
+      document
+        .getElementById('loadBtn')
+        .addEventListener('click', loadCommands);
+      document
+        .getElementById('previewBtn')
+        .addEventListener('click', async (event) => {
+          try {
+            const payload = readFormData();
+            validateFormData(payload);
+            const data = await runWithButton(
+              event.currentTarget,
+              '预览中...',
+              () =>
+                request('/api/command/config/preview', {
+                  method: 'POST',
+                  headers: getHeaders(false),
+                  body: JSON.stringify(payload),
+                }),
+            );
+            renderPreview(data);
+            setStatus(formStatus, '预览生成成功', 'success');
+          } catch (error) {
+            setStatus(formStatus, error.message, 'error');
+          }
+        });
 
       document.getElementById('resetBtn').addEventListener('click', resetForm);
+      reviewCancelBtn.addEventListener('click', closeReviewDialog);
+      reviewConfirmBtn.addEventListener('click', async (event) => {
+        if (!pendingReviewAction) {
+          return;
+        }
+        const { id, action } = pendingReviewAction;
+        const comment =
+          reviewComment.value.trim() ||
+          (action === 'approve' ? '审核通过' : '审核拒绝');
+        await runWithButton(event.currentTarget, '提交中...', async () => {
+          if (action === 'approve') {
+            await approveItem(id, comment);
+          } else {
+            await rejectItem(id, comment);
+          }
+          closeReviewDialog();
+        });
+      });
       document.getElementById('clearImageBtn').addEventListener('click', () => {
         document.getElementById('imageUrl').value = '';
         imageFileInput.value = '';
@@ -657,12 +1042,23 @@
           const id = document.getElementById('commandId').value.trim();
           const path = id ? `/api/command/config/${id}` : '/api/command/config';
           const method = id ? 'PUT' : 'POST';
-          await request(path, {
-            method,
-            headers: getHeaders(false),
-            body: JSON.stringify(readFormData()),
-          });
-          setStatus(formStatus, id ? '更新成功，状态已重置为待审核' : '创建成功，等待审核', 'success');
+          const payload = readFormData();
+          validateFormData(payload);
+          await runWithButton(
+            document.getElementById('saveBtn'),
+            '保存中...',
+            () =>
+              request(path, {
+                method,
+                headers: getHeaders(false),
+                body: JSON.stringify(payload),
+              }),
+          );
+          setStatus(
+            formStatus,
+            id ? '更新成功，状态已重置为待审核' : '创建成功，等待审核',
+            'success',
+          );
           resetForm();
           await loadCommands();
         } catch (error) {
@@ -671,7 +1067,7 @@
       });
 
       resetForm();
-      syncReplyFields();
+      syncModeHint();
     </script>
   </body>
 </html>
