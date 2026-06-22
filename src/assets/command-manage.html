@@ -394,13 +394,16 @@
                 </button>
               </div>
               <span class="muted"
-                >支持直接粘贴剪贴板图片；需要管理 key，图片请控制在 8MB
+                >也可选择本地图片文件上传；需要管理 key，图片请控制在 8MB
                 内。</span
               >
             </label>
             <div class="actions">
               <button class="primary" id="saveBtn" type="submit">
                 保存命令
+              </button>
+              <button class="secondary" id="pasteImageBtn" type="button">
+                粘贴剪贴板图片
               </button>
               <button class="secondary" id="previewBtn" type="button">
                 预览效果
@@ -488,6 +491,7 @@
       const imageUrlWrap = document.getElementById('imageUrlWrap');
       const imageUploadWrap = document.getElementById('imageUploadWrap');
       const imageFileInput = document.getElementById('imageFile');
+      const pasteImageBtn = document.getElementById('pasteImageBtn');
 
       let currentFilter = 'ALL';
       let commandItems = [];
@@ -692,10 +696,28 @@
         setStatus(formStatus, `${sourceLabel}已上传并回填图片 URL`, 'success');
       }
 
-      function getPastedImageFile(event) {
-        const items = Array.from(event.clipboardData?.items || []);
-        const imageItem = items.find((item) => item.type?.startsWith('image/'));
-        return imageItem?.getAsFile() || null;
+      async function readClipboardImageFile() {
+        if (!navigator.clipboard?.read) {
+          throw new Error('当前浏览器不支持读取剪贴板图片');
+        }
+
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          const imageType = item.types.find((type) =>
+            type.startsWith('image/'),
+          );
+          if (!imageType) {
+            continue;
+          }
+
+          const blob = await item.getType(imageType);
+          const extension = imageType.split('/')[1] || 'png';
+          return new File([blob], `clipboard-image.${extension}`, {
+            type: imageType,
+          });
+        }
+
+        throw new Error('剪贴板里没有图片');
       }
 
       function renderPreview(result) {
@@ -1103,20 +1125,15 @@
         }
       });
 
-      document.addEventListener('paste', async (event) => {
-        if (replyType.value !== 'IMAGE_URL') {
-          return;
-        }
-
-        const file = getPastedImageFile(event);
-        if (!file) {
-          return;
-        }
-
-        event.preventDefault();
+      pasteImageBtn.addEventListener('click', async (event) => {
         try {
-          setStatus(formStatus, '正在上传粘贴的图片...', '');
-          await uploadImageFile(file, '粘贴图片');
+          document.getElementById('replyType').value = 'IMAGE_URL';
+          syncReplyFields();
+          const file = await readClipboardImageFile();
+          setStatus(formStatus, '正在上传剪贴板图片...', '');
+          await runWithButton(event.currentTarget, '读取中...', () =>
+            uploadImageFile(file, '剪贴板图片'),
+          );
         } catch (error) {
           setStatus(formStatus, error.message, 'error');
         }
