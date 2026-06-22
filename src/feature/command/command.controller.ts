@@ -111,7 +111,12 @@ export class CommandController {
   ) {
     const ownerKeyHash =
       this.commandAuthService.resolveOptionalOwnerKeyHash(req) || 'public';
-    return this.customCommandService.create(ownerKeyHash, body);
+    const hasManagementKey = ownerKeyHash !== 'public';
+    return this.customCommandService.create(ownerKeyHash, body, {
+      publishDirectly: hasManagementKey,
+      reviewerKeyHash: hasManagementKey ? ownerKeyHash : undefined,
+      reviewComment: hasManagementKey ? '管理 key 直通发布' : undefined,
+    });
   }
 
   @Put('config/:id')
@@ -122,7 +127,11 @@ export class CommandController {
   ) {
     const ownerKeyHash =
       this.commandAuthService.resolveRequiredOwnerKeyHash(req);
-    return this.customCommandService.update(ownerKeyHash, id, body);
+    return this.customCommandService.update(ownerKeyHash, id, body, {
+      publishDirectly: true,
+      reviewerKeyHash: ownerKeyHash,
+      reviewComment: '管理 key 直接更新',
+    });
   }
 
   @Delete('config/:id')

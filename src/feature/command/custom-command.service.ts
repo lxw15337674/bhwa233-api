@@ -18,6 +18,12 @@ const COMMAND_STATUS = {
 type CommandStatus = (typeof COMMAND_STATUS)[keyof typeof COMMAND_STATUS];
 const ANONYMOUS_OWNER_KEY = 'public';
 
+interface SaveCommandOptions {
+  publishDirectly?: boolean;
+  reviewerKeyHash?: string;
+  reviewComment?: string;
+}
+
 @Injectable()
 export class CustomCommandService {
   async list(): Promise<CustomCommand[]> {
@@ -27,18 +33,27 @@ export class CustomCommandService {
     });
   }
 
-  async create(ownerKeyHash: string, dto: UpsertCustomCommandDto): Promise<CustomCommand> {
+  async create(
+    ownerKeyHash: string,
+    dto: UpsertCustomCommandDto,
+    options: SaveCommandOptions = {},
+  ): Promise<CustomCommand> {
     await this.ensureCommandUnique(dto.command);
-    const payload = this.buildPayload(ownerKeyHash, dto);
+    const payload = this.buildPayload(ownerKeyHash, dto, options);
     return prisma.customCommand.create({
       data: payload,
     });
   }
 
-  async update(ownerKeyHash: string, id: string, dto: UpsertCustomCommandDto): Promise<CustomCommand> {
-    await this.ensureEditable(id);
+  async update(
+    ownerKeyHash: string,
+    id: string,
+    dto: UpsertCustomCommandDto,
+    options: SaveCommandOptions = {},
+  ): Promise<CustomCommand> {
+    await this.ensureEditable(id, options.publishDirectly);
     await this.ensureCommandUnique(dto.command, id);
-    const payload = this.buildPayload(ownerKeyHash, dto);
+    const payload = this.buildPayload(ownerKeyHash, dto, options);
     return prisma.customCommand.update({
       where: { id },
       data: payload,
@@ -169,9 +184,13 @@ export class CustomCommandService {
     return item;
   }
 
-  private async ensureEditable(id: string): Promise<CustomCommand> {
+  private async ensureEditable(id: string, allowApproved = false): Promise<CustomCommand> {
     const item = await this.ensureExists(id);
-    if ((item as CustomCommand & { status?: CommandStatus }).status === COMMAND_STATUS.APPROVED) {
+    if (
+      !allowApproved &&
+      (item as CustomCommand & { status?: CommandStatus }).status ===
+        COMMAND_STATUS.APPROVED
+    ) {
       throw new BadRequestException('已审核通过的命令不能直接编辑，请先重新创建新命令');
     }
     return item;
@@ -192,8 +211,14 @@ export class CustomCommandService {
     }
   }
 
-  private buildPayload(ownerKeyHash: string, dto: UpsertCustomCommandDto) {
+  private buildPayload(
+    ownerKeyHash: string,
+    dto: UpsertCustomCommandDto,
+    options: SaveCommandOptions = {},
+  ) {
     this.validatePayload(dto);
+    const publishDirectly = options.publishDirectly === true;
+    const now = new Date();
     return {
       ownerKeyHash: ownerKeyHash || ANONYMOUS_OWNER_KEY,
       name: dto.command.trim(),
@@ -202,12 +227,16 @@ export class CustomCommandService {
       replyType: dto.replyType,
       contentText: dto.contentText?.trim() || null,
       imageUrl: dto.imageUrl?.trim() || null,
-      status: COMMAND_STATUS.PENDING,
-      reviewerKeyHash: null,
-      reviewComment: null,
-      submittedAt: new Date(),
-      reviewedAt: null,
-      enabled: false,
+      status: publishDirectly ? COMMAND_STATUS.APPROVED : COMMAND_STATUS.PENDING,
+      reviewerKeyHash: publishDirectly
+        ? options.reviewerKeyHash || ownerKeyHash || null
+        : null,
+      reviewComment: publishDirectly
+        ? options.reviewComment?.trim() || '管理 key 直通发布'
+        : null,
+      submittedAt: now,
+      reviewedAt: publishDirectly ? now : null,
+      enabled: publishDirectly,
       sortOrder: 0,
     } as any;
   }

@@ -319,14 +319,14 @@
       <section class="hero">
         <h1>命令审核中心</h1>
         <p>
-          命令创建后默认进入列表待审核，只有审核通过的命令才会生效。新建命令可以不带
-          key，管理和审核操作需要 `x-command-key`。
+          新建命令可以不带 key 投稿审核；填入合法 `x-command-key`
+          后，保存会直接生效，无需再单独审批。
         </p>
         <div class="toolbar">
           <input
             id="commandKey"
             type="password"
-            placeholder="输入管理 x-command-key（审核/编辑/删除时需要）"
+            placeholder="输入管理 x-command-key（保存即生效）"
           />
           <button class="secondary" id="loadBtn" type="button">刷新列表</button>
         </div>
@@ -339,7 +339,7 @@
           <h2 id="formTitle">新建命令</h2>
           <p id="formHint" class="muted">
             投稿模式下可直接新建和预览；填入管理 key
-            后可编辑待审/已拒命令并处理审核。
+            后可编辑任意命令，保存即直接生效。
           </p>
           <form id="commandForm" class="fields">
             <input id="commandId" type="hidden" />
@@ -378,7 +378,7 @@
               ></textarea>
             </label>
             <label id="imageUrlWrap" style="display: none">
-              图片 URL
+              图片 URL / Base64
               <input
                 id="imageUrl"
                 type="text"
@@ -394,8 +394,8 @@
                 </button>
               </div>
               <span class="muted"
-                >也可选择本地图片文件上传；需要管理 key，图片请控制在 8MB
-                内。</span
+                >支持选择本地图片或粘贴剪贴板图片，前端会自动转成
+                base64；图片请控制在 2MB 内。</span
               >
             </label>
             <div class="actions">
@@ -440,9 +440,8 @@
             </button>
           </div>
           <p class="muted" style="margin-top: 12px">
-            按钮会按审核状态和 key
-            是否存在自动收敛；灰色不可用代表当前操作缺少管理 key
-            或不符合状态机。
+            列表支持回填到顶部表单编辑；带管理 key
+            时保存会直接发布，审核按钮只针对待审核命令。
           </p>
           <div id="list" class="list"></div>
         </div>
@@ -543,7 +542,7 @@
       function syncModeHint() {
         if (hasManagementKey()) {
           modeHint.innerHTML =
-            '<strong>管理模式</strong>：可以编辑待审/已拒命令、删除未通过命令，并执行审核操作。';
+            '<strong>管理模式</strong>：可以编辑任意命令；保存即直接生效，无需再审批。';
         } else {
           modeHint.innerHTML =
             '<strong>投稿模式</strong>：可以新建和预览命令；审核、编辑、删除需要先输入管理 key。';
@@ -551,6 +550,11 @@
       }
 
       function setFormMode(mode, item) {
+        if (mode === 'edit-managed') {
+          formTitle.textContent = '编辑命令';
+          formHint.textContent = `当前编辑“${item?.command || ''}”；保存后会直接生效。`;
+          return;
+        }
         if (mode === 'edit-pending') {
           formTitle.textContent = '编辑待审核命令';
           formHint.textContent =
@@ -562,14 +566,9 @@
           formHint.textContent = '保存后会作为待审核版本重新进入审核流程。';
           return;
         }
-        if (mode === 'clone-approved') {
-          formTitle.textContent = '从已通过命令复制新草稿';
-          formHint.textContent = `已通过命令不能直接编辑；这里会复制“${item?.command || ''}”的内容，请确认新命令名后保存。`;
-          return;
-        }
         formTitle.textContent = '新建命令';
         formHint.textContent =
-          '投稿模式下可直接新建和预览；填入管理 key 后可编辑待审/已拒命令并处理审核。';
+          '投稿模式下可直接新建和预览；填入管理 key 后可编辑任意命令并直接发布。';
       }
 
       function syncReplyFields() {
@@ -604,7 +603,7 @@
           );
         }
         if (data.replyType === 'IMAGE_URL' && !data.imageUrl) {
-          throw new Error('图片类型必须填写图片 URL，或粘贴/选择图片上传');
+          throw new Error('图片类型必须填写图片 URL，或粘贴/选择图片转成 base64');
         }
       }
 
@@ -618,23 +617,6 @@
         setFormMode(mode, item);
         syncReplyFields();
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-
-      function cloneApprovedItem(item) {
-        fillForm(
-          {
-            ...item,
-            id: '',
-            command: item.command ? `${item.command}-新版` : '',
-            description: item.description || '',
-          },
-          'clone-approved',
-        );
-        setStatus(
-          formStatus,
-          '已复制为新草稿。已通过命令不能直接编辑，请确认新命令名后保存。',
-          'success',
-        );
       }
 
       function resetForm() {
@@ -657,8 +639,8 @@
         if (file.type === 'image/svg+xml') {
           throw new Error('暂不支持 SVG 图片');
         }
-        if (file.size > 8 * 1024 * 1024) {
-          throw new Error('图片过大，请控制在 8MB 以内');
+        if (file.size > 2 * 1024 * 1024) {
+          throw new Error('图片过大，请控制在 2MB 以内');
         }
       }
 
@@ -671,29 +653,14 @@
         });
       }
 
-      async function uploadImageFile(file, sourceLabel) {
+      async function applyImageFile(file, sourceLabel) {
         assertUploadableImage(file);
-        if (!hasManagementKey()) {
-          throw new Error('上传图片需要先填写管理 x-command-key');
-        }
-
         const dataUrl = await fileToDataUrl(file);
-        const result = await request('/api/command/config/upload-image', {
-          method: 'POST',
-          headers: getHeaders(false),
-          body: JSON.stringify({
-            imageData: dataUrl,
-            fileName: file.name || 'pasted-image.png',
-          }),
-        });
-
-        if (!result?.url) {
-          throw new Error('上传接口没有返回图片 URL');
-        }
-
-        document.getElementById('imageUrl').value = result.url;
-        renderPreview({ type: 'image', content: result.url });
-        setStatus(formStatus, `${sourceLabel}已上传并回填图片 URL`, 'success');
+        document.getElementById('replyType').value = 'IMAGE_URL';
+        syncReplyFields();
+        document.getElementById('imageUrl').value = dataUrl;
+        renderPreview({ type: 'image', content: dataUrl });
+        setStatus(formStatus, `${sourceLabel}已转成 base64 并回填`, 'success');
       }
 
       async function readClipboardImageFile() {
@@ -823,7 +790,7 @@
         if (item.status === 'PENDING') {
           container.appendChild(
             createActionButton('编辑', 'secondary', !canManage, () =>
-              fillForm(item, 'edit-pending'),
+              fillForm(item, canManage ? 'edit-managed' : 'edit-pending'),
             ),
           );
           container.appendChild(
@@ -843,8 +810,8 @@
           );
         } else if (item.status === 'REJECTED') {
           container.appendChild(
-            createActionButton('编辑并重新提交', 'secondary', !canManage, () =>
-              fillForm(item, 'edit-rejected'),
+            createActionButton('编辑', 'secondary', !canManage, () =>
+              fillForm(item, canManage ? 'edit-managed' : 'edit-rejected'),
             ),
           );
           container.appendChild(
@@ -863,8 +830,8 @@
           );
         } else if (item.status === 'APPROVED') {
           container.appendChild(
-            createActionButton('复制为新草稿', 'secondary', false, () =>
-              cloneApprovedItem(item),
+            createActionButton('编辑', 'secondary', !canManage, () =>
+              fillForm(item, 'edit-managed'),
             ),
           );
         }
@@ -1115,10 +1082,10 @@
         try {
           setStatus(
             formStatus,
-            `正在上传图片：${file.name || '未命名图片'}`,
+            `正在读取图片：${file.name || '未命名图片'}`,
             '',
           );
-          await uploadImageFile(file, '图片');
+          await applyImageFile(file, '图片');
         } catch (error) {
           imageFileInput.value = '';
           setStatus(formStatus, error.message, 'error');
@@ -1127,12 +1094,10 @@
 
       pasteImageBtn.addEventListener('click', async (event) => {
         try {
-          document.getElementById('replyType').value = 'IMAGE_URL';
-          syncReplyFields();
           const file = await readClipboardImageFile();
-          setStatus(formStatus, '正在上传剪贴板图片...', '');
+          setStatus(formStatus, '正在读取剪贴板图片...', '');
           await runWithButton(event.currentTarget, '读取中...', () =>
-            uploadImageFile(file, '剪贴板图片'),
+            applyImageFile(file, '剪贴板图片'),
           );
         } catch (error) {
           setStatus(formStatus, error.message, 'error');
@@ -1159,7 +1124,13 @@
           );
           setStatus(
             formStatus,
-            id ? '更新成功，状态已重置为待审核' : '创建成功，等待审核',
+            hasManagementKey()
+              ? id
+                ? '更新成功，已直接生效'
+                : '创建成功，已直接发布'
+              : id
+                ? '更新成功，状态已重置为待审核'
+                : '创建成功，等待审核',
             'success',
           );
           loadStoredCommandKey();
