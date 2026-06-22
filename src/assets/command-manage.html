@@ -468,6 +468,7 @@
 
     <script>
       const commandKeyInput = document.getElementById('commandKey');
+      const COMMAND_KEY_STORAGE_KEY = 'commandManageKey';
       const listEl = document.getElementById('list');
       const topStatus = document.getElementById('topStatus');
       const formStatus = document.getElementById('formStatus');
@@ -495,6 +496,28 @@
       function setStatus(target, text, type) {
         target.textContent = text || '';
         target.className = 'status' + (type ? ' ' + type : '');
+      }
+
+      function loadStoredCommandKey() {
+        try {
+          commandKeyInput.value =
+            localStorage.getItem(COMMAND_KEY_STORAGE_KEY) || '';
+        } catch (_error) {
+          commandKeyInput.value = '';
+        }
+      }
+
+      function persistCommandKey() {
+        const key = commandKeyInput.value.trim();
+        try {
+          if (key) {
+            localStorage.setItem(COMMAND_KEY_STORAGE_KEY, key);
+          } else {
+            localStorage.removeItem(COMMAND_KEY_STORAGE_KEY);
+          }
+        } catch (_error) {
+          // localStorage may be unavailable in private/restricted contexts.
+        }
       }
 
       function hasManagementKey() {
@@ -1006,6 +1029,7 @@
 
       replyType.addEventListener('change', syncReplyFields);
       commandKeyInput.addEventListener('input', () => {
+        persistCommandKey();
         syncModeHint();
         renderList();
       });
@@ -1121,6 +1145,7 @@
             id ? '更新成功，状态已重置为待审核' : '创建成功，等待审核',
             'success',
           );
+          loadStoredCommandKey();
           resetForm();
           await loadCommands();
         } catch (error) {
@@ -1128,6 +1153,7 @@
         }
       });
 
+      loadStoredCommandKey();
       resetForm();
       syncModeHint();
     </script>
