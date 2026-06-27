@@ -20,10 +20,20 @@ import { ProxyResponse } from './interfaces/proxy-response.interface';
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
+  private throwRequestEndpointDisabled(): never {
+    throw new HttpException(
+      {
+        success: false,
+        error: 'Proxy request API has been disabled',
+      },
+      HttpStatus.GONE,
+    );
+  }
+
   @Get('request')
   @ApiOperation({
     summary: 'GET代理请求',
-    description: '通过查询参数发送代理请求，适用于简单的GET请求'
+    description: '该接口已停用'
   })
   @ApiQuery({
     name: 'url',
@@ -55,60 +65,27 @@ export class ProxyController {
     required: false,
   })
   @ApiResponse({
-    status: 200,
-    description: '代理请求成功',
+    status: 410,
+    description: '接口已停用',
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true },
-        data: { type: 'object', description: '目标API返回的数据' },
-        status: { type: 'number', example: 200 },
-        headers: { type: 'object', description: '目标API返回的响应头' },
-        contentType: { type: 'string', example: 'application/json' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: '请求参数错误',
-    schema: {
-      type: 'object',
-      properties: {
-        error: { type: 'string', example: '无效的URL地址' },
+        success: { type: 'boolean', example: false },
+        error: { type: 'string', example: 'Proxy request API has been disabled' },
       },
     },
   })
   async getProxyRequest(
     @Query(new ValidationPipe({ transform: true })) query: ProxyRequestDto,
   ): Promise<ProxyResponse> {
-    try {
-      // 确保是GET请求
-      query.method = HttpMethod.GET;
-      
-      const result = await this.proxyService.makeProxyRequest(query);
-      
-      return {
-        success: true,
-        data: result.data,
-        status: result.status,
-        headers: result.headers,
-        contentType: result.contentType,
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          error: error.message || '代理请求失败',
-        },
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    query.method = HttpMethod.GET;
+    this.throwRequestEndpointDisabled();
   }
 
   @Post('request')
   @ApiOperation({
     summary: 'POST代理请求',
-    description: '通过请求体发送代理请求，支持所有HTTP方法和复杂的请求配置'
+    description: '该接口已停用'
   })
   @ApiBody({
     type: ProxyRequestDto,
@@ -138,41 +115,21 @@ export class ProxyController {
     }
   })
   @ApiResponse({
-    status: 200,
-    description: '代理请求成功',
+    status: 410,
+    description: '接口已停用',
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true },
-        data: { type: 'object', description: '目标API返回的数据' },
-        status: { type: 'number', example: 200 },
-        headers: { type: 'object', description: '目标API返回的响应头' },
-        contentType: { type: 'string', example: 'application/json' },
+        success: { type: 'boolean', example: false },
+        error: { type: 'string', example: 'Proxy request API has been disabled' },
       },
     },
   })
   async postProxyRequest(
     @Body(new ValidationPipe({ transform: true })) body: ProxyRequestDto,
   ): Promise<ProxyResponse> {
-    try {
-      const result = await this.proxyService.makeProxyRequest(body);
-      
-      return {
-        success: true,
-        data: result.data,
-        status: result.status,
-        headers: result.headers,
-        contentType: result.contentType,
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          error: error.message || '代理请求失败',
-        },
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    void body;
+    this.throwRequestEndpointDisabled();
   }
 
   @Get('stream')

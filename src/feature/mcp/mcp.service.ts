@@ -36,17 +36,6 @@ const aiSummarizeInputSchema = z.object({
 });
 type AiSummarizeInput = z.infer<typeof aiSummarizeInputSchema>;
 
-const proxyRequestInputSchema = z.object({
-  url: z.string(),
-  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']).optional(),
-  origin: z.string().optional(),
-  referer: z.string().optional(),
-  userAgent: z.string().optional(),
-  headers: z.union([z.string(), z.record(z.unknown())]).optional(),
-  body: z.string().optional(),
-});
-type ProxyRequestInput = z.infer<typeof proxyRequestInputSchema>;
-
 class UpstreamError extends Error {
   constructor(
     message: string,
@@ -290,29 +279,6 @@ export class McpService {
         url.searchParams.set('period', relayPeriod);
         const image = await this.fetchBinary(url.toString(), { method: 'GET' }, ctx);
         return this.buildToolImage(image.data, image.contentType || 'image/jpeg');
-      }
-    );
-
-    registerTool(
-      'proxy.request',
-      {
-        title: 'proxy.request',
-        description: 'Proxy HTTP request and return JSON result.',
-        inputSchema: proxyRequestInputSchema,
-      },
-      async (args) => {
-        const { url, method, origin, referer, userAgent, headers, body } = args as ProxyRequestInput;
-        const payload = this.pickArgs(
-          { url, method, origin, referer, userAgent, headers, body },
-          ['url', 'method', 'origin', 'referer', 'userAgent', 'headers', 'body']
-        );
-        payload.headers = this.normalizeHeadersArg(payload.headers);
-        const result = await this.fetchJson<unknown>(
-          `${ctx.apiBaseUrl}/proxy/request`,
-          { method: 'POST', body: JSON.stringify(payload) },
-          ctx
-        );
-        return this.buildToolText(this.formatText(result));
       }
     );
 
