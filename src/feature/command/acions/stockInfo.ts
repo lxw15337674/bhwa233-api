@@ -145,7 +145,24 @@ interface ExtendedHoursQuote {
   pricePrecision: number;
 }
 
-interface EastmoneyQuote {
+interface YahooExtendedHoursMetaLike {
+  previousClose?: number;
+  chartPreviousClose?: number;
+  regularMarketPreviousClose?: number;
+  regularMarketPrice?: number;
+}
+
+interface YahooQuoteResultLike extends YahooExtendedHoursMetaLike {
+  marketState?: string;
+  preMarketPrice?: number;
+  preMarketChangePercent?: number;
+  preMarketChange?: number;
+  postMarketPrice?: number;
+  postMarketChangePercent?: number;
+  postMarketChange?: number;
+}
+
+export interface EastmoneyQuote {
   name: string;
   symbol: string;
   current: number;
@@ -173,6 +190,7 @@ const EASTMONEY_STOCK_API_URL =
   'https://push2delay.eastmoney.com/api/qt/stock/get';
 const EASTMONEY_SUGGEST_API_URL =
   'https://searchapi.eastmoney.com/api/suggest/get';
+const YAHOO_QUOTE_API_URL = 'https://query1.finance.yahoo.com/v7/finance/quote';
 const YAHOO_CHART_API_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const EASTMONEY_STOCK_FIELDS = [
   'f43',
@@ -274,11 +292,19 @@ export async function getSuggestStock(q: string): Promise<string | undefined> {
   }
 
   const xueqiuSymbol = await getSuggestStockFromXueqiu(query);
+  const tencentSymbol = await getSuggestStockFromTencent(query);
+  const numericSymbol = resolveNumericSymbol(query, {
+    xueqiuSymbol,
+    tencentSymbol,
+  });
+  if (numericSymbol) {
+    return numericSymbol;
+  }
+
   if (xueqiuSymbol) {
     return xueqiuSymbol;
   }
 
-  const tencentSymbol = await getSuggestStockFromTencent(query);
   if (tencentSymbol) {
     return tencentSymbol;
   }
@@ -298,13 +324,6 @@ function normalizeDirectSymbol(query: string): string | undefined {
 
   if (/^HK\d{5}$/i.test(symbol)) {
     return symbol.slice(2);
-  }
-
-  if (/^\d{6}$/.test(symbol)) {
-    if (/^(60|68|90)/.test(symbol)) return `SH${symbol}`;
-    if (/^(00|30|12|15|16|18|20)/.test(symbol)) return `SZ${symbol}`;
-    if (/^(4|8)/.test(symbol)) return `BJ${symbol}`;
-    return symbol;
   }
 
   if (/^\d{5}$/.test(symbol)) {
@@ -329,6 +348,37 @@ function normalizeDirectSymbol(query: string): string | undefined {
   }
 
   return undefined;
+}
+
+function normalizeNumericSymbolFallback(query: string): string | undefined {
+  const symbol = query.trim();
+  if (!/^\d{6}$/.test(symbol)) {
+    return undefined;
+  }
+
+  if (/^(51|56|58|60|68|90|10|11)/.test(symbol)) return `SH${symbol}`;
+  if (/^(00|12|15|16|18|20|30)/.test(symbol)) return `SZ${symbol}`;
+  if (/^(4|8)/.test(symbol)) return `BJ${symbol}`;
+  return undefined;
+}
+
+export function resolveNumericSymbol(
+  query: string,
+  suggestions: {
+    xueqiuSymbol?: string;
+    tencentSymbol?: string;
+  } = {},
+): string | undefined {
+  const symbol = query.trim();
+  if (!/^\d{6}$/.test(symbol)) {
+    return undefined;
+  }
+
+  return (
+    suggestions.xueqiuSymbol ||
+    suggestions.tencentSymbol ||
+    normalizeNumericSymbolFallback(symbol)
+  );
 }
 
 async function getSuggestStockFromXueqiu(
@@ -359,6 +409,8 @@ interface XueqiuSuggestItem {
   symbol?: string;
   market?: string;
   query?: string;
+  label?: string;
+  stock_type?: number;
 }
 
 interface XueqiuSuggestResponse {
@@ -387,7 +439,89 @@ async function requestXueqiuSuggest(
   return response.data ?? {};
 }
 
-function pickXueqiuSuggestSymbol(
+function hasChineseCharacter(text: string): boolean {
+  return /[\u3400-\u9fff]/.test(text);
+}
+
+function normalizeSuggestText(text?: string): string {
+  return (text || '').trim().toUpperCase();
+}
+
+function isAdrLikeLabel(text?: string): boolean {
+  return /\bADR\b|\bADS\b|\bOTC\b|DEPOSITARY|存托|预托/i.test(text || '');
+}
+
+function getXueqiuSuggestMarket(item: XueqiuSuggestItem): string {
+  const market = normalizeSuggestText(item.market);
+  if (market) {
+    return market;
+  }
+
+  const stockType = item.stock_type;
+  if (stockType === 6) return 'US';
+  if (stockType === 12 || stockType === 30) return 'HK';
+  if (stockType === 1) return 'SH';
+  if (stockType === 2) return 'SZ';
+  if (stockType === 3) return 'BJ';
+  return '';
+}
+
+function matchTextScore(text: string, query: string): number {
+  if (!text) {
+    return 0;
+  }
+  if (text === query) {
+    return 100;
+  }
+  if (text.startsWith(query)) {
+    return 80;
+  }
+  if (text.includes(query)) {
+    return 60;
+  }
+  return 0;
+}
+
+function scoreXueqiuSuggestItem(
+  item: XueqiuSuggestItem,
+  query: string,
+  hasHKCandidate: boolean,
+  hasUSCandidate: boolean,
+): number {
+  const queryUpper = normalizeSuggestText(query);
+  const code = normalizeSuggestText(item.code || item.symbol);
+  const alias = normalizeSuggestText(item.query);
+  const label = normalizeSuggestText(item.label);
+  const market = getXueqiuSuggestMarket(item);
+
+  let score = 0;
+
+  if (code === queryUpper || alias === queryUpper) {
+    score += 1000;
+  }
+
+  score += Math.max(
+    matchTextScore(code, queryUpper),
+    matchTextScore(alias, queryUpper),
+    matchTextScore(label, queryUpper),
+  );
+
+  if (hasChineseCharacter(query) && hasHKCandidate && hasUSCandidate) {
+    if (market === 'HK') {
+      score += 80;
+    }
+    if (market === 'US') {
+      score -= 20;
+      if (isAdrLikeLabel(`${item.label || ''} ${item.query || ''}`)) {
+        score -= 80;
+      }
+    }
+  }
+
+  return score;
+}
+
+export function pickXueqiuSuggestSymbol(
   response: XueqiuSuggestResponse,
   query: string,
 ): string | undefined {
@@ -398,13 +532,33 @@ function pickXueqiuSuggestSymbol(
     return undefined;
   }
 
-  const queryUpper = query.toUpperCase();
-  const best =
-    items.find((item) => {
-      const code = (item?.code || item?.symbol || '').toUpperCase();
-      const alias = (item?.query || '').toUpperCase();
-      return code === queryUpper || alias === queryUpper;
-    }) ?? items[0];
+  const hasHKCandidate = items.some(
+    (item) => getXueqiuSuggestMarket(item) === 'HK',
+  );
+  const hasUSCandidate = items.some(
+    (item) => getXueqiuSuggestMarket(item) === 'US',
+  );
+
+  const best = items.reduce((currentBest, item) => {
+    if (!currentBest) {
+      return item;
+    }
+
+    const currentScore = scoreXueqiuSuggestItem(
+      currentBest,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    const nextScore = scoreXueqiuSuggestItem(
+      item,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    return nextScore > currentScore ? item : currentBest;
+  }, items[0]);
+
   return mapXueqiuStockToSymbol(best);
 }
 
@@ -484,19 +638,89 @@ async function getSuggestStockFromTencent(
       return undefined;
     }
 
-    const queryUpper = query.toUpperCase();
-    const byExactCode =
-      stockList.find((item) => {
-        const code = (item?.[1] || '').toUpperCase();
-        const abbr = (item?.[3] || '').toUpperCase();
-        return code === queryUpper || abbr === queryUpper;
-      }) ?? stockList[0];
-
-    return mapTencentStockToSymbol(byExactCode);
+    return pickTencentSuggestSymbol(stockList, query);
   } catch (error) {
     logger.warn(`tencent smartbox failed for "${query}"`);
     return undefined;
   }
+}
+
+function scoreTencentSuggestItem(
+  item: TencentSmartboxItem,
+  query: string,
+  hasHKCandidate: boolean,
+  hasUSCandidate: boolean,
+): number {
+  const [market, rawCode, name, abbr] = item;
+  const queryUpper = normalizeSuggestText(query);
+  const code = normalizeSuggestText(rawCode);
+  const alias = normalizeSuggestText(abbr);
+  const label = normalizeSuggestText(name);
+  const marketUpper = normalizeSuggestText(market);
+
+  let score = 0;
+
+  if (code === queryUpper || alias === queryUpper) {
+    score += 1000;
+  }
+
+  score += Math.max(
+    matchTextScore(code, queryUpper),
+    matchTextScore(alias, queryUpper),
+    matchTextScore(label, queryUpper),
+  );
+
+  if (hasChineseCharacter(query) && hasHKCandidate && hasUSCandidate) {
+    if (marketUpper === 'HK') {
+      score += 80;
+    }
+    if (marketUpper === 'US') {
+      score -= 20;
+      if (isAdrLikeLabel(`${name || ''} ${abbr || ''}`)) {
+        score -= 80;
+      }
+    }
+  }
+
+  return score;
+}
+
+export function pickTencentSuggestSymbol(
+  stockList: TencentSmartboxItem[],
+  query: string,
+): string | undefined {
+  if (!Array.isArray(stockList) || stockList.length === 0) {
+    return undefined;
+  }
+
+  const hasHKCandidate = stockList.some(
+    (item) => normalizeSuggestText(item?.[0]) === 'HK',
+  );
+  const hasUSCandidate = stockList.some(
+    (item) => normalizeSuggestText(item?.[0]) === 'US',
+  );
+
+  const best = stockList.reduce((currentBest, item) => {
+    if (!currentBest) {
+      return item;
+    }
+
+    const currentScore = scoreTencentSuggestItem(
+      currentBest,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    const nextScore = scoreTencentSuggestItem(
+      item,
+      query,
+      hasHKCandidate,
+      hasUSCandidate,
+    );
+    return nextScore > currentScore ? item : currentBest;
+  }, stockList[0]);
+
+  return mapTencentStockToSymbol(best);
 }
 
 function getEastmoneySecid(
@@ -506,6 +730,44 @@ function getEastmoneySecid(
   | undefined {
   const normalized =
     normalizeDirectSymbol(symbol) ?? symbol.trim().toUpperCase();
+
+  const predefinedIndexSecidMap: Record<
+    string,
+    { secid: string; displaySymbol: string; pricePrecision: number }
+  > = {
+    '.DJI': { secid: '100.DJIA', displaySymbol: 'DJIA', pricePrecision: 2 },
+    'DJI': { secid: '100.DJIA', displaySymbol: 'DJIA', pricePrecision: 2 },
+    '.IXIC': { secid: '100.NDX', displaySymbol: 'NDX', pricePrecision: 2 },
+    'IXIC': { secid: '100.NDX', displaySymbol: 'NDX', pricePrecision: 2 },
+    '.INX': { secid: '100.SPX', displaySymbol: 'SPX', pricePrecision: 2 },
+    'INX': { secid: '100.SPX', displaySymbol: 'SPX', pricePrecision: 2 },
+    'HSI': { secid: '100.HSI', displaySymbol: 'HSI', pricePrecision: 2 },
+    'HKHSI': { secid: '100.HSI', displaySymbol: 'HSI', pricePrecision: 2 },
+    'HSCEI': {
+      secid: '100.HSCEI',
+      displaySymbol: 'HSCEI',
+      pricePrecision: 2,
+    },
+    'HKHSCEI': {
+      secid: '100.HSCEI',
+      displaySymbol: 'HSCEI',
+      pricePrecision: 2,
+    },
+    'HSTECH': {
+      secid: '124.HSTECH',
+      displaySymbol: 'HSTECH',
+      pricePrecision: 2,
+    },
+    'HKHSTECH': {
+      secid: '124.HSTECH',
+      displaySymbol: 'HSTECH',
+      pricePrecision: 2,
+    },
+  };
+
+  if (predefinedIndexSecidMap[normalized]) {
+    return predefinedIndexSecidMap[normalized];
+  }
 
   if (/^SH\d{6}$/.test(normalized)) {
     return {
@@ -552,18 +814,32 @@ function getEastmoneySecid(
 }
 
 async function resolveEastmoneySymbol(query: string): Promise<string> {
-  const directSymbol = normalizeDirectSymbol(query);
+  const normalizedQuery = query.trim();
+  const directSymbol = normalizeDirectSymbol(normalizedQuery);
   if (directSymbol) {
     return directSymbol;
   }
 
-  const tencentSymbol = await getSuggestStockFromTencent(query);
+  const xueqiuSymbol = await getSuggestStockFromXueqiu(normalizedQuery);
+  const tencentSymbol = await getSuggestStockFromTencent(normalizedQuery);
+  const numericSymbol = resolveNumericSymbol(normalizedQuery, {
+    xueqiuSymbol,
+    tencentSymbol,
+  });
+  if (numericSymbol) {
+    return numericSymbol;
+  }
+
+  if (xueqiuSymbol) {
+    return xueqiuSymbol;
+  }
+
   if (tencentSymbol) {
     return tencentSymbol;
   }
 
-  if (/^[a-zA-Z][a-zA-Z0-9.-]{0,14}$/.test(query)) {
-    return query.toUpperCase();
+  if (/^[a-zA-Z][a-zA-Z0-9.-]{0,14}$/.test(normalizedQuery)) {
+    return normalizedQuery.toUpperCase();
   }
 
   throw new Error('未找到相关股票');
@@ -658,12 +934,113 @@ function formatEastmoneyOptionalPercent(value: number | undefined): string {
 function formatEastmoneyOptionalAmount(value: number | undefined): string {
   return value === undefined ? '-' : formatAmount(value);
 }
+
+function formatPositiveMetric(value: number | undefined): string | undefined {
+  if (value === undefined || value <= 0) {
+    return undefined;
+  }
+  return convertToNumber(value);
+}
+
 function isUSEastmoneySecid(secid: string): boolean {
   return /^(105|106|107)\./.test(secid);
 }
 
 function toYahooSymbol(symbol: string): string {
   return symbol.replace(/\./g, '-');
+}
+
+export function getExtendedHoursBasePrice(
+  label: ExtendedHoursQuote['label'],
+  meta: YahooExtendedHoursMetaLike | undefined,
+  fallbackRegularClose?: number,
+): number | undefined {
+  if (!meta) {
+    return fallbackRegularClose;
+  }
+
+  if (label === '⏰ 盘前') {
+    return (
+      meta.regularMarketPreviousClose ??
+      fallbackRegularClose ??
+      meta.previousClose ??
+      meta.chartPreviousClose
+    );
+  }
+
+  return (
+    meta.regularMarketPrice ??
+    meta.regularMarketPreviousClose ??
+    fallbackRegularClose ??
+    meta.previousClose ??
+    meta.chartPreviousClose
+  );
+}
+
+export function parseYahooQuoteExtendedHours(
+  quote: YahooQuoteResultLike | undefined,
+  pricePrecision: number,
+  fallbackRegularClose?: number,
+): ExtendedHoursQuote | undefined {
+  if (!quote) {
+    return undefined;
+  }
+
+  if (
+    typeof quote.preMarketPrice === 'number' &&
+    Number.isFinite(quote.preMarketPrice)
+  ) {
+    const percent =
+      typeof quote.preMarketChangePercent === 'number' &&
+      Number.isFinite(quote.preMarketChangePercent)
+        ? quote.preMarketChangePercent
+        : undefined;
+    const basePrice = getExtendedHoursBasePrice(
+      '⏰ 盘前',
+      quote,
+      fallbackRegularClose,
+    );
+    if (percent !== undefined || basePrice) {
+      return {
+        label: '⏰ 盘前',
+        price: quote.preMarketPrice,
+        percent:
+          percent ??
+          ((quote.preMarketPrice - (basePrice as number)) / (basePrice as number)) *
+            100,
+        pricePrecision,
+      };
+    }
+  }
+
+  if (
+    typeof quote.postMarketPrice === 'number' &&
+    Number.isFinite(quote.postMarketPrice)
+  ) {
+    const percent =
+      typeof quote.postMarketChangePercent === 'number' &&
+      Number.isFinite(quote.postMarketChangePercent)
+        ? quote.postMarketChangePercent
+        : undefined;
+    const basePrice = getExtendedHoursBasePrice(
+      '🌙 盘后',
+      quote,
+      fallbackRegularClose,
+    );
+    if (percent !== undefined || basePrice) {
+      return {
+        label: '🌙 盘后',
+        price: quote.postMarketPrice,
+        percent:
+          percent ??
+          ((quote.postMarketPrice - (basePrice as number)) / (basePrice as number)) *
+            100,
+        pricePrecision,
+      };
+    }
+  }
+
+  return undefined;
 }
 
 function findLastCloseInPeriod(
@@ -700,9 +1077,29 @@ function findLastCloseInPeriod(
 async function getYahooExtendedHoursQuote(
   symbol: string,
   pricePrecision: number,
+  fallbackRegularClose?: number,
 ): Promise<ExtendedHoursQuote | undefined> {
   try {
     const yahooSymbol = toYahooSymbol(symbol);
+    const quoteResponse = await axios.get(YAHOO_QUOTE_API_URL, {
+      params: { symbols: yahooSymbol },
+      timeout: 2500,
+      validateStatus: () => true,
+    });
+    if (quoteResponse.status === 200) {
+      const quoteResult = quoteResponse.data?.quoteResponse?.result?.[0];
+      const directQuote = parseYahooQuoteExtendedHours(
+        quoteResult,
+        pricePrecision,
+        fallbackRegularClose,
+      );
+      if (directQuote) {
+        return directQuote;
+      }
+    } else {
+      logger.warn(`yahoo quote failed for "${symbol}": ${quoteResponse.status}`);
+    }
+
     const response = await axios.get(
       `${YAHOO_CHART_API_URL}/${encodeURIComponent(yahooSymbol)}`,
       {
@@ -744,7 +1141,6 @@ async function getYahooExtendedHoursQuote(
       label = '⏰ 盘前';
       start = pre.start;
       end = pre.end;
-      basePrice = meta.previousClose ?? meta.chartPreviousClose;
     } else if (
       typeof post?.start === 'number' &&
       typeof post?.end === 'number' &&
@@ -754,7 +1150,14 @@ async function getYahooExtendedHoursQuote(
       label = '🌙 盘后';
       start = post.start;
       end = post.end;
-      basePrice = meta.regularMarketPrice ?? meta.previousClose;
+    }
+
+    if (label) {
+      basePrice = getExtendedHoursBasePrice(
+        label,
+        meta,
+        fallbackRegularClose,
+      );
     }
 
     if (!label || start === undefined || end === undefined || !basePrice) {
@@ -788,7 +1191,9 @@ function formatExtendedHoursQuote(extended: ExtendedHoursQuote): string {
   const trend = isGrowing ? '📈' : '📉';
   return `${extended.label}：${formatEastmoneyPrice(extended.price, extended.pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(extended.percent)}%`;
 }
-async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
+export async function getEastmoneyStockQuote(
+  query: string,
+): Promise<EastmoneyQuote> {
   const resolvedSymbol = await resolveEastmoneySymbol(query);
   let secidInfo = getEastmoneySecid(resolvedSymbol);
   if (!secidInfo) {
@@ -849,7 +1254,11 @@ async function getEastmoneyStockQuote(query: string): Promise<EastmoneyQuote> {
   };
 
   if (isUSEastmoneySecid(secidInfo.secid)) {
-    quote.extended = await getYahooExtendedHoursQuote(quote.symbol, precision);
+    quote.extended = await getYahooExtendedHoursQuote(
+      quote.symbol,
+      precision,
+      quote.current,
+    );
   }
 
   return quote;
@@ -1030,19 +1439,40 @@ function formatIndexData(quoteData: any) {
   return text;
 }
 
+function formatEastmoneyIndexData(quote: EastmoneyQuote): string {
+  const isGrowing = quote.percent > 0;
+  const trend = isGrowing ? '📈' : '📉';
+
+  let text = quote?.name
+    ? `${quote.name}${quote.symbol ? ` (${quote.symbol})` : ''}\n`
+    : '';
+  text += `💰 现价：${formatEastmoneyPrice(quote.current, quote.pricePrecision)} ${trend} ${isGrowing ? '+' : ''}${convertToNumber(quote.percent)}%\n`;
+
+  if (quote?.amount !== undefined) {
+    text += `💎 成交额：${formatAmount(quote.amount)}\n`;
+  }
+
+  if (quote?.currentYearPercent !== undefined) {
+    text += `📅 年初至今：${quote.currentYearPercent > 0 ? '+' : ''}${convertToNumber(quote.currentYearPercent)}%`;
+  }
+  return text.trimEnd();
+}
+
 export async function getCNMarketIndexData() {
   try {
-    const [data1, data2, data3, gzjcData] = await Promise.all([
-      getStockBasicData('SH000001'),
-      getStockBasicData('SZ399001'),
-      getStockBasicData('SZ399006'),
+    const [data1, data2, data3, data4, gzjcData] = await Promise.all([
+      getEastmoneyStockQuote('SH000001'),
+      getEastmoneyStockQuote('SZ399001'),
+      getEastmoneyStockQuote('SZ399006'),
+      getEastmoneyStockQuote('SH000688'),
       getGzjc(),
     ]);
 
     const data = [
-      formatIndexData(data1),
-      formatIndexData(data2),
-      formatIndexData(data3),
+      formatEastmoneyIndexData(data1),
+      formatEastmoneyIndexData(data2),
+      formatEastmoneyIndexData(data3),
+      formatEastmoneyIndexData(data4),
       gzjcData,
     ];
 
@@ -1058,11 +1488,11 @@ export async function getCNMarketIndexData() {
 export async function getUSMarketIndexData() {
   try {
     const data = await Promise.all([
-      getStockBasicData('.DJI'),
-      getStockBasicData('.IXIC'),
-      getStockBasicData('.INX'),
+      getEastmoneyStockQuote('.DJI'),
+      getEastmoneyStockQuote('.IXIC'),
+      getEastmoneyStockQuote('.INX'),
     ]);
-    return `${data.map(formatIndexData).join('\n')}`;
+    return `${data.map(formatEastmoneyIndexData).join('\n')}`;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取美国市场指数失败：${error.message}`;
@@ -1074,11 +1504,11 @@ export async function getUSMarketIndexData() {
 export async function getHKMarketIndexData() {
   try {
     const data = await Promise.all([
-      getStockBasicData('HSI'),
-      getStockBasicData('HSCEI'),
-      getStockBasicData('HSTECH'),
+      getEastmoneyStockQuote('HSI'),
+      getEastmoneyStockQuote('HSCEI'),
+      getEastmoneyStockQuote('HSTECH'),
     ]);
-    return `${data.map(formatIndexData).join('\n')}`;
+    return `${data.map(formatEastmoneyIndexData).join('\n')}`;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return `❌ 获取港股市场指数失败：${error.message}`;
@@ -1106,8 +1536,14 @@ export async function getStockDetailData(symbol: string): Promise<string> {
     text += `💫 成交额：${formatEastmoneyOptionalAmount(quote.amount)}\n`;
     text += `🔁 换手率：${formatEastmoneyOptionalPercent(quote.turnoverRate)}\n`;
     text += `🏢 总市值：${formatEastmoneyOptionalAmount(quote.marketCapital)}\n`;
-    text += `📌 市盈率：${quote.pe === undefined ? '-' : convertToNumber(quote.pe)}\n`;
-    text += `📋 市净率：${quote.pb === undefined ? '-' : convertToNumber(quote.pb)}\n`;
+    const pe = formatPositiveMetric(quote.pe);
+    if (pe) {
+      text += `📌 市盈率：${pe}\n`;
+    }
+    const pb = formatPositiveMetric(quote.pb);
+    if (pb) {
+      text += `📋 市净率：${pb}\n`;
+    }
     text += `📅 今年以来：${formatEastmoneyOptionalPercent(quote.currentYearPercent)}`;
 
     return text;

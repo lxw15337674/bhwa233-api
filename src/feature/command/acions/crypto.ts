@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { Logger } from '@nestjs/common';
+import { convertToNumber } from '../../../utils';
 
 const Binance_API_URL = 'https://data-api.binance.vision/api/v3/ticker/24hr';
 const logger = new Logger('Crypto');
 const Bitget_API_URL = 'https://api.bitget.com/api/v2/spot/market/tickers';
 const Bybit_API_URL = 'https://api.bybit.com/v5/market/tickers';
 const Gateio_API_URL = 'https://www.gate.io/apiw/v2/market/tickers';
+const CoinGecko_Markets_API_URL = 'https://api.coingecko.com/api/v3/coins/markets';
+const CoinGecko_Coin_API_URL = 'https://api.coingecko.com/api/v3/coins';
 
 interface BinanceData {
   // 交易对名称，例如 BTCUSDT
@@ -166,6 +169,42 @@ interface Response {
   text: string;
 }
 
+interface CoinGeckoMarketCoin {
+  id: string;
+  symbol: string;
+  name: string;
+  current_price: number | null;
+  market_cap: number | null;
+  market_cap_rank: number | null;
+  total_volume: number | null;
+  price_change_percentage_24h: number | null;
+}
+
+interface CoinGeckoHistoryResponse {
+  market_data?: {
+    current_price?: {
+      usd?: number;
+    };
+  };
+}
+
+interface CryptoDetailQuote {
+  name: string;
+  symbol: string;
+  currentPrice?: number;
+  priceChangePercentage24h?: number;
+  currentYearPercent?: number;
+  marketCap?: number;
+  totalVolume?: number;
+  marketCapRank?: number;
+}
+
+const USD_COMPACT_FORMATTER = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 2,
+});
+
 export async function getCryptoData(symbol: string): Promise<string> {
   try {
     const symbols = symbol.split(/\s+/); // 按空格分割多个交易对代码
@@ -177,6 +216,207 @@ export async function getCryptoData(symbol: string): Promise<string> {
     }
     return `❌ 获取 ${symbol} 失败：未知错误`;
   }
+}
+
+export async function getCryptoDetailData(symbol: string): Promise<string> {
+  try {
+    const symbols = symbol.split(/\s+/);
+    const results = await Promise.all(
+      symbols.map((item) => getSingleCryptoDetailData(item)),
+    );
+    return results.join('\n\n');
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return `❌ 获取 ${symbol} 详情失败：${error.message}`;
+    }
+    return `❌ 获取 ${symbol} 详情失败：未知错误`;
+  }
+}
+
+async function getSingleCryptoDetailData(symbol: string): Promise<string> {
+  try {
+    const marketCoin = await getCoinGeckoMarketCoin(symbol);
+    const currentPrice =
+      typeof marketCoin.current_price === 'number'
+        ? marketCoin.current_price
+        : undefined;
+    const currentYearPercent = await getCoinGeckoCurrentYearPercent(
+      marketCoin.id,
+      currentPrice,
+    );
+
+    return formatCryptoDetailResponse({
+      name: marketCoin.name,
+      symbol: marketCoin.symbol.toUpperCase(),
+      currentPrice,
+      priceChangePercentage24h:
+        typeof marketCoin.price_change_percentage_24h === 'number'
+          ? marketCoin.price_change_percentage_24h
+          : undefined,
+      currentYearPercent,
+      marketCap:
+        typeof marketCoin.market_cap === 'number'
+          ? marketCoin.market_cap
+          : undefined,
+      totalVolume:
+        typeof marketCoin.total_volume === 'number'
+          ? marketCoin.total_volume
+          : undefined,
+      marketCapRank:
+        typeof marketCoin.market_cap_rank === 'number'
+          ? marketCoin.market_cap_rank
+          : undefined,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return `❌ 获取 ${symbol} 详情失败：${error.message}`;
+    }
+    return `❌ 获取 ${symbol} 详情失败：未知错误`;
+  }
+}
+
+async function getCoinGeckoMarketCoin(
+  symbol: string,
+): Promise<CoinGeckoMarketCoin> {
+  const normalizedSymbol = symbol.trim().toLowerCase();
+  if (!normalizedSymbol) {
+    throw new Error('请输入数字货币代码，例如: bd btc');
+  }
+
+  const response = await axios.get<CoinGeckoMarketCoin[]>(
+    CoinGecko_Markets_API_URL,
+    {
+      params: {
+        vs_currency: 'usd',
+        symbols: normalizedSymbol,
+        include_tokens: 'top',
+        precision: 'full',
+      },
+      validateStatus: () => true,
+    },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`CoinGecko 行情接口返回 ${response.status}`);
+  }
+
+  const coins = Array.isArray(response.data) ? response.data : [];
+  const candidates = coins
+    .filter((item) => item?.symbol?.toLowerCase() === normalizedSymbol)
+    .sort((a, b) => {
+      const rankA = a.market_cap_rank ?? Number.MAX_SAFE_INTEGER;
+      const rankB = b.market_cap_rank ?? Number.MAX_SAFE_INTEGER;
+      return rankA - rankB;
+    });
+
+  const marketCoin = candidates[0];
+  if (!marketCoin) {
+    throw new Error('未找到相关数字货币');
+  }
+
+  return marketCoin;
+}
+
+async function getCoinGeckoCurrentYearPercent(
+  coinId: string,
+  currentPrice?: number,
+): Promise<number | undefined> {
+  if (!currentPrice || currentPrice <= 0) {
+    return undefined;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const response = await axios.get<CoinGeckoHistoryResponse>(
+    `${CoinGecko_Coin_API_URL}/${encodeURIComponent(coinId)}/history`,
+    {
+      params: {
+        date: `01-01-${currentYear}`,
+        localization: false,
+      },
+      validateStatus: () => true,
+    },
+  );
+
+  if (response.status !== 200) {
+    return undefined;
+  }
+
+  const startPrice = response.data?.market_data?.current_price?.usd;
+  if (typeof startPrice !== 'number' || !Number.isFinite(startPrice) || startPrice <= 0) {
+    return undefined;
+  }
+
+  return ((currentPrice - startPrice) / startPrice) * 100;
+}
+
+function formatUsdPrice(value?: number): string {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return '-';
+  }
+
+  if (value >= 1000) {
+    return `$${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+
+  if (value >= 1) {
+    return `$${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    })}`;
+  }
+
+  if (value >= 0.01) {
+    return `$${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    })}`;
+  }
+
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8,
+  })}`;
+}
+
+function formatUsdCompactAmount(value?: number): string {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return '-';
+  }
+
+  return `$${USD_COMPACT_FORMATTER.format(value)}`;
+}
+
+function formatSignedPercent(value?: number): string {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return '暂不可用';
+  }
+
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${convertToNumber(value)}%`;
+}
+
+export function formatCryptoDetailResponse(detail: CryptoDetailQuote): string {
+  const dayPercent = detail.priceChangePercentage24h;
+  const has24hPercent =
+    typeof dayPercent === 'number' && Number.isFinite(dayPercent);
+  const isGrowing = has24hPercent && dayPercent > 0;
+  const dayChangeText = has24hPercent
+    ? `${isGrowing ? '📈' : '📉'} ${formatSignedPercent(
+        dayPercent,
+      )}`
+    : '暂不可用';
+
+  return [
+    `${detail.name} (${detail.symbol})`,
+    `现价：${formatUsdPrice(detail.currentPrice)}`,
+    `24h：${dayChangeText}`,
+    `今年以来：${formatSignedPercent(detail.currentYearPercent)}`,
+    `总市值：${formatUsdCompactAmount(detail.marketCap)}`,
+    `24h 成交额：${formatUsdCompactAmount(detail.totalVolume)}`,
+  ].join('\n');
 }
 
 // 新增辅助函数用于并行获取多个交易对数据

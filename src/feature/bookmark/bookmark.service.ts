@@ -1,18 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { CreateBookmarkDto } from './bookmark.dto';
 import { AiService } from '../ai/ai.service';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
-import { Bookmark, BookmarkTag, Prisma, PrismaClient } from '@prisma/client';
-
-// 创建数据库连接适配器
-const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-});
-const adapter = new PrismaPg(pool);
-
-// 使用适配器创建 Prisma 客户端
-const prisma = new PrismaClient({ adapter });
+import { Bookmark, BookmarkTag, Prisma } from '@prisma/client';
+import { prisma } from '../../database/prisma';
 
 export interface CompleteBookmark extends Bookmark {
     tags: BookmarkTag[];

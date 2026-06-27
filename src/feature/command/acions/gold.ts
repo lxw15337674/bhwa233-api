@@ -1,5 +1,7 @@
 import axios from 'axios';
 import dayjs from 'dayjs';
+import { convertToNumber } from '../../../utils';
+import { getEastmoneyStockQuote } from './stockInfo';
 
 interface GoldQuote {
   label: string;
@@ -7,14 +9,19 @@ interface GoldQuote {
   unit: string;
 }
 
+interface GoldBenchmarkQuote {
+  symbol: string;
+  currentYearPercent?: number;
+}
+
 const GOLD_PRICE_SCRIPT_URL = 'http://res.huangjinjiage.com.cn/panjia2.js';
 const GOLD_TIME_SCRIPT_URL = 'http://res.huangjinjiage.com.cn/panjia1.js';
+const GOLD_BENCHMARK_SYMBOL = 'AU9999';
 
 const DISPLAY_ITEMS = [
   { label: '黄金', start: 12, unit: '元/克' },
   { label: '白银', start: 16, unit: '元/克' },
   { label: '铂金', start: 20, unit: '元/克' },
-  { label: '钯金', start: 24, unit: '元/克' },
 ] as const;
 
 const USER_AGENT =
@@ -42,6 +49,21 @@ function extractQuoteTime(script: string): string | undefined {
   return `${dayjs().format('YYYY-MM-DD')} ${rawTime}`;
 }
 
+function formatBenchmarkPerformance(
+  benchmark?: GoldBenchmarkQuote,
+): string | undefined {
+  if (!benchmark) {
+    return undefined;
+  }
+
+  if (benchmark.currentYearPercent === undefined) {
+    return `年内涨幅：暂不可用（基准 ${benchmark.symbol}）`;
+  }
+
+  const sign = benchmark.currentYearPercent > 0 ? '+' : '';
+  return `年内涨幅：${sign}${convertToNumber(benchmark.currentYearPercent)}%（基准 ${benchmark.symbol}）`;
+}
+
 export function buildGoldQuotes(priceList: string[]): GoldQuote[] {
   const quotes: GoldQuote[] = [];
 
@@ -61,12 +83,27 @@ export function buildGoldQuotes(priceList: string[]): GoldQuote[] {
   return quotes;
 }
 
-export function formatGoldPriceResponse(quotes: GoldQuote[], quoteTime?: string): string {
+export function formatGoldPriceResponse(
+  quotes: GoldQuote[],
+  quoteTime?: string,
+  benchmark?: GoldBenchmarkQuote,
+): string {
   if (quotes.length === 0) {
     throw new Error('缺少可展示的金价数据');
   }
 
-  const lines = quotes.map((quote) => `${quote.label}：${quote.price}${quote.unit}`);
+  const performanceLine = formatBenchmarkPerformance(benchmark);
+  const goldIndex = quotes.findIndex((quote) => quote.label === '黄金');
+  const lines = quotes.map((quote) =>
+    quote.label === '黄金'
+      ? `当前金价：${quote.price}${quote.unit}`
+      : `${quote.label}：${quote.price}${quote.unit}`,
+  );
+
+  if (performanceLine) {
+    const insertIndex = goldIndex >= 0 ? goldIndex + 1 : 1;
+    lines.splice(insertIndex, 0, performanceLine);
+  }
 
   if (!quoteTime) {
     return lines.join('\n');
@@ -75,19 +112,34 @@ export function formatGoldPriceResponse(quotes: GoldQuote[], quoteTime?: string)
   return [`报价时间：${quoteTime}`, ...lines].join('\n');
 }
 
+async function getGoldBenchmarkQuote(): Promise<GoldBenchmarkQuote> {
+  try {
+    const quote = await getEastmoneyStockQuote(GOLD_BENCHMARK_SYMBOL);
+    return {
+      symbol: quote.symbol,
+      currentYearPercent: quote.currentYearPercent,
+    };
+  } catch {
+    return {
+      symbol: GOLD_BENCHMARK_SYMBOL,
+    };
+  }
+}
+
 export async function getGoldPrice(): Promise<string> {
-  const [{ data: priceScript }, { data: timeScript }] = await Promise.all([
+  const [{ data: priceScript }, { data: timeScript }, benchmark] = await Promise.all([
     axios.get<string>(GOLD_PRICE_SCRIPT_URL, {
       headers: { 'User-Agent': USER_AGENT },
     }),
     axios.get<string>(GOLD_TIME_SCRIPT_URL, {
       headers: { 'User-Agent': USER_AGENT },
     }),
+    getGoldBenchmarkQuote(),
   ]);
 
   const priceList = extractScriptList(priceScript, 'panjia2');
   const quotes = buildGoldQuotes(priceList);
   const quoteTime = extractQuoteTime(timeScript);
 
-  return formatGoldPriceResponse(quotes, quoteTime);
+  return formatGoldPriceResponse(quotes, quoteTime, benchmark);
 }

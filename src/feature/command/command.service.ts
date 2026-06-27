@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getCryptoData } from './acions/crypto';
+import { getCryptoData, getCryptoDetailData } from './acions/crypto';
 import { holiday } from './acions/fishingTime';
 import { getStockData as getStockNewData, getStockDetailData as getStockDetailNewData } from './acions/stock';
 import { getHotSpot } from './acions/stockHotSpot';
@@ -16,11 +16,13 @@ import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
 import { AiSessionCacheService } from './ai-session-cache.service';
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import satori from 'satori';
 import sharp from 'sharp';
 import React from 'react';
 import type OpenAI from 'openai';
+import { Request } from 'express';
+import { CustomCommandService } from './custom-command.service';
 
 export interface CommandParams {
     args?: string,
@@ -59,6 +61,7 @@ export class CommandService {
         private readonly screenshotService: ScreenshotService,
         private readonly httpService: HttpService,
         private readonly aiSessionCacheService: AiSessionCacheService,
+        private readonly customCommandService: CustomCommandService,
     ) { }
 
     private commandMap: {
@@ -265,6 +268,21 @@ export class CommandService {
                 msg: 'b [货币代码] - 获取数字货币信息 例如: b btc',
                 hasArgs: true,
             },
+            {
+                key: 'bd ',
+                callback: async (params) => {
+                    if (!params.args) {
+                        throw new Error('请输入数字货币代码，例如: bd btc');
+                    }
+                    const result = await getCryptoDetailData(params.args);
+                    return {
+                        content: result,
+                        type: 'text'
+                    };
+                },
+                msg: 'bd [货币代码] - 获取数字货币详情，例如: bd btc',
+                hasArgs: true,
+            },
             // 热点资讯
             {
                 key: 'hot',
@@ -312,7 +330,7 @@ export class CommandService {
                         type: 'text',
                     };
                 },
-                msg: 'gold - 获取实时金价',
+                msg: 'gold - 获取当前金价和年内涨幅',
                 hasArgs: false,
             },
             // 网页截图
@@ -428,12 +446,18 @@ export class CommandService {
             }
         ];
 
-    async executeCommand(msg: string): Promise<{ content: string, type: 'text' | 'image' }> {
+    async executeCommand(msg: string, request?: Request): Promise<{ content: string, type: 'text' | 'image' }> {
         if (!msg || !msg.trim()) {
             return {
                 content: '',
                 type: 'text'
             };
+        }
+
+        const customResult = await this.customCommandService.execute(msg);
+        if (customResult) {
+            this.logger.log(`====================[自定义命令执行开始]====================\n[时间] ${new Date().toLocaleString()}\n[命令] ${msg.trim()}\n[结果] ${customResult.content}\n====================[自定义命令执行结束]====================`);
+            return customResult;
         }
 
         for (const command of this.commandMap) {
@@ -591,15 +615,17 @@ export class CommandService {
         }
     }
 
-    async getCommandList(): Promise<Command[]> {
-        const commandMsg = this.commandMap
+    async getCommandList(_request?: Request): Promise<Command[]> {
+        const builtInCommands = this.commandMap
             .filter(command => command.enable !== false)
             .map(command => ({
                 key: command.key,
                 description: command.msg,
                 type: command.type,
             }));
-        return commandMsg;
+
+        const customCommands = await this.customCommandService.listForHelp();
+        return [...customCommands, ...builtInCommands];
     }
 
     async getCommandListImage(): Promise<Buffer> {
@@ -677,5 +703,21 @@ export class CommandService {
 
     async getRelayPulseScreenshot(provider: string = '88code', period: string = '24h'): Promise<Buffer> {
         return await takeRelayPulseScreenshot(this.screenshotService, provider, period);
+    }
+
+    async getManagementPageHtml(): Promise<string> {
+        const candidatePaths = [
+            join(process.cwd(), 'public', 'command-manage.html'),
+            join(process.cwd(), 'dist', 'assets', 'command-manage.html'),
+            join(__dirname, '..', '..', 'assets', 'command-manage.html'),
+        ];
+
+        for (const pagePath of candidatePaths) {
+            if (existsSync(pagePath)) {
+                return readFileSync(pagePath, 'utf-8');
+            }
+        }
+
+        throw new Error('command-manage.html not found in expected locations');
     }
 }
