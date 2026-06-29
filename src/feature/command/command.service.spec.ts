@@ -6,7 +6,9 @@ import { HttpService } from '@nestjs/axios';
 import { AiSessionCacheService } from './ai-session-cache.service';
 import { CustomCommandService } from './custom-command.service';
 
-describe('CommandService (a command + Tavily)', () => {
+// 命令执行已转发至 SparkHub 线上服务，本地 `a` 命令 + Tavily 逻辑已注释下线，
+// 这组用例暂时跳过；待恢复本地实现时改回 describe 即可。
+describe.skip('CommandService (a command + Tavily)', () => {
   let service: CommandService;
   let aiService: { generateResponseWithTools: jest.Mock };
   let tavilyService: { search: jest.Mock };

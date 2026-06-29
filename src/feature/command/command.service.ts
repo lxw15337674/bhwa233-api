@@ -22,6 +22,7 @@ import sharp from 'sharp';
 import React from 'react';
 import type OpenAI from 'openai';
 import { Request } from 'express';
+import { firstValueFrom } from 'rxjs';
 import { CustomCommandService } from './custom-command.service';
 
 export interface CommandParams {
@@ -64,6 +65,8 @@ export class CommandService {
         private readonly customCommandService: CustomCommandService,
     ) { }
 
+    // ↓↓↓ 原本地命令实现已迁移至 SparkHub（见文件末尾的转发实现），整段注释保留以便回滚 ↓↓↓
+    /*
     private commandMap: {
         key: string,
         callback: (params: CommandParams) => Promise<{ content: string, type: 'text' | 'image' }>,
@@ -719,5 +722,79 @@ export class CommandService {
         }
 
         throw new Error('command-manage.html not found in expected locations');
+    }
+    */
+    // ↑↑↑ 原本地命令实现注释结束 ↑↑↑
+
+    // SparkHub 线上命令服务地址，默认指向生产环境，可用 SPARKHUB_COMMAND_BASE_URL 覆盖（如 dev 指向 api-dev.bhwa233.com）
+    private getSparkHubCommandBaseUrl(): string {
+        return (process.env.SPARKHUB_COMMAND_BASE_URL || 'https://api.bhwa233.com/api/command').replace(/\/+$/, '');
+    }
+
+    async executeCommand(msg: string, _request?: Request): Promise<{ content: string, type: 'text' | 'image' }> {
+        if (!msg || !msg.trim()) {
+            return {
+                content: '',
+                type: 'text'
+            };
+        }
+
+        const url = `${this.getSparkHubCommandBaseUrl()}?command=${encodeURIComponent(msg)}`;
+        try {
+            const response = await firstValueFrom(
+                this.httpService.get<{ content: string; type: 'text' | 'image' }>(url),
+            );
+
+            this.logger.log(`====================[命令转发 SparkHub]====================\n[时间] ${new Date().toLocaleString()}\n[命令] ${msg.trim()}\n[目标] ${url}\n====================[命令转发结束]====================`);
+
+            return response.data;
+        } catch (error) {
+            this.logger.error('转发命令到 SparkHub 失败:', error);
+            return {
+                content: '命令服务暂时不可用，请稍后重试',
+                type: 'text'
+            };
+        }
+    }
+
+    async getCommandList(_request?: Request): Promise<Command[]> {
+        const url = `${this.getSparkHubCommandBaseUrl()}/list`;
+        const response = await firstValueFrom(
+            this.httpService.get<Command[]>(url),
+        );
+        return response.data;
+    }
+
+    // 注意：SparkHub（Cloudflare Workers 版）已移除服务端图片渲染，/hpimg 返回 501，
+    // 这里仅原样透传上游响应字节，控制器仍按 image/png 发送，客户端会拿到降级响应。
+    async getCommandListImage(): Promise<Buffer> {
+        const url = `${this.getSparkHubCommandBaseUrl()}/hpimg`;
+        const response = await firstValueFrom(
+            this.httpService.get<ArrayBuffer>(url, {
+                responseType: 'arraybuffer',
+                validateStatus: () => true,
+            }),
+        );
+        return Buffer.from(response.data);
+    }
+
+    // 注意：SparkHub 已移除无头浏览器截图，/relay 返回文本提示，透传后非图片，属预期降级。
+    async getRelayPulseScreenshot(provider: string = '88code', period: string = '24h'): Promise<Buffer> {
+        const url = `${this.getSparkHubCommandBaseUrl()}/relay?provider=${encodeURIComponent(provider)}&period=${encodeURIComponent(period)}`;
+        const response = await firstValueFrom(
+            this.httpService.get<ArrayBuffer>(url, {
+                responseType: 'arraybuffer',
+                validateStatus: () => true,
+            }),
+        );
+        return Buffer.from(response.data);
+    }
+
+    async getManagementPageHtml(): Promise<string> {
+        const url = `${this.getSparkHubCommandBaseUrl()}/manage`;
+        const response = await firstValueFrom(
+            this.httpService.get(url, { responseType: 'text' }),
+        );
+        return response.data as string;
     }
 }
