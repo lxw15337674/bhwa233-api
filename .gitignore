@@ -45,3 +45,4 @@ lerna-debug.log*
 .env*.local
 
 /dist
+.env*
