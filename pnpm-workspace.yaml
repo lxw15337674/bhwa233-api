@@ -1,0 +1,2 @@
+# 单包仓库，仅用于批准依赖 build 脚本（pnpm 10+ 默认屏蔽）
+dangerouslyAllowAllBuilds: true
