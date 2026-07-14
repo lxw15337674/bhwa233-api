@@ -23,7 +23,6 @@ import React from 'react';
 import type OpenAI from 'openai';
 import { Request } from 'express';
 import { firstValueFrom } from 'rxjs';
-import { CustomCommandService } from './custom-command.service';
 
 export interface CommandParams {
     args?: string,
@@ -62,7 +61,6 @@ export class CommandService {
         private readonly screenshotService: ScreenshotService,
         private readonly httpService: HttpService,
         private readonly aiSessionCacheService: AiSessionCacheService,
-        private readonly customCommandService: CustomCommandService,
     ) { }
 
     // ↓↓↓ 原本地命令实现已迁移至 SparkHub（见文件末尾的转发实现），整段注释保留以便回滚 ↓↓↓
@@ -788,13 +786,5 @@ export class CommandService {
             }),
         );
         return Buffer.from(response.data);
-    }
-
-    async getManagementPageHtml(): Promise<string> {
-        const url = `${this.getSparkHubCommandBaseUrl()}/manage`;
-        const response = await firstValueFrom(
-            this.httpService.get(url, { responseType: 'text' }),
-        );
-        return response.data as string;
     }
 }

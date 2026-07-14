@@ -4,7 +4,6 @@ import { TavilyService } from '../ai/tavily.service';
 import { ScreenshotService } from '../../utils/screenshot.service';
 import { HttpService } from '@nestjs/axios';
 import { AiSessionCacheService } from './ai-session-cache.service';
-import { CustomCommandService } from './custom-command.service';
 
 // 命令执行已转发至 SparkHub 线上服务，本地 `a` 命令 + Tavily 逻辑已注释下线，
 // 这组用例暂时跳过；待恢复本地实现时改回 describe 即可。
@@ -13,7 +12,6 @@ describe.skip('CommandService (a command + Tavily)', () => {
   let aiService: { generateResponseWithTools: jest.Mock };
   let tavilyService: { search: jest.Mock };
   let aiSessionCacheService: { getTurns: jest.Mock; appendTurn: jest.Mock };
-  let customCommandService: { execute: jest.Mock };
 
   beforeEach(() => {
     aiService = {
@@ -26,17 +24,12 @@ describe.skip('CommandService (a command + Tavily)', () => {
       getTurns: jest.fn().mockResolvedValue([]),
       appendTurn: jest.fn().mockResolvedValue(undefined),
     };
-    customCommandService = {
-      execute: jest.fn().mockResolvedValue(null),
-    };
-
     service = new CommandService(
       aiService as unknown as AiService,
       tavilyService as unknown as TavilyService,
       {} as ScreenshotService,
       {} as HttpService,
       aiSessionCacheService as unknown as AiSessionCacheService,
-      customCommandService as unknown as CustomCommandService,
     );
   });
 

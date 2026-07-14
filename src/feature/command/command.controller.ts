@@ -2,11 +2,8 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
-  Param,
   Post,
-  Put,
   Query,
   Req,
   Res,
@@ -16,24 +13,11 @@ import { CommandService } from './command.service';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { CommandRequestDto } from './dto/command.dto';
 import { Request } from 'express';
-import { CommandAuthService } from './command-auth.service';
-import { CustomCommandService } from './custom-command.service';
-import {
-  PreviewCustomCommandDto,
-  UpsertCustomCommandDto,
-} from './dto/custom-command.dto';
-import { ReviewCommandDto } from './dto/review-command.dto';
-import { UploadCommandImageDto } from './dto/upload-command-image.dto';
-import { uploadImageDataUrl } from '../../utils/upload';
 
 @ApiTags('Command')
 @Controller('command')
 export class CommandController {
-  constructor(
-    private readonly commandService: CommandService,
-    private readonly commandAuthService: CommandAuthService,
-    private readonly customCommandService: CustomCommandService,
-  ) {}
+  constructor(private readonly commandService: CommandService) {}
 
   @Get('')
   async executeCommand(@Query('command') command: string, @Req() req: Request) {
@@ -97,103 +81,5 @@ export class CommandController {
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10分钟缓存
     res.send(imageBuffer);
-  }
-
-  @Get('config')
-  async getCustomCommands() {
-    return this.customCommandService.list();
-  }
-
-  @Post('config')
-  async createCustomCommand(
-    @Req() req: Request,
-    @Body() body: UpsertCustomCommandDto,
-  ) {
-    const ownerKeyHash =
-      this.commandAuthService.resolveOptionalOwnerKeyHash(req) || 'public';
-    const hasManagementKey = ownerKeyHash !== 'public';
-    return this.customCommandService.create(ownerKeyHash, body, {
-      publishDirectly: hasManagementKey,
-      reviewerKeyHash: hasManagementKey ? ownerKeyHash : undefined,
-      reviewComment: hasManagementKey ? '管理 key 直通发布' : undefined,
-    });
-  }
-
-  @Put('config/:id')
-  async updateCustomCommand(
-    @Req() req: Request,
-    @Param('id') id: string,
-    @Body() body: UpsertCustomCommandDto,
-  ) {
-    const ownerKeyHash =
-      this.commandAuthService.resolveRequiredOwnerKeyHash(req);
-    return this.customCommandService.update(ownerKeyHash, id, body, {
-      publishDirectly: true,
-      reviewerKeyHash: ownerKeyHash,
-      reviewComment: '管理 key 直接更新',
-    });
-  }
-
-  @Delete('config/:id')
-  async deleteCustomCommand(@Req() req: Request, @Param('id') id: string) {
-    const ownerKeyHash =
-      this.commandAuthService.resolveRequiredOwnerKeyHash(req);
-    await this.customCommandService.remove(ownerKeyHash, id);
-    return { success: true };
-  }
-
-  @Post('config/preview')
-  async previewCustomCommand(@Body() body: PreviewCustomCommandDto) {
-    return this.customCommandService.preview(body);
-  }
-
-  @Post('config/upload-image')
-  async uploadCustomCommandImage(
-    @Req() req: Request,
-    @Body() body: UploadCommandImageDto,
-  ) {
-    this.commandAuthService.resolveRequiredOwnerKeyHash(req);
-    try {
-      const url = await uploadImageDataUrl(body.imageData, body.fileName);
-      return { url };
-    } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : '图片上传失败',
-      );
-    }
-  }
-
-  @Post('config/:id/submit')
-  async submitCustomCommand(@Req() req: Request, @Param('id') id: string) {
-    this.commandAuthService.resolveRequiredOwnerKeyHash(req);
-    return this.customCommandService.submit(id);
-  }
-
-  @Post('config/:id/approve')
-  async approveCustomCommand(
-    @Req() req: Request,
-    @Param('id') id: string,
-    @Body() body: ReviewCommandDto,
-  ) {
-    const reviewerKeyHash =
-      this.commandAuthService.resolveRequiredReviewerKeyHash(req);
-    return this.customCommandService.approve(id, reviewerKeyHash, body.comment);
-  }
-
-  @Post('config/:id/reject')
-  async rejectCustomCommand(
-    @Req() req: Request,
-    @Param('id') id: string,
-    @Body() body: ReviewCommandDto,
-  ) {
-    const reviewerKeyHash =
-      this.commandAuthService.resolveRequiredReviewerKeyHash(req);
-    return this.customCommandService.reject(id, reviewerKeyHash, body.comment);
-  }
-
-  @Get('manage')
-  async getCommandManagePage(@Res() res: Response) {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(await this.commandService.getManagementPageHtml());
   }
 }
